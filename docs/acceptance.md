@@ -148,8 +148,10 @@ the devtool (`hiddenFromDevtool` in `scripts/devtool-apps.mjs`):
    `render.html?pageId=<page-id>` iframe; the active frame is visible and hidden
    pages stay mounted behind it. Each page frame registers only its own page WXSS and
    recursive component styles, not the other pages in the manifest. A host status bar and
-   navigation bar consume the top `88px` (content stays `375 × 724`, or `375 × 674` on tab
-   pages with a `50px` tabBar); the Elements tab shows the page root, built-in tags,
+   default navigation bar consume the top `88px` (content stays `375 × 724`, or `375 × 674`
+   on tab pages with a `50px` tabBar). Custom-navigation pages keep the full `375 × 812`
+   content area, with the status bar and `87 × 32` native capsule layered above it; the
+   Elements tab shows the page root, built-in tags,
    classes, attributes, and text, with host DOM wrapper nodes collapsed away.
 5. The host navigation bar projects the **active page** title and exposes back;
    `navigate.back` is disabled on the first page and drives the runtime after a

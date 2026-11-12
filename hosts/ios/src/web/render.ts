@@ -7,11 +7,31 @@ import { installRemoteCanvas } from './canvas'
 
 type NativeRenderWindow = Window & {
   __tinyRenderReceive?: (raw: string) => void
+  __TINY_NATIVE_TEMPLATES_SOURCE__?: string
   webkit?: {
     messageHandlers?: {
       tinyRender?: { postMessage(message: unknown): void }
     }
   }
+}
+
+function reportRenderError(message: string): void {
+  try {
+    (window as NativeRenderWindow).webkit?.messageHandlers?.tinyRender?.postMessage({
+      type: 'error',
+      message,
+    })
+  } catch {
+    // The native handler is installed before the render bundle runs.
+  }
+}
+
+function evaluateTemplates(source: string): TemplateRegistry {
+  const transformed = source.replace(/\bexport\s+default\s+/, 'return ')
+  if (transformed === source) {
+    throw new Error('templates.js does not contain an export default')
+  }
+  return new Function(transformed)() as TemplateRegistry
 }
 
 function bootNativeRenderEntry(options: {
@@ -109,16 +129,28 @@ installRemoteCanvas()
  * same way.
  */
 async function loadRenderTemplates(): Promise<TemplateRegistry | undefined> {
-  try {
-    const response = await fetch(`${assetsBase}templates.js`)
-    if (!response.ok) return undefined
-    const source = await response.text()
-    const transformed = source.replace(/\bexport\s+default\s+/, 'return ')
-    if (transformed === source) return undefined
-    return new Function(transformed)() as TemplateRegistry
-  } catch {
-    return undefined
+  const injectedSource = (window as NativeRenderWindow).__TINY_NATIVE_TEMPLATES_SOURCE__
+  const errors: string[] = []
+  if (injectedSource) {
+    try {
+      return evaluateTemplates(injectedSource)
+    } catch (error) {
+      errors.push(`native injection: ${error instanceof Error ? error.message : String(error)}`)
+    }
   }
+
+  const templatesURL = `${assetsBase}templates.js`
+  try {
+    const response = await fetch(templatesURL)
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const source = await response.text()
+    return evaluateTemplates(source)
+  } catch (error) {
+    errors.push(`fetch ${templatesURL}: ${error instanceof Error ? error.message : String(error)}`)
+  }
+
+  reportRenderError(`templates.js unavailable; ${errors.join(' | ')}`)
+  return undefined
 }
 
 const entry = createGlassRenderEntry({
@@ -134,11 +166,13 @@ const entry = createGlassRenderEntry({
 
 entry.prepare?.()
 void (async () => {
+  // `createRenderer` installs the WXS runtime global required while evaluating
+  // compiled WXML bundles. Templates must be evaluated after this point.
+  const renderer = entry.createRenderer()
   const templates = await loadRenderTemplates()
   if (!templates) {
     console.error('[tiny native render] templates.js is missing; component shadow trees cannot be evaluated')
   }
-  const renderer = entry.createRenderer()
   if (templates) renderer.setTemplates?.(templates)
   bootNativeRenderEntry({
     pageId: params.get('pageId') ?? undefined,

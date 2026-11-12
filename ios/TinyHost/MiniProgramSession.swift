@@ -18,6 +18,7 @@ final class MiniProgramSession: ObservableObject {
   private var started = false
   private var closed = false
   private var lastVisible = true
+  private var viewportSize: CGSize = .zero
 
   init(app: AppInfo, smoke: Bool) {
     self.app = app
@@ -29,8 +30,11 @@ final class MiniProgramSession: ObservableObject {
 
   func makeNativeView() -> UIView {
     if let nativeContainer { return nativeContainer }
-    let container = UIView()
+    let container = HostViewportView()
     container.backgroundColor = .white
+    container.onViewportChange = { [weak self] size in
+      self?.updateViewport(size)
+    }
     nativeContainer = container
     startIfNeeded()
     return container
@@ -44,12 +48,15 @@ final class MiniProgramSession: ObservableObject {
       app: app,
       generatedRoot: generatedRoot,
       container: container,
-      smoke: smoke
+      smoke: smoke,
+      hostInfo: systemInfo,
+      viewportSize: viewportSize
     )
     nativeRuntime = runtime
     runtime.onUIState = { [weak self] state in
       self?.uiState = state
       self?.loading = false
+      let system = self?.nativeRuntime?.systemSnapshot ?? [:]
       HostDebug.writeResult([
         "appId": self?.app.id ?? "",
         "runId": HostDebug.runId,
@@ -58,6 +65,7 @@ final class MiniProgramSession: ObservableObject {
         "pageId": state.pageId ?? "",
         "canBack": state.canBack,
         "tabBar": state.tabBar == nil ? "none" : "visible",
+        "system": system,
       ], name: "ui-state.json")
     }
     runtime.onReady = { [weak self] _ in
@@ -76,6 +84,12 @@ final class MiniProgramSession: ObservableObject {
 
   func back() {
     nativeRuntime?.back()
+  }
+
+  private func updateViewport(_ size: CGSize) {
+    guard size.width > 0, size.height > 0 else { return }
+    viewportSize = size
+    nativeRuntime?.updateWindowSize(width: size.width, height: size.height)
   }
 
   func switchTab(_ index: Int) {
@@ -113,5 +127,18 @@ final class MiniProgramSession: ObservableObject {
     ], name: "error.json")
     errorMessage = message
     loading = false
+  }
+}
+
+private final class HostViewportView: UIView {
+  var onViewportChange: ((CGSize) -> Void)?
+  private var lastReportedSize: CGSize = .zero
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    let size = bounds.size
+    guard size.width > 0, size.height > 0, size != lastReportedSize else { return }
+    lastReportedSize = size
+    onViewportChange?(size)
   }
 }

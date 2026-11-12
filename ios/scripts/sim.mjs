@@ -169,11 +169,40 @@ async function main() {
       ? JSON.parse(await fsp.readFile(stateFile, 'utf8'))
       : null
     const state = stateValue?.runId === runId ? stateValue : null
+    if (state?.system) {
+      const windowHeight = Number(state.system.windowHeight)
+      const screenHeight = Number(state.system.screenHeight)
+      const safeAreaBottom = Number(state.system.safeArea?.bottom)
+      if (
+        !(windowHeight > 0 && windowHeight <= screenHeight)
+        || !(safeAreaBottom >= 0 && safeAreaBottom <= screenHeight)
+      ) {
+        throw new Error(
+          `Invalid native window facts for ${appId}: ${JSON.stringify(state.system)}`,
+        )
+      }
+    }
+    if (appId === 'custom-tab' && state?.tabBar !== 'none') {
+      throw new Error('custom tabBar page must not render the host tabBar')
+    }
+    if (
+      appId === 'mini'
+      && state?.path === 'pages/add-todo/add-todo'
+      && state?.tabBar !== 'none'
+    ) {
+      throw new Error('secondary page must not keep the host tabBar')
+    }
     const errorFile = path.join(documents, 'error.json')
     const error = fs.existsSync(errorFile)
       ? JSON.parse(await fsp.readFile(errorFile, 'utf8'))
       : null
     const currentError = error?.runId === runId ? error : null
+
+    if (currentError?.error) {
+      throw new Error(
+        `Native host reported an error for ${appId}: ${currentError.error}`,
+      )
+    }
 
     if (!smoke?.ok) {
       const logFile = path.join(documents, 'tiny-host.log')

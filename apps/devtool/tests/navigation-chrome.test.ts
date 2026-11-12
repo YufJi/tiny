@@ -19,6 +19,22 @@ const systemInfo = {
 }
 
 describe('devtool navigation chrome', () => {
+  test('exposes the host capsule through the synchronous API channel', () => {
+    const menuButton = {
+      width: 87,
+      height: 32,
+      top: 48,
+      right: 365,
+      bottom: 80,
+      left: 278,
+    }
+    const { syncApiHandlers } = createDevtoolApiHost({
+      getSystemInfo: () => systemInfo,
+      getMenuButtonBoundingClientRect: () => menuButton,
+    })
+    expect(syncApiHandlers['system.menuButton']!({})).toEqual(menuButton)
+  })
+
   test('forwards title, color and loading mutations to the host chrome', () => {
     const events: Array<[string, Record<string, unknown>]> = []
     let shareMenuVisible = true

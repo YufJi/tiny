@@ -6,13 +6,15 @@ import { createWasmHostCoreFactory } from './wasmHostCore';
 import './runtimePanel.css';
 import {
   APPS_REGISTRY_URL,
-  DEVICE_SCREEN_HEIGHT,
   DEVICE_SCREEN_WIDTH,
-  HOST_CHROME_HEIGHT,
   MAX_LIVE_APPS,
   MAX_PAGE_STACK,
-  TAB_BAR_HEIGHT,
 } from './config';
+import {
+  previewContentHeight,
+  previewMenuButtonRect,
+  previewSystemInfo,
+} from './previewDevice';
 import {
   fetchJson,
   generatedBaseFor,
@@ -315,10 +317,11 @@ class RuntimePanel extends PureComponent {
       state.currentPage,
       session.app.title || '',
     );
-    const tabBarVisible = Boolean(state.tabBar?.visible);
-    const height = DEVICE_SCREEN_HEIGHT
-      - (navigation.custom ? 0 : HOST_CHROME_HEIGHT)
-      - (tabBarVisible ? TAB_BAR_HEIGHT : 0);
+    const height = previewContentHeight({
+      customNavigation: navigation.custom,
+      tabBarVisible: Boolean(state.tabBar?.visible),
+      tabBarPosition: state.tabBar?.position,
+    });
     if (force || height !== session.lastContentHeight) {
       session.lastContentHeight = height;
       this.run(() => session.client.resize(DEVICE_SCREEN_WIDTH, height));
@@ -335,10 +338,10 @@ class RuntimePanel extends PureComponent {
 
   initialContentHeight(app, manifest, initialPath) {
     const navigation = resolveNavigationConfig(manifest, initialPath, app.title || '');
-    const tabBar = resolveTabBarPage(manifest, initialPath);
-    return DEVICE_SCREEN_HEIGHT
-      - (navigation.custom ? 0 : HOST_CHROME_HEIGHT)
-      - (tabBar ? TAB_BAR_HEIGHT : 0);
+    return previewContentHeight({
+      customNavigation: navigation.custom,
+      tabBarVisible: resolveTabBarPage(manifest, initialPath),
+    });
   }
 
   createSurface(appId) {
@@ -408,17 +411,8 @@ class RuntimePanel extends PureComponent {
         renderUrl: threadUrl('render.html'),
         initialPath,
         container: surface,
-        systemInfo: {
-          pixelRatio: window.devicePixelRatio || 1,
-          windowWidth: DEVICE_SCREEN_WIDTH,
-          windowHeight: contentHeight,
-          // WeChat always reports these; WeUI components read `system` directly.
-          system: 'iOS 16.0',
-          model: 'iPhone X',
-          brand: 'devtools',
-          platform: 'devtools',
-          statusBarHeight: 44,
-        },
+        systemInfo: previewSystemInfo(contentHeight),
+        menuButton: previewMenuButtonRect(),
         maxPageStack: this.maxPageStack,
         ...(savedStack[0]
           ? { initialExitState: launchExitState(savedStack[0]) }

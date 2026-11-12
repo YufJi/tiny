@@ -43,15 +43,45 @@ const queue = []
 globalThis.__TINY_IOS_APP__ = appData
 globalThis.__TINY_IOS__ = {
   menuButton: { width: 87, height: 32, top: 48, right: 365, bottom: 80, left: 278 },
-  system: { pixelRatio: 2, windowWidth: 375, windowHeight: 712, platform: 'ios' },
+  system: {
+    pixelRatio: 2,
+    screenWidth: 375,
+    screenHeight: 812,
+    windowWidth: 375,
+    windowHeight: 712,
+    statusBarHeight: 44,
+    safeArea: { top: 44, bottom: 778, left: 0, right: 375, width: 375, height: 734 },
+    platform: 'ios',
+    system: 'iOS 16.0',
+    model: 'iPhone X',
+    brand: 'Apple',
+    language: 'zh_CN',
+    version: '8.0.0',
+    SDKVersion: '3.0.0',
+    theme: 'light',
+    host: 'WeChat',
+    enableDebug: false,
+  },
 }
 const smokeStorage = {}
 const smokeSystemInfo = {
   pixelRatio: 2,
+  screenWidth: 375,
+  screenHeight: 812,
   windowWidth: 375,
   windowHeight: 712,
+  statusBarHeight: 44,
+  safeArea: { top: 44, bottom: 778, left: 0, right: 375, width: 375, height: 734 },
   platform: 'ios',
+  system: 'iOS 16.0',
+  model: 'iPhone X',
+  brand: 'Apple',
+  language: 'zh_CN',
+  version: '8.0.0',
   SDKVersion: '3.0.0',
+  theme: 'light',
+  host: 'WeChat',
+  enableDebug: false,
 }
 globalThis.__tinySyncHostCall = (method, payload) => {
   const params = JSON.parse(payload || '{}')
@@ -145,10 +175,26 @@ globalThis.__runHostSmoke = async () => {
     manifest,
     initialPath: firstPage,
   })
+  const windowInfo = globalThis.wx.getWindowInfo()
+  const systemInfo = globalThis.wx.getSystemInfoSync()
+  const menuButton = globalThis.wx.getMenuButtonBoundingClientRect()
+  if (
+    windowInfo.windowHeight !== 712
+    || windowInfo.safeArea?.bottom !== 778
+    || systemInfo.windowHeight !== 712
+    || systemInfo.safeArea?.bottom !== 778
+    || menuButton.right !== 365
+  ) {
+    throw new Error('iOS host facts are inconsistent: '
+      + JSON.stringify({ windowInfo, systemInfo, menuButton }))
+  }
   print('SMOKE_OK ' + JSON.stringify({
     appId: appData.appId,
     pageId: boot.pageId,
     currentPath: boot.currentPath,
+    windowHeight: windowInfo.windowHeight,
+    safeAreaBottom: windowInfo.safeArea.bottom,
+    menuButton,
     pages: manifest.pages.length,
     registeredPages: boot.registeredPages.length,
     componentSchemas: boot.componentSchemas.length,

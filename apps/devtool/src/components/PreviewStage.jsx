@@ -5,10 +5,14 @@ import {
   DEVICE_SCREEN_HEIGHT,
   DEVICE_SCREEN_WIDTH,
   HOST_CHROME_HEIGHT,
-  TAB_BAR_HEIGHT,
 } from '../config';
+import {
+  PREVIEW_DEVICE,
+  previewContentInsets,
+} from '../previewDevice';
 import AppLauncher from './AppLauncher';
-import HostNavigationBar from './HostNavigationBar';
+import HostNavigationBar, { HostStatusBar } from './HostNavigationBar';
+import HostControlsMenu from './HostControlsMenu';
 import HostTabBar from './HostTabBar';
 import HostShareSheet from './HostShareSheet';
 import './PreviewStage.css';
@@ -68,9 +72,13 @@ function PreviewStage({
   let overlay = null;
   const hostChromeTop = hostNavigation ? HOST_CHROME_HEIGHT : 0;
   const tabBarVisible = !launcher && status === 'running' && Boolean(tabBar?.visible);
-  const tabBarAtTop = tabBarVisible && tabBar?.position === 'top';
-  const contentTop = hostChromeTop + (tabBarAtTop ? TAB_BAR_HEIGHT : 0);
-  const contentBottom = tabBarVisible && !tabBarAtTop ? TAB_BAR_HEIGHT : 0;
+  const contentInsets = previewContentInsets({
+    customNavigation: !launcher && navigation.custom,
+    tabBarVisible,
+    tabBarPosition: tabBar?.position,
+  });
+  const chromeScheme = navigation.textStyle === 'white' ? 'dark' : 'light';
+  const chromeColor = navigation.textStyle === 'white' ? '#ffffff' : '#111827';
   if (error) {
     overlay = { title: 'Preview unavailable', detail: error };
   } else if (loading) {
@@ -117,6 +125,10 @@ function PreviewStage({
               <span className="td-device-side td-device-side--volume-down" />
               <span className="td-device-side td-device-side--power" />
               <div className="td-screen">
+                <HostStatusBar
+                  navigation={navigation}
+                  overlay={!launcher && navigation.custom}
+                />
                 {hostNavigation ? (
                   <HostNavigationBar
                     navigation={navigation}
@@ -124,30 +136,37 @@ function PreviewStage({
                     enabled={status === 'running'}
                     canGoBack={canGoBack}
                     onBack={onBack}
-                    onBackground={onBackground}
-                    onReload={onReload}
-                    onShare={onShare}
-                    shareEnabled={shareEnabled}
                   />
                 ) : null}
-                {!launcher && !hostNavigation ? (
-                  <button
-                    type="button"
-                    className="td-float-apps"
-                    aria-label="Background app"
-                    title="Background app and open the app list"
-                    disabled={status !== 'running'}
-                    onClick={onBackground}
+                {!launcher ? (
+                  <div
+                    className={`td-host-capsule td-host-chrome--${chromeScheme}`}
+                    style={{
+                      top: PREVIEW_DEVICE.menuButton.top,
+                      right: PREVIEW_DEVICE.screenWidth - PREVIEW_DEVICE.menuButton.right,
+                      width: PREVIEW_DEVICE.menuButton.width,
+                      height: PREVIEW_DEVICE.menuButton.height,
+                      color: chromeColor,
+                    }}
                   >
-                    ◎
-                  </button>
+                    <HostControlsMenu
+                      enabled={status === 'running'}
+                      onBackground={onBackground}
+                      onReload={onReload}
+                      onShare={onShare}
+                      shareEnabled={shareEnabled}
+                    />
+                  </div>
                 ) : null}
                 {refreshing && !launcher ? (
                   <div className="td-pull-refresh" role="status" aria-label="Refreshing">
                     <span className="td-pull-refresh-spinner" />
                   </div>
                 ) : null}
-                <div className="td-screen-content" style={{ top: contentTop, bottom: contentBottom }}>
+                <div
+                  className="td-screen-content"
+                  style={{ top: contentInsets.top, bottom: contentInsets.bottom }}
+                >
                   <div className="td-screen-surface" ref={surfaceHostRef} />
                   {launcher ? (
                     <AppLauncher

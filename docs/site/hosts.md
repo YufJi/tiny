@@ -402,7 +402,7 @@ devtool 的 service/render 入口用 `new Function('url', 'return import(url)')`
 | tests/host | 1 个 service + 每页 1 个 render iframe（Vite） | `createGlassRenderTree` | OffscreenCanvas handoff + /generated 资源 | URL ?path + window.__tinyRuntime |
 | apps/devtool | 1 个 service + 每页一个 render iframe（Vite） | `createGlassRenderTree` | OffscreenCanvas handoff + 相对 URL | DevtoolRuntimeClient + React/Redux |
 | runtime 单测 | 同进程 | headless TreeRenderer | 无 canvas，manifest 内联 | 直接持有 BridgeConnection |
-| iOS 宿主（ios + hosts/ios） | JavaScriptCore service + 每页一个 WKWebView（`render.html`，无 iframe） | `createGlassRenderTree`（native surface） | UserDefaults 存储；Canvas 2D 走 service 录制 + native render 回放，WebGL 未接 | SwiftUI Launcher / 原生导航栏 + tabBar / UniFFI HostCore |
+| iOS 宿主（ios + hosts/ios） | JavaScriptCore service + 每页一个 WKWebView（`render.html`，无 iframe） | `createGlassRenderTree`（native surface） | UserDefaults 存储；Canvas 2D 走 service 录制 + native render 回放，WebGL 未接 | SwiftUI Launcher / 原生导航栏 + 固定胶囊 + tabBar / UniFFI HostCore |
 
 ::::split
 :::card{title="共享的部分"}

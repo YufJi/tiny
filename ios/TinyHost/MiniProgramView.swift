@@ -16,6 +16,10 @@ struct MiniProgramView: View {
     session.uiState?.nav.custom ?? false
   }
 
+  private var prefersDarkChrome: Bool {
+    session.uiState?.nav.textStyle == "white"
+  }
+
   private var ignoredEdges: Edge.Set {
     var edges: Edge.Set = []
     if customNavigation {
@@ -44,7 +48,7 @@ struct MiniProgramView: View {
       .ignoresSafeArea(edges: ignoredEdges)
 
       if customNavigation {
-        floatingNavigation
+        customNavigationCapsule
       }
       if session.loading {
         loadingOverlay
@@ -54,6 +58,7 @@ struct MiniProgramView: View {
       }
     }
     .background(Color.white)
+    .preferredColorScheme(prefersDarkChrome ? .dark : .light)
     .onAppear {
       session.startIfNeeded()
     }
@@ -70,10 +75,10 @@ struct MiniProgramView: View {
 
     return ZStack {
       Text(session.uiState?.title ?? app.title)
-        .font(.system(size: 17, weight: .semibold))
+        .font(.system(size: 16, weight: .semibold))
         .foregroundColor(foreground)
         .lineLimit(1)
-        .padding(.horizontal, 90)
+        .padding(.horizontal, 108)
 
       HStack(spacing: 0) {
         if session.uiState?.canBack == true {
@@ -81,73 +86,84 @@ struct MiniProgramView: View {
             session.back()
           } label: {
             Image(systemName: "chevron.left")
-              .font(.system(size: 18, weight: .semibold))
+              .font(.system(size: 21, weight: .semibold))
               .foregroundColor(foreground)
-              .frame(width: 44, height: 44)
+              .frame(width: 34, height: 34)
               .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
         } else {
-          Color.clear.frame(width: 44, height: 44)
+          Color.clear.frame(width: 34, height: 34)
         }
         Spacer(minLength: 0)
-        capsuleMenu(foreground: foreground, floating: false)
       }
       .padding(.horizontal, 8)
     }
     .frame(height: 44)
     .background(background.ignoresSafeArea(edges: .top))
+    .overlay(alignment: .bottom) {
+      Rectangle()
+        .fill(Color(white: 0.5).opacity(0.13))
+        .frame(height: 0.5)
+    }
+    .overlay(alignment: .topTrailing) {
+      capsuleMenu(dark: nav?.textStyle == "white")
+        .padding(.top, session.systemInfo.menuButtonTopInset)
+        .padding(.trailing, session.systemInfo.menuButtonTrailingInset)
+    }
   }
 
-  private var floatingNavigation: some View {
+  private var customNavigationCapsule: some View {
     VStack {
-      HStack(spacing: 8) {
-        if session.uiState?.canBack == true {
-          Button {
-            session.back()
-          } label: {
-            Image(systemName: "chevron.left")
-              .font(.system(size: 16, weight: .bold))
-              .foregroundColor(.black)
-              .frame(width: 36, height: 32)
-              .background(Capsule().fill(Color.white.opacity(0.92)))
-              .overlay(Capsule().stroke(Color.black.opacity(0.12), lineWidth: 0.5))
-              .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
-          }
-          .buttonStyle(.plain)
-        }
+      HStack {
         Spacer(minLength: 0)
-        capsuleMenu(foreground: .black, floating: true)
+        capsuleMenu(dark: session.uiState?.nav.textStyle == "white")
       }
-      .padding(.top, session.systemInfo.safeAreaTop + 6)
-      .padding(.horizontal, 10)
+      .padding(.top, session.systemInfo.menuButtonTopInset)
+      .padding(.trailing, session.systemInfo.menuButtonTrailingInset)
       Spacer(minLength: 0)
     }
   }
 
-  private func capsuleMenu(foreground: Color, floating: Bool) -> some View {
-    Menu {
-      Button("关闭小程序", role: .destructive) {
+  private func capsuleMenu(dark: Bool) -> some View {
+    let foreground: Color = dark ? .white : .black
+    let fill = dark ? Color.white.opacity(0.14) : Color.black.opacity(0.045)
+    let stroke = dark ? Color.white.opacity(0.18) : Color.black.opacity(0.08)
+
+    return HStack(spacing: 0) {
+      Menu {
+        Button("返回上一页") {
+          session.back()
+        }
+        .disabled(session.uiState?.canBack != true)
+      } label: {
+        CapsuleDots(color: foreground)
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .contentShape(Rectangle())
+      }
+      .accessibilityLabel("小程序菜单")
+      .tint(foreground)
+
+      Rectangle()
+        .fill(foreground.opacity(0.16))
+        .frame(width: 1, height: 14)
+
+      Button {
         dismiss()
+      } label: {
+        CapsuleRing(color: foreground)
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .contentShape(Rectangle())
       }
-    } label: {
-      HStack(spacing: 8) {
-        Image(systemName: "ellipsis")
-        Rectangle()
-          .fill(foreground.opacity(0.18))
-          .frame(width: 1, height: 14)
-        Image(systemName: "xmark")
-      }
-      .font(.system(size: 13, weight: .semibold))
-      .foregroundColor(foreground)
-      .padding(.horizontal, 10)
-      .frame(height: 30)
-      .background(
-        Capsule().fill(floating ? Color.white.opacity(0.94) : Color.white.opacity(0.6))
-      )
-      .overlay(Capsule().stroke(foreground.opacity(0.16), lineWidth: 0.5))
-      .shadow(color: .black.opacity(floating ? 0.12 : 0), radius: 8, y: 2)
+      .buttonStyle(.plain)
+      .accessibilityLabel("关闭小程序")
     }
+    .frame(
+      width: session.systemInfo.menuButtonWidth,
+      height: session.systemInfo.menuButtonHeight
+    )
+    .background(Capsule().fill(fill))
+    .overlay(Capsule().stroke(stroke, lineWidth: 0.5))
   }
 
   private func tabBarView(_ state: TabBarState) -> some View {
@@ -282,5 +298,29 @@ struct MiniProgramView: View {
           .fill(Color.white)
       )
     }
+  }
+}
+
+private struct CapsuleDots: View {
+  let color: Color
+
+  var body: some View {
+    HStack(spacing: 2) {
+      ForEach(0..<3, id: \.self) { _ in
+        Circle()
+          .fill(color.opacity(0.8))
+          .frame(width: 3, height: 3)
+      }
+    }
+  }
+}
+
+private struct CapsuleRing: View {
+  let color: Color
+
+  var body: some View {
+    Circle()
+      .strokeBorder(color.opacity(0.75), lineWidth: 1.4)
+      .frame(width: 12, height: 12)
   }
 }

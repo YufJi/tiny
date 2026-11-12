@@ -3,8 +3,12 @@
 iOS 宿主的 native adapter。Web render tree 和 render entry 复用
 `@tiny/host-web`；本包只保留 iOS 特有的部分：
 
-- JSCore service engine（`src/service`：shims、native transport、Canvas display-list 录制、设备 API 扩展）
+- JSCore service engine（`src/service`：shims、native transport、Canvas display-list 录制，
+  以及读取实时宿主事实的 `getSystemInfoSync` / `getWindowInfo` / `getDeviceInfo` /
+  `getAppBaseInfo` / `getMenuButtonBoundingClientRect` 扩展）
 - 每页 WKWebView 的 native transport 与 Canvas 回放（`src/web`）
+- 原生注入编译后的 render templates，并在 renderer/WXS 初始化后求值，避免
+  `tinyapp://` 自定义 scheme 的 `fetch()` 在真机上不可用
 
 一个 Vite 配置通过两种 mode 输出两份产物：
 

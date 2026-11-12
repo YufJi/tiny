@@ -2242,7 +2242,7 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
         { timeout: STEP_TIMEOUT },
       )
       assert.equal(await page.locator('.td-nav-loading').count(), 1, 'loading indicator is missing')
-      const chromeColor = await page.locator('.td-host-chrome').first().evaluate(
+      const chromeColor = await page.locator('.td-host-navbar').first().evaluate(
         (element) => getComputedStyle(element).backgroundColor,
       )
       assert.equal(chromeColor, 'rgb(17, 34, 51)', 'navigation background did not update')
@@ -2907,7 +2907,39 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       })
       await waitForStatus('running')
       assert.equal((await state()).currentPage, 'page/component/index')
-      assert.equal(await page.locator('.td-host-chrome').count(), 0, 'custom nav app should own its bar')
+      assert.equal(
+        await page.locator('.td-host-navbar').count(),
+        0,
+        'custom nav app should own its navigation bar',
+      )
+      assert.equal(
+        await page.locator('.td-statusbar').count(),
+        1,
+        'custom nav app should keep the host status bar',
+      )
+      assert.equal(
+        await page.locator('.td-host-capsule').count(),
+        1,
+        'custom nav app should keep the native capsule',
+      )
+      const capsule = await page.locator('.td-host-capsule').evaluate((element) => {
+        const screen = element.closest('.td-screen')
+        if (!screen) return null
+        const capsuleRect = element.getBoundingClientRect()
+        const screenRect = screen.getBoundingClientRect()
+        return {
+          top: capsuleRect.top - screenRect.top,
+          right: screenRect.right - capsuleRect.right,
+          width: capsuleRect.width,
+          height: capsuleRect.height,
+        }
+      })
+      assert.deepEqual(capsule, {
+        top: 48,
+        right: 10,
+        width: 87,
+        height: 32,
+      }, 'custom nav capsule does not match getMenuButtonBoundingClientRect')
       await page.getByRole('button', { name: 'Background app' }).click()
       await waitForLauncher()
       await waitForSession('wechat-demo', true)

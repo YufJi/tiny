@@ -40,13 +40,15 @@ hosts/ios/                         iOS 的前端标准包（pnpm workspace）
 ## 能力
 
 - 原生 Launcher：自动列出 `tests/apps` 下的全部 fixture（demo、mini、todo、wechat-demo、echarts、vant、weui），点击进入。
-- 原生导航栏和 tabBar：标题、返回、关闭胶囊、tab 图标/选中态/badge/redDot，颜色来自页面和 `RUNTIME_STATE`。
+- 原生导航栏、固定胶囊和 tabBar：标题、返回、关闭胶囊、tab 图标/选中态/badge/redDot，
+  颜色来自页面和 `RUNTIME_STATE`；胶囊 geometry 与 `getMenuButtonBoundingClientRect()` 同源。
 - 逻辑层真正跑在 `JSContext`：App/Page/Component、glass-easel 逻辑树、逻辑模板实例化、WXS 表达式、observer/relations/页面栈全部在 JSCore；最终页面/组件 WXML 求值在 render WKWebView 的 pageframe。
 - 渲染层跑在 WKWebView：每页一个独立 `NativeRenderSurface`，复用 `createGlassRenderEntry` / `createGlassRenderTree`；
   与 browser/devtool 一样由 render pageframe 执行页面/组件 WXML。隐藏页保留 DOM、滚动位置、定时器和页级 WXSS。
 - 页面间只走现有 Bridge 协议；service 帧和 render 帧由 Swift `HostCoreSession` 通过原生消息处理器转发。
 - 原生存储：启动时把该 app 的 UserDefaults 快照交给 runtime，运行期 `wx.setStorage*` 经宿主 API 落盘。
-- 原生系统信息/安全区/菜单按钮几何注入，窗口尺寸变化会触发 runtime `resize`。
+- 原生系统信息/安全区/菜单按钮几何注入；`getSystemInfoSync`、`getWindowInfo`、
+  `getDeviceInfo`、`getAppBaseInfo` 读取同一份实时宿主事实，容器尺寸变化会触发 runtime `resize`。
 - 无调试面板；需要时可在 Web host 层接入 vConsole（见“vConsole”）。
 
 ## 架构
@@ -203,6 +205,8 @@ pnpm ios:smoke:jsc    # 在 macOS jsc 里启动 demo 的真实 service engine + 
 
 - Vite MPA，唯一 HTML entry：`render.html`，输出 `dist/web/`。
 - `render.html`：`render.ts` 内联 native Bridge，配合 `createGlassRenderEntry`，每页一个独立 WKWebView。
+- render 模板由原生在 `documentStart` 注入 `__TINY_NATIVE_TEMPLATES_SOURCE__`，不依赖
+  `tinyapp://` 上的 `fetch()`；renderer 先创建 WXS 运行时，再求值模板并开始 mount。
 - 通过 `window.webkit.messageHandlers.tinyRender` 发送 Bridge frames，通过
   `window.__tinyRenderReceive` 接收 HostCore frames。
 - render page 不依赖 iframe、MessagePort 或 `host.html`。
@@ -232,8 +236,12 @@ fixture 通过 `scripts/devtool-apps.mjs` 的 `discoverTestApps()` 自动发现�
 ## 原生 chrome
 
 - 普通页面：原生 nav bar（44pt + 安全区）+ WKWebView + 可选原生 tabBar（50pt + 底部安全区）。
-- `navigationStyle: "custom"`：隐藏 nav bar，WebView 延伸到状态栏下方，右上角保留浮动胶囊（关闭）；
-  有返回能力时左上角出现浮动返回按钮。
+  右上角胶囊固定在 `getMenuButtonBoundingClientRect()` 的 `87 × 32` 区域。
+- 宿主 tabBar 只在 `tabBar.visible == true` 且 `custom == false` 的 tab 页渲染；自定义 tabBar
+  完全由页面组件绘制，二级页面不保留宿主 tabBar。
+- `navigationStyle: "custom"`：隐藏默认 nav bar，WebView 延伸到状态栏下方；系统状态栏仍保留，
+  原生胶囊继续覆盖在右上角。胶囊右侧关闭按钮直接返回 Launcher，左侧菜单只提供页面返回，
+  不再需要二次确认关闭。
 - 无 tabBar 时 WebView 延伸到屏幕底部，页面背景覆盖 home indicator；有 tabBar 时 tabBar 背景延伸到底部安全区。
 - 关闭：胶囊 → “关闭小程序” → dismiss；`MiniProgramSession.close()` 停止 JSContext、关闭 HostCore 会话并移除所有 native render surface。
 - 不做调试面板；Console/Elements/Lifecycle 需要的话后续在 Web host 层接 vConsole 或另做。

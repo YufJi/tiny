@@ -6,11 +6,23 @@
  * context from them, and because the runtime must not depend on host facts.
  */
 
+/** Rectangle reported by `wx.getWindowInfo().safeArea`. */
+export type SafeArea = {
+  top: number
+  bottom: number
+  left: number
+  right: number
+  width: number
+  height: number
+}
+
 /** Host-reported system facts; the shape `wx.getSystemInfo*` returns. */
 export type SystemInfo = {
   pixelRatio: number
   windowWidth: number
   windowHeight: number
+  screenWidth?: number
+  screenHeight?: number
   language?: string
   platform?: string
   SDKVersion?: string
@@ -19,6 +31,7 @@ export type SystemInfo = {
   model?: string
   brand?: string
   statusBarHeight?: number
+  safeArea?: SafeArea
 }
 
 /** Host-owned storage values, keyed by storage key. */

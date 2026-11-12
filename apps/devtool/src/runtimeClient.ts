@@ -15,6 +15,7 @@ import { createDevtoolApiHost } from './host-api'
 import { projectComponentTree } from './componentTree'
 import { pollHostPicker, showHostPicker, updateHostPicker } from './hostPicker'
 import { launchExitState } from './pageStackState'
+import type { PreviewRect } from './previewDevice'
 
 export type DevtoolRuntimeStatus = 'idle' | 'connecting' | 'running' | 'terminated' | 'error'
 
@@ -73,6 +74,7 @@ export type DevtoolRuntimeOptions = {
   renderUrl: string
   initialPath: string
   systemInfo?: Partial<SystemInfo>
+  menuButton?: PreviewRect
   storage?: StorageValues
   container?: HTMLElement
   diagnosticLimit?: number
@@ -173,6 +175,7 @@ export class DevtoolRuntimeClient {
       const apiHost = createDevtoolApiHost({
         storage,
         getSystemInfo,
+        getMenuButtonBoundingClientRect: () => this.options.menuButton,
         onNavigation: (action, params) => this.applyNavigation(action, params),
         onShareMenu: (visible) => this.update({ shareMenuVisible: visible }),
       })

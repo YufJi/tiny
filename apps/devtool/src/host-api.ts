@@ -6,6 +6,7 @@ export type DevtoolApiOptions = {
   /** Host-owned storage facts shared by the async and sync API tables. */
   storage?: StorageValues
   getSystemInfo: () => SystemInfo
+  getMenuButtonBoundingClientRect?: () => Record<string, number> | undefined
   /** Mirror navigation-bar mutations into the host chrome. */
   onNavigation?: (action: DevtoolNavigationAction, params: Record<string, unknown>) => void
   /** `wx.showShareMenu` / `wx.hideShareMenu` visibility for the host menu. */
@@ -46,6 +47,7 @@ function createApiHandlers(
   const getSystemInfo = options.getSystemInfo
   return {
     'system.info': () => getSystemInfo(),
+    'system.menuButton': () => options.getMenuButtonBoundingClientRect?.(),
     'network.request': (params) => request(params),
     'network.type': () => ({ networkType: networkType(), errMsg: 'getNetworkType:ok' }),
     'battery.get': () => batteryInfo(),
@@ -127,8 +129,10 @@ function createSyncApiHandlers(
   options: DevtoolApiOptions,
 ): SyncApiHandlers {
   const getSystemInfo = options.getSystemInfo
+  const getMenuButtonBoundingClientRect = options.getMenuButtonBoundingClientRect
   return {
     'system.info': () => getSystemInfo(),
+    'system.menuButton': () => getMenuButtonBoundingClientRect?.(),
     'storage.get': (params) => ({ value: storage[String(params.key)] }),
     'storage.set': (params) => {
       storage[String(params.key)] = params.value
