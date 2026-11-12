@@ -80,4 +80,11 @@ describe('mapCssAssetUrls', () => {
     const css = '.a { background: url("/pages/todos/a.png"); }'
     expect(mapCssAssetUrls(css, () => undefined)).toBe(css)
   })
+
+  test('uses the host policy for protocol-relative network URLs', () => {
+    const css = '@font-face { src: url(//cdn.example/icon.woff2) format("woff2"); }'
+    expect(mapCssAssetUrls(css, resolve, (url) => `https:${url}`))
+      .toContain('url("https://cdn.example/icon.woff2")')
+    expect(mapCssAssetUrls(css, resolve)).toBe(css)
+  })
 })

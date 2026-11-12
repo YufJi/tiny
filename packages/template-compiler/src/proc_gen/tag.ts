@@ -996,9 +996,11 @@ function eventBindingToProcGen(
     })
   }
   w.exprStmt((ww) => {
-    ww.write('if(C||K||')
-    p.lvalueStateExpr(ww, scopes, false)
-    ww.write(`)R.v(N,${n},`)
+    // Dynamic handlers must be installed on every template pass. Glass
+    // replaces the previous dynamic listener in `R.v`; gating this on the
+    // expression's current truthiness drops the listener when a conditional
+    // expression currently resolves in the opposite branch.
+    ww.write(`R.v(N,${n},`)
     if (dynamicLocal) ww.write(`Q.B(N,${n},`)
     p.valueExpr(ww)
     if (dynamicLocal) ww.write(`,${isCatch},${isMut},${isCapture})`)

@@ -1,6 +1,5 @@
-import Page from '../../common/page';
-import icons from './config';
-
+const Page = require('../../common/page');
+const icons = require('./config');
 Page({
   data: {
     icons,
@@ -8,7 +7,6 @@ Page({
     demoIcon: 'chat-o',
     demoImage: 'https://b.yzcdn.cn/vant/icon-demo-1126.png',
   },
-
   methods: {
     onSwitch(event) {
       this.setData({

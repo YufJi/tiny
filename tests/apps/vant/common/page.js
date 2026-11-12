@@ -1,10 +1,10 @@
-export default function(options = {}) {
+module.exports = function page(options = {}) {
   return Page({
     onShareAppMessage() {
       return {
-        title: 'Vant Weapp 组件库演示'
+        title: 'Vant Weapp 组件库演示',
       };
     },
-    ...options
+    ...options,
   });
-}
+};

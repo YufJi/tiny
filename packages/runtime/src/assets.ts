@@ -11,6 +11,11 @@ export type { AssetUrlResolver } from '@tiny/manifest'
 import { resolveAssetReference } from '@tiny/manifest'
 import type { AssetUrlResolver } from '@tiny/manifest'
 
+/** Host policy for WXSS protocol-relative network URLs (`//host/path`). */
+export type ProtocolRelativeUrlResolver = (
+  url: string,
+) => string | undefined | null
+
 /**
  * Map compiler-normalized WXSS `url(/app-root/path)` values to host URLs
  * before the text reaches the backend style registry. The compiler owns
@@ -18,13 +23,26 @@ import type { AssetUrlResolver } from '@tiny/manifest'
  * the runtime only asks the host to turn the resulting app-root path into a
  * loadable URL. Relative values are left for the WebView, matching WeChat.
  */
-export function mapCssAssetUrls(css: string, resolve: AssetUrlResolver): string {
+export function mapCssAssetUrls(
+  css: string,
+  resolve: AssetUrlResolver,
+  resolveProtocolRelativeUrl?: ProtocolRelativeUrlResolver,
+): string {
   return css.replace(
     /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)]*))\s*\)/gi,
     (match, doubleQuoted: string | undefined, singleQuoted: string | undefined, unquoted: string | undefined) => {
       const value = (doubleQuoted ?? singleQuoted ?? unquoted ?? '').trim()
       if (!value || value.startsWith('var(')) return match
 
+      if (value.startsWith('//')) {
+        let url: string | undefined | null
+        try {
+          url = resolveProtocolRelativeUrl?.(value)
+        } catch {
+          return match
+        }
+        return url ? `url("${url}")` : match
+      }
       if (!value.startsWith('/')) return match
       const reference = resolveAssetReference('', value)
       if (!reference) return match

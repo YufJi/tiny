@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'vitest'
 import * as glassEasel from '@tiny/runtime/glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
-import { applyClassProps, createGlassRenderTree, matchComponentInstances } from '../src/render/tree'
+import {
+  applyClassProps,
+  createGlassRenderTree,
+  matchComponentInstances,
+  plainDataset,
+} from '../src/render/tree'
 
 function element(id: string, tag: string, props: Record<string, unknown> = {}, children: any[] = []): any {
   return { type: 'element', id, tag, props, children }
@@ -210,6 +215,11 @@ describe('glass render tree', () => {
     expect(inner).toBeDefined()
   })
 
+  test('drops undefined values from bridged datasets', () => {
+    expect(plainDataset({ empty: undefined, role: 'tagged' })).toEqual({ role: 'tagged' })
+    expect(plainDataset({ empty: undefined })).toBeUndefined()
+  })
+
   test('registers a real component for a defined component path', () => {
     const tree = createGlassRenderTree({ backend: new glassEasel.EmptyBackendContext() })
     tree.setComponentDefinitions?.({
@@ -239,6 +249,52 @@ describe('glass render tree', () => {
     expect(card.data.label).toBe('default')
     // Light children still render through the component host.
     expect(tree.getNode('inner')).toBeDefined()
+  })
+
+  test('binds a component projected through a slot without a false desync', async () => {
+    const parentPath = 'components/parent/parent'
+    const childPath = 'components/child/child'
+    const tree = createGlassRenderTree({
+      backend: new glassEasel.EmptyBackendContext(),
+      templates: templatesForMany([
+        [parentPath, '<view class="parent"><slot /></view>'],
+        [childPath, '<view class="child">{{label}}</view>'],
+      ]),
+      componentDefinitions: {
+        [parentPath]: {
+          path: parentPath,
+          using: { child: childPath },
+        },
+        [childPath]: {
+          path: childPath,
+          properties: { label: { type: String, value: '' } },
+          data: { label: '' },
+        },
+      },
+    })
+    const diagnostics: Array<{ code: string }> = []
+    tree.setDiagnosticSink?.((diagnostic) => diagnostics.push(diagnostic as never))
+    tree.mount(element('root', 'view', {}, [{
+      type: 'element',
+      id: 'parent',
+      tag: 'parent',
+      component: true,
+      componentPath: parentPath,
+      componentInstances: [{ id: 'child', path: childPath }],
+      children: [{
+        type: 'element',
+        id: 'child',
+        tag: 'child',
+        component: true,
+        componentPath: childPath,
+        props: { label: 'slot' },
+      }],
+    }]))
+
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(diagnostics).toEqual([])
+    expect((tree.getNode('child') as unknown as { data: { label: string } }).data.label)
+      .toBe('slot')
   })
 
   test('keeps the path identity when the definition has not arrived', () => {
@@ -293,6 +349,37 @@ describe('glass render tree', () => {
     // covered in `builtin-behaviors.test.ts`).
     expect(field.data.name).toBe('email')
     expect(field.data.value).toBe('a@b')
+  })
+
+  test('updates declared custom component properties from parent patches', () => {
+    const path = 'components/card/card'
+    const tree = createGlassRenderTree({
+      backend: new glassEasel.EmptyBackendContext(),
+      componentDefinitions: {
+        [path]: {
+          path,
+          properties: { label: { type: String, value: 'default' } },
+        },
+      },
+    })
+    tree.mount(element('root', 'view', {}, [{
+      type: 'element',
+      id: 'card',
+      tag: 'card',
+      component: true,
+      componentPath: path,
+      props: { label: 'first' },
+    }]))
+
+    const card = tree.getNode('card') as unknown as { data: Record<string, unknown> }
+    expect(card.data.label).toBe('first')
+
+    tree.applyPatches([{
+      type: 'props',
+      target: 'card',
+      props: { label: 'second' },
+    }])
+    expect(card.data.label).toBe('second')
   })
 
   test('evaluates a component template in the render thread', () => {
@@ -819,5 +906,36 @@ describe('glass render tree', () => {
     expect(tree.measureLocators?.(['root#9'])).toEqual({})
     expect(tree.measureLocators?.(['missing#0'])).toEqual({})
     expect(tree.measureLocators?.(['invalid'])).toEqual({})
+  })
+  test('merges successive component data patches per instance', () => {
+    const path = 'components/month/month'
+    const tree = createGlassRenderTree({
+      backend: new glassEasel.EmptyBackendContext(),
+      componentDefinitions: {
+        [path]: {
+          path,
+          properties: {},
+          data: { days: [], label: '' },
+          methods: [],
+          using: {},
+        },
+      },
+    })
+    tree.mount(element('root', 'view', {}, [{
+      type: 'element',
+      id: 'month',
+      tag: 'month',
+      component: true,
+      componentPath: path,
+    }]))
+
+    tree.setComponentData?.({ month: { days: [1, 2, 3] } })
+    tree.setComponentData?.({ month: { label: 'late observer' } })
+
+    const month = tree.getNode('month') as unknown as { data: Record<string, unknown> }
+    expect(month.data).toMatchObject({
+      days: [1, 2, 3],
+      label: 'late observer',
+    })
   })
 })

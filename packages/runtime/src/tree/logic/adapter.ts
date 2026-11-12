@@ -8,7 +8,7 @@ import type {
   RenderPatch,
 } from '../protocol'
 import { diffRenderTree } from '../diff'
-import type { AssetUrlResolver } from '../../assets'
+import type { AssetUrlResolver, ProtocolRelativeUrlResolver } from '../../assets'
 import { normalizeAnimationFrames, animationTimingOptions } from '../animation'
 import * as glassEasel from 'glass-easel'
 import type { MiniProgramComponentSchema, QueryNodeSnapshot, TemplateRegistry } from '../../types'
@@ -51,6 +51,8 @@ export type LogicTreeAdapterOptions = {
   loadStyle?: (outputPath: string) => string
   /** Host hook used to resolve stylesheet `url(...)` assets before delivery. */
   resolveAssetUrl?: AssetUrlResolver
+  /** Host policy for protocol-relative stylesheet URLs in custom-scheme pages. */
+  resolveProtocolRelativeUrl?: ProtocolRelativeUrlResolver
   /** Runtime page kind, derived from the actual registration. */
   isComponentPage?: (path: string) => boolean
   onDataChange?: (pageId: string) => void
@@ -111,6 +113,7 @@ export class LogicTreeAdapter {
   private readonly manifest: Manifest
   private readonly loadStyle: (outputPath: string) => string
   private readonly resolveAssetUrl?: AssetUrlResolver
+  private readonly resolveProtocolRelativeUrl?: ProtocolRelativeUrlResolver
   private readonly isComponentPage?: (path: string) => boolean
   private componentSchemas: MiniProgramComponentSchema[] = []
   private componentDefinitions?: ReadonlyMap<string, NormalizedComponentDefinition>
@@ -139,6 +142,7 @@ export class LogicTreeAdapter {
     this.manifest = options.manifest
     this.loadStyle = options.loadStyle ?? (() => '')
     this.resolveAssetUrl = options.resolveAssetUrl
+    this.resolveProtocolRelativeUrl = options.resolveProtocolRelativeUrl
     this.isComponentPage = options.isComponentPage
     this.measureView = options.measureView
     this.measureLocators = options.measureLocators
@@ -174,11 +178,15 @@ export class LogicTreeAdapter {
       manifest: options.manifest,
       templates: options.templates,
       ...(options.resolveAssetUrl ? { resolveAssetUrl: options.resolveAssetUrl } : {}),
+      ...(options.resolveProtocolRelativeUrl
+        ? { resolveProtocolRelativeUrl: options.resolveProtocolRelativeUrl }
+        : {}),
       ...(options.isComponentPage ? { isComponentPage: options.isComponentPage } : {}),
       logicPageOptions: options.pageOptions,
       logicComponentDefinitions: options.componentDefinitions,
       ...(options.frameworkContext ? { frameworkContext: options.frameworkContext } : {}),
       logicQueryFactory: (component) => this.createSelectorQueryFor(component),
+      componentHandleFactory: (component) => this.componentHandle(component),
       onLogicDataChange: options.onDataChange,
       ...(options.afterRender ? { afterRender: options.afterRender } : {}),
       logicTouchState: () => this.getActiveTouches(),
@@ -389,22 +397,10 @@ export class LogicTreeAdapter {
     if (!root) return []
     const tabBarRoot = pageTree.getTabBarRoot()
     if (selector.trim() === 'custom-tab-bar' && tabBarRoot?.__wxElement) {
-      return [this.componentHandle(tabBarRoot.__wxElement, pageId)]
+      return [this.componentHandle(tabBarRoot.__wxElement)]
     }
-    const deep = selector.split('>>>')
-    if (deep.length === 2) {
-      const ownerSelector = deep[0]!.trim()
-      const innerSelector = deep[1]!.trim()
-      const owner = queryLogicNodes(root, ownerSelector, false, true)
-        .find((node) => node.nodeType === 'component')
-      if (!owner) return []
-      const nodes = queryLogicNodes(owner, innerSelector, all)
-        .filter((node) => node.nodeType === 'component' && node.__wxElement)
-      return nodes.map((node) => this.componentHandle(node.__wxElement, pageId))
-    }
-    const nodes = queryLogicNodes(root, selector, all, true)
-      .filter((node) => node.nodeType === 'component' && node.__wxElement)
-    return nodes.map((node) => this.componentHandle(node.__wxElement, pageId))
+    return this.glass.selectComponents(root, selector, all)
+      .map((component) => this.componentHandle(component))
   }
 
   private reportMissingComponents(path: string): void {
@@ -432,7 +428,7 @@ export class LogicTreeAdapter {
     }
   }
 
-  private componentHandle(component: unknown, pageId: string): unknown {
+  private componentHandle(component: unknown): unknown {
     const target = component as Record<string, unknown>
     // WeChat returns the `export()` result for a component that declared
     // `wx://component-export`; `undefined` falls back to the instance proxy.
@@ -441,9 +437,8 @@ export class LogicTreeAdapter {
     const element = (target as { getBackendElement?: () => unknown }).getBackendElement?.()
     const select = (selector: string, all: boolean): unknown[] => {
       if (!element) return []
-      const nodes = queryLogicNodes(element as LogicBackendElement, selector, all, true)
-        .filter((node) => node.nodeType === 'component' && node.__wxElement)
-      return nodes.map((node) => this.componentHandle(node.__wxElement, pageId))
+      return this.glass.selectComponents(element as LogicBackendElement, selector, all)
+        .map((selected) => this.componentHandle(selected))
     }
     return new Proxy(target, {
       get: (source, property) => {
@@ -455,13 +450,10 @@ export class LogicTreeAdapter {
         }
         if (property === 'selectOwnerComponent') {
           return () => {
-            const componentId = this.glass.componentIdOf(component)
-            const snapshot = this.glass.getComponentSnapshot()
-              .find((item) => item.componentId === componentId)
-            const parent = snapshot?.parentComponentId
-              ? this.glass.getMountedComponentByComponentId(snapshot.parentComponentId)
-              : undefined
-            return parent ? this.componentHandle(parent, pageId) : null
+            const parent = this.glass.ownerComponentFor(
+              component as glassEasel.GeneralComponent,
+            )
+            return parent ? this.componentHandle(parent) : null
           }
         }
         const value = Reflect.get(source, property)

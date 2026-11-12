@@ -125,11 +125,14 @@ describe('component ready order', () => {
     expect(ready).toEqual(['child:slot'])
     const hiddenInner = await flushReady({ showInner: false })
     expect(ready).toEqual([])
-    expect(hiddenInner).toContainEqual({
+    const hostInstanceHint = hiddenInner.find((patch) => patch.type === 'component-instances')
+    expect(hostInstanceHint).toMatchObject({
       type: 'component-instances',
       target: expect.any(String),
-      instances: [],
     })
+    expect(hostInstanceHint?.type === 'component-instances'
+      ? hostInstanceHint.instances.map((instance) => instance.path)
+      : []).toEqual([CHILD])
     await flushReady({ showInner: true })
     expect(ready).toEqual(['child:inner'])
     await flushReady({ showHost: false })

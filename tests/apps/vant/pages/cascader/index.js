@@ -1,29 +1,22 @@
-import { isDef } from '../../common/utils';
-import { isObj } from '../../common/validator';
-import Page from '../../common/page';
-
-function deepClone<T extends Record<string, any>>(obj: T): T {
+const { isDef } = require('../../common/utils');
+const { isObj } = require('../../common/validator');
+const Page = require('../../common/page');
+function deepClone(obj) {
   if (!isDef(obj)) {
     return obj;
   }
-
   if (Array.isArray(obj)) {
-    return obj.map((item) => deepClone(item)) as unknown as T;
+    return obj.map((item) => deepClone(item));
   }
-
   if (isObj(obj)) {
-    const to = {} as Record<string, any>;
-    Object.keys(obj).forEach((key: string) => {
-      // @ts-ignore
+    const to = {};
+    Object.keys(obj).forEach((key) => {
       to[key] = deepClone(obj[key]);
     });
-
-    return to as T;
+    return to;
   }
-
   return obj;
 }
-
 const zhCNOptions = [
   {
     text: '浙江省',
@@ -146,7 +139,6 @@ const zhCNOptions = [
     ],
   },
 ];
-
 const asyncOptions1 = [
   {
     text: '浙江省',
@@ -158,7 +150,6 @@ const asyncOptions2 = [
   { text: '杭州市', value: '330100' },
   { text: '宁波市', value: '330200' },
 ];
-
 function getCustomFieldOptions(options) {
   const newOptions = deepClone(options);
   const adjustFieldName = (item) => {
@@ -179,7 +170,6 @@ function getCustomFieldOptions(options) {
   newOptions.forEach(adjustFieldName);
   return newOptions;
 }
-
 Page({
   data: {
     area: '地区',
@@ -208,7 +198,6 @@ Page({
       result: '',
     },
   },
-
   onClick(e) {
     const { stateKey } = e.currentTarget.dataset;
     this.setData({
@@ -224,10 +213,7 @@ Page({
   onFinish(e) {
     const { stateKey } = e.currentTarget.dataset;
     const { selectedOptions, value } = e.detail;
-    const result = selectedOptions
-      .map((option) => option.text || option.name)
-      .join('/');
-
+    const result = selectedOptions.map((option) => option.text || option.name).join('/');
     this.setData({
       [`${stateKey}.value`]: value,
       [`${stateKey}.result`]: result,
@@ -238,7 +224,6 @@ Page({
     const { value } = e.detail;
     if (value === '330000') {
       setTimeout(() => {
-        console.log('123321loadDynamicOptions', value);
         this.setData({
           'asyncState.options[0].children': asyncOptions2,
         });

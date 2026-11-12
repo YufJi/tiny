@@ -261,6 +261,18 @@ const plainEventDetail = (detail: unknown): unknown => (
   detail === undefined ? undefined : eventDetailValue(detail, 0, new WeakSet())
 )
 
+export const plainDataset = (
+  dataset: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined => {
+  if (!dataset) return undefined
+  const result: Record<string, unknown> = {}
+  for (const [name, value] of Object.entries(dataset)) {
+    const plain = eventDetailValue(value, 0, new WeakSet())
+    if (plain !== undefined) result[name] = plain
+  }
+  return Object.keys(result).length > 0 ? result : undefined
+}
+
 const propertyName = (name: string): string => (
   name.replace(/-([a-z])/g, (_match, letter: string) => letter.toUpperCase())
 )
@@ -528,13 +540,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       currentTarget?: unknown
     }
     const name = String(source.type ?? '')
-    // A raw DOM touch projection also reaches this binding. The built-in
-    // component that owned the native listener already re-emitted a
-    // normalized event for the same finger, so forward only that one.
-    if (
-      name.startsWith('touch')
-      && isHandledNativeEvent((event as { getOriginalEvent?: () => unknown }).getOriginalEvent?.())
-    ) return
+    const original = (event as { getOriginalEvent?: () => unknown }).getOriginalEvent?.()
+    if (!shouldForwardGlassEvent(name, original)) return
     const detail = plainEventDetail(source.detail)
     const self = this as {
       __tinyNodeId?: string
@@ -554,6 +561,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     } | null
     const targetRender = renderTargetOf(source.target)
     const viewId = element?.getAttribute?.(TINY_ENGINE_NAMING.nodeIdAttribute) ?? ''
+    const dataset = plainDataset(element?.dataset)
     const geometry = element && typeof element.offsetLeft === 'number'
       ? {
           viewId,
@@ -576,9 +584,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         ? { changedTouches: touchListOf(source.changedTouches) }
         : {}),
       ...(element?.id ? { id: String(element.id) } : {}),
-      ...(element?.dataset && Object.keys(element.dataset).length > 0
-        ? { dataset: { ...element.dataset } }
-        : {}),
+      ...(dataset ? { dataset } : {}),
       ...(geometry ? { currentTarget: geometry } : {}),
       ...(targetRender.identity ? { targetId: targetRender.identity } : {}),
       ...(targetRender.geometry ? { target: targetRender.geometry } : {}),
@@ -659,6 +665,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const bindNestedComponentInstances = (
     strictHints = false,
     applyData = true,
+    verifyDesync = false,
   ): void => {
     const reportDesync = (parentId: string, message: string, details: unknown): void => {
       if (desyncReported.has(parentId)) return
@@ -707,7 +714,10 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
             || (rootBinding
               ? owner === ownerComponent
               : owner === ownerComponent
-                || Boolean(ownerElement && host.contains(ownerElement as Node)))
+                || Boolean(ownerElement && (
+                  host.contains(ownerElement as Node)
+                  || (ownerElement as Node).contains(host)
+                )))
           if (
             path
             && componentDefinitions.has(path)
@@ -744,13 +754,17 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       }
       if (result.desync) {
         const desync = result.desync
-        reportDesync(
-          parentId,
-          desync.kind === 'order'
-            ? `component instance #${desync.index} is ${desync.actual} in the render tree but ${desync.expected} in the logic tree`
-            : `render tree created ${desync.created.length} component(s) but the logic tree has ${desync.expected.length}`,
-          { parentId, ...desync },
-        )
+        if (verifyDesync) {
+          reportDesync(
+            parentId,
+            desync.kind === 'order'
+              ? `component instance #${desync.index} is ${desync.actual} in the render tree but ${desync.expected} in the logic tree`
+              : `render tree created ${desync.created.length} component(s) but the logic tree has ${desync.expected.length}`,
+            { parentId, ...desync },
+          )
+        } else if (!desyncReported.has(parentId)) {
+          scheduleDesyncVerification()
+        }
       }
     }
     if (pageFrameRoot) {
@@ -778,6 +792,14 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       if (node.type !== 'element' || !node.componentInstances) continue
       bindFor(id, node.componentInstances)
     }
+  }
+  let desyncVerificationTimer: ReturnType<typeof setTimeout> | undefined
+  const scheduleDesyncVerification = (): void => {
+    if (desyncVerificationTimer !== undefined) clearTimeout(desyncVerificationTimer)
+    desyncVerificationTimer = setTimeout(() => {
+      desyncVerificationTimer = undefined
+      bindNestedComponentInstances(true, true, true)
+    }, 0)
   }
   /** Push service-side component data into the render instances (templates). */
   const applyComponentDataToNodes = (data: Record<string, Record<string, unknown>>): void => {
@@ -1395,9 +1417,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const isGestureEvent = (name: string): boolean => (
     name === 'tap' || name === 'longpress' || name === 'canceltap'
   )
-  const isNativeProjection = (name: string): boolean => (
-    name === 'click' || name.startsWith('touch')
-  )
+  const isNativeProjection = (name: string): boolean => name.startsWith('touch')
   // DOM events no built-in component re-emits with a normalized detail. Pages
   // can bind them directly; forwarding the raw projection is the only source.
   const RAW_PASSTHROUGH_EVENTS = new Set([
@@ -1408,12 +1428,17 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     'wheel',
     'touchforcechange',
   ])
-  const shouldForwardGlassEvent = (name: string, original: unknown): boolean => (
-    original === undefined
-    || isGestureEvent(name)
-    || isNativeProjection(name)
-    || RAW_PASSTHROUGH_EVENTS.has(name)
-  )
+  const shouldForwardGlassEvent = (name: string, original: unknown): boolean => {
+    // WeChat has no native `click` mini-program event. `click` is only a
+    // component event created by `triggerEvent`, so the browser click that
+    // bubbles through a component template must not replace its payload.
+    if (name === 'click') return original === undefined
+    if (original === undefined) return true
+    if (name.startsWith('touch') && isHandledNativeEvent(original)) return false
+    return isGestureEvent(name)
+      || isNativeProjection(name)
+      || RAW_PASSTHROUGH_EVENTS.has(name)
+  }
 
   /**
    * Build the service-facing payload from one glass event.
@@ -1621,9 +1646,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
           .getOriginalEvent?.()
         // A built-in component (canvas) re-dispatches a normalized event and
         // marks the raw one; only forward the normalized copy.
-        // Only raw touch projections are de-duplicated by built-ins (canvas).
-        // Synthesized tap/longpress legitimately carry the same native event.
-        if (original && binding.name.startsWith('touch') && isHandledNativeEvent(original)) return
         if (!shouldForwardGlassEvent(binding.name, original)) return
         // `catch` is a compile-time binding; glass owns the bubble path, so
         // stopping here is what makes `catchtap` block parent handlers.
@@ -2023,18 +2045,20 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
           original,
         ) as unknown as Record<string, unknown>
         if (payload.currentTarget && node.dataset) {
+          const dataset = plainDataset(node.dataset)
           payload.currentTarget = {
             ...(payload.currentTarget as Record<string, unknown>),
-            dataset: node.dataset,
+            ...(dataset ? { dataset } : {}),
           }
         }
         const targetNode = payload.target && (payload.target as { viewId?: string }).viewId
           ? currentTree.get((payload.target as { viewId: string }).viewId)
           : undefined
         if (payload.target && targetNode?.type === 'element' && targetNode.dataset) {
+          const dataset = plainDataset(targetNode.dataset)
           payload.target = {
             ...(payload.target as Record<string, unknown>),
-            dataset: targetNode.dataset,
+            ...(dataset ? { dataset } : {}),
           }
         }
         invoke(binding, payload, () => {
@@ -2423,6 +2447,19 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     delete props.id
     if (builtinTags.has(node.tag)) component.setData(glassProps(node.props) as never)
     else {
+      // Custom component properties are instance data, not only host
+      // attributes. WeChat runs property observers before the template update;
+      // without this write, `value="{{ parent.result }}"` reaches the DOM but
+      // never the component's data/observers.
+      const path = node.componentPath ?? componentPathByComponent.get(component)
+      const declared = path ? componentDefinitions.get(path)?.properties : undefined
+      if (declared) {
+        const projected: Record<string, unknown> = {}
+        for (const [name, value] of Object.entries(glassProps(node.props))) {
+          if (Object.hasOwn(declared, name)) projected[name] = value
+        }
+        if (Object.keys(projected).length > 0) component.setData(projected as never)
+      }
       const element = component.getBackendElement() as unknown as {
         setAttribute?: (name: string, value: string) => void
       } | null
@@ -2998,6 +3035,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         }).setData?.(patch)
         queuePageFrameWxsProps()
         queuePageFrameTouchMoveGuards()
+        queueMicrotask(() => bindNestedComponentInstances(true))
       }
     },
     applyPageDataPatches: (patches) => {
@@ -3012,18 +3050,26 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       }
       queuePageFrameWxsProps()
       queuePageFrameTouchMoveGuards()
+      queueMicrotask(() => bindNestedComponentInstances(true))
     },
     setComponentData: (data) => {
       // The service sends a component-scoped patch after the initial snapshot,
-      // so merge instead of replacing before applying it to render instances.
-      componentData = { ...componentData, ...data }
+      // so merge each instance's fields instead of replacing its earlier data.
+      // A late-created component can bind after multiple patches have arrived;
+      // dropping an earlier field such as Vant's month `days` leaves the render
+      // template with only the most recent observer output.
+      componentData = { ...componentData }
+      for (const [id, patch] of Object.entries(data)) {
+        componentData[id] = { ...(componentData[id] ?? {}), ...patch }
+      }
       if (pageFrameRoot) {
         // The pageframe template already applied the props that created each
         // component. Re-pushing unchanged data makes glass re-run WXS-only
         // expression slots (for example `PEEK: {{state.peek()}}`) against a
         // later module state, while WeChat keeps the value from the render that
         // produced the component. Only write data that actually changed.
-        bindNestedComponentInstances(true)
+        bindNestedComponentInstances()
+        queueMicrotask(() => bindNestedComponentInstances(true))
         queuePageFrameWxsProps()
         queuePageFrameTouchMoveGuards()
       } else {
@@ -3205,10 +3251,11 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       if (!all) elements.splice(1)
       return elements.map((element) => {
         const rect = element.getBoundingClientRect()
+        const dataset = plainDataset({ ...(element as HTMLElement).dataset })
         return {
           viewId: element.getAttribute(TINY_ENGINE_NAMING.nodeIdAttribute) ?? '',
           id: element.id,
-          dataset: { ...(element as HTMLElement).dataset },
+          ...(dataset ? { dataset } : {}),
           left: rect.left,
           top: rect.top,
           right: rect.right,
@@ -3435,6 +3482,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       return nodes.get(id)
     },
     destroy() {
+      if (desyncVerificationTimer !== undefined) clearTimeout(desyncVerificationTimer)
+      desyncVerificationTimer = undefined
       clearTabBar()
       pageFrameRoot = undefined
       pageFramePageId = ''

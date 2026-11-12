@@ -5,7 +5,7 @@ import type {
   TemplateRegistry,
 } from '../types'
 import type { ComponentTree } from './component-tree'
-import type { AssetUrlResolver } from '../assets'
+import type { AssetUrlResolver, ProtocolRelativeUrlResolver } from '../assets'
 import type { MiniProgramComponentOptions } from '../component/options'
 import type { MiniProgramPageRegistry } from './page-registry'
 import type { MiniProgramPageInstance } from './page-instance'
@@ -107,6 +107,8 @@ export type ServiceThreadOptions = {
    * the render document's base URL never participates in resolution.
    */
   resolveAssetUrl?: AssetUrlResolver
+  /** Host policy for protocol-relative stylesheet URLs. */
+  resolveProtocolRelativeUrl?: ProtocolRelativeUrlResolver
   /**
    * Sink shared with the host-composed API table. Runtime-originated events
    * and host `event.global` frames reach the global `wx.onXXX` listeners.

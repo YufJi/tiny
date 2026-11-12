@@ -1,4 +1,4 @@
-import list from '../../config';
+const list = require('../../config');
 
 Component({
   data: {

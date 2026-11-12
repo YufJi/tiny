@@ -1,4 +1,4 @@
-export default [
+module.exports = [
   {
     groupName: '基础组件',
     icon: 'https://img.yzcdn.cn/vant/basic-0401.svg',
@@ -58,7 +58,7 @@ export default [
       {
         path: '/overlay',
         title: 'Overlay 遮罩层',
-      }
+      },
     ],
-  }
+  },
 ];

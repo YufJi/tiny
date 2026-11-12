@@ -337,6 +337,7 @@ export function startTinyService(app: TinyIOSApp): void {
       loadTemplates,
       loadStyle: (stylePath) => app.styles[stylePath] ?? '',
       resolveAssetUrl: apiContext.resolveAssetUrl,
+      resolveProtocolRelativeUrl: (url) => `https:${url}`,
       loadArtifacts: async () => {
         if (serviceEvaluated) return
         serviceEvaluated = true

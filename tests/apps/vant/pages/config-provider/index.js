@@ -1,5 +1,4 @@
-import Page from '../../common/page';
-
+const Page = require('../../common/page');
 Page({
   data: {
     rate: 4,
@@ -14,7 +13,6 @@ Page({
       buttonPrimaryBackgroundColor: '#07c160',
     },
   },
-
   methods: {
     onChange(event) {
       const { key } = event.currentTarget.dataset;
