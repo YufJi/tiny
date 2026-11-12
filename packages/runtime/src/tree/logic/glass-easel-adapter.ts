@@ -51,6 +51,10 @@ const ELEMENT_RESERVED_NAMES = new Set([
   'style',
 ])
 
+function directObserverPath(path: string): string | null {
+  return /^[A-Za-z_$][\w$]*$/.test(path) ? path : null
+}
+
 export type ComponentSnapshot = {
   componentId: string
   path: string
@@ -248,6 +252,10 @@ export class GlassEaselRuntimeAdapter {
   private readonly frameworkProperties = new WeakSet<object>()
   private readonly unscopedComponentUsage = new Map<string, number>()
   private readonly methodCallerComponents = new WeakMap<object, glassEasel.GeneralComponent>()
+  private readonly observerPreviousValues = new WeakMap<
+    object,
+    Record<string, Record<string, unknown>>
+  >()
   private readonly setDataCallbackComponents = new WeakSet<object>()
   private readonly onDiagnostic?: (diagnostic: import('../../diagnostics').RuntimeDiagnostic) => void
   private readonly logicPageOptions?: GlassEaselAdapterOptions['logicPageOptions']
@@ -1477,7 +1485,46 @@ export class GlassEaselRuntimeAdapter {
           })
           continue
         }
-        builder = builder.observer(observer.paths, handler)
+        // WeChat exposes properties as instance getters backed by the old
+        // property snapshot while observers run, then advances the snapshot.
+        // Vant's Field relies on this (`value !== this.value`) to mirror a
+        // parent-owned value into its local `innerValue`.
+        builder = builder.observer(observer.paths, function (
+          this: glassEasel.GeneralComponent,
+          ...args: unknown[]
+        ) {
+          const target = adapter.resolveMethodCaller(this) ?? this
+          const component = target as unknown as object
+          const allPrevious = adapter.observerPreviousValues.get(component) ?? {}
+          const previous = allPrevious[observer.key] ?? {}
+          const data = (this as unknown as { data?: Record<string, unknown> }).data ?? {}
+          for (const path of observer.paths) {
+            const name = directObserverPath(path)
+            if (!name || Object.hasOwn(previous, name)) continue
+            previous[name] = data[name] ?? (this as unknown as Record<string, unknown>)[name]
+          }
+          allPrevious[observer.key] = previous
+          adapter.observerPreviousValues.set(component, allPrevious)
+          const observerThis = new Proxy(target as object, {
+            get(source, property, receiver) {
+              if (typeof property === 'string' && Object.hasOwn(previous, property)) {
+                return previous[property]
+              }
+              return Reflect.get(source, property, receiver)
+            },
+          })
+          try {
+            return handler.apply(observerThis, args)
+          } finally {
+            observer.paths.forEach((path, index) => {
+              const name = directObserverPath(path)
+              if (!name) return
+              previous[name] = args.length > index
+                ? args[index]
+                : data[name] ?? (this as unknown as Record<string, unknown>)[name]
+            })
+          }
+        })
       }
       builder = this.applyRelations(builder, logicDefinition.relations, methods)
       builder = this.applyTraitImplementations(builder, logicDefinition.traits)

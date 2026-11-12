@@ -351,6 +351,37 @@ describe('glass render tree', () => {
     expect(field.data.value).toBe('a@b')
   })
 
+  test('updates declared custom component properties from parent patches', () => {
+    const path = 'components/card/card'
+    const tree = createGlassRenderTree({
+      backend: new glassEasel.EmptyBackendContext(),
+      componentDefinitions: {
+        [path]: {
+          path,
+          properties: { label: { type: String, value: 'default' } },
+        },
+      },
+    })
+    tree.mount(element('root', 'view', {}, [{
+      type: 'element',
+      id: 'card',
+      tag: 'card',
+      component: true,
+      componentPath: path,
+      props: { label: 'first' },
+    }]))
+
+    const card = tree.getNode('card') as unknown as { data: Record<string, unknown> }
+    expect(card.data.label).toBe('first')
+
+    tree.applyPatches([{
+      type: 'props',
+      target: 'card',
+      props: { label: 'second' },
+    }])
+    expect(card.data.label).toBe('second')
+  })
+
   test('evaluates a component template in the render thread', () => {
     const templates = templatesFor('components/card/card', '<view id="inner">{{ label }}</view>')
     const tree = createGlassRenderTree({

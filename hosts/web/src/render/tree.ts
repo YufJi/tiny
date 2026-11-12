@@ -2447,6 +2447,19 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     delete props.id
     if (builtinTags.has(node.tag)) component.setData(glassProps(node.props) as never)
     else {
+      // Custom component properties are instance data, not only host
+      // attributes. WeChat runs property observers before the template update;
+      // without this write, `value="{{ parent.result }}"` reaches the DOM but
+      // never the component's data/observers.
+      const path = node.componentPath ?? componentPathByComponent.get(component)
+      const declared = path ? componentDefinitions.get(path)?.properties : undefined
+      if (declared) {
+        const projected: Record<string, unknown> = {}
+        for (const [name, value] of Object.entries(glassProps(node.props))) {
+          if (Object.hasOwn(declared, name)) projected[name] = value
+        }
+        if (Object.keys(projected).length > 0) component.setData(projected as never)
+      }
       const element = component.getBackendElement() as unknown as {
         setAttribute?: (name: string, value: string) => void
       } | null
