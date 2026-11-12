@@ -466,8 +466,8 @@ service iframe 只是视觉上隐藏，没有 sandbox 属性，仍然可以访�
 首屏用 define/tree/ready 对齐组件树（身份快照作为嵌套树发送，元素不带 id）；pageframe 从模板挂载页面并本地 diff。custom tabBar 通过可选 `tabFrame` 挂载，后续更新也走 `tabFrame`。
 :::
 
-:::card{tag="event" tone="warn" title="target 语义仍是近似"}
-`tree.event` 已带 `target` / `currentTarget` 的 offset 几何，但两者目前都解析到绑定 handler 的节点；嵌套元素的 `event.target` 和微信仍有差别。
+:::card{tag="event" tone="good" title="target 语义已对齐"}
+`tree.event` 和 `tree.templateEvent` 会携带最内层 target locator；页级和组件 shadow 内的嵌套元素都能解析出正确的 `event.target` 与 `currentTarget`。
 :::
 
 :::card{tag="capability" tone="warn" title="没有能力协商"}

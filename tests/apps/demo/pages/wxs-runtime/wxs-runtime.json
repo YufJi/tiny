@@ -1,3 +1,8 @@
 {
-  "navigationBarTitleText": "WXS runtime"
+  "navigationBarTitleText": "WXS runtime",
+  "usingComponents": {
+    "trait-probe": "/components/trait-probe/trait-probe",
+    "trait-relation-parent": "/components/trait-relation-parent/trait-relation-parent",
+    "trait-relation-child": "/components/trait-relation-child/trait-relation-child"
+  }
 }

@@ -295,7 +295,7 @@ WXS 代码在编译期完成：
 - `input` / `textarea` 的普通 JS `bindinput` 仍使用微信的 `PAGE_EVENT` service 派发；一旦值是 WXS 函数，handler 由 pageframe 执行，并使用 render descriptor（含 `getState` / `getComputedStyle`）；
 - `catch` / `capture-bind` / `capture-catch` / `return false` 生效；
 - 本地 handler 执行后，只有路径上存在 service listener 才回传；
-- `mutated` 元数据会传递，但 `mut-bind` 的本地语义尚未实现。
+- `mut-bind` 使用 glass-easel 的 `MutLevel`：首个 mut handler 执行后标记事件，后续 mut handler 跳过，普通 `bind`/`catch` 仍按原路径传播。
 
 render 侧 `ComponentDescriptor` 已覆盖 `selectComponent`、`getDataset`、`getState`、`setStyle`、class 方法、`getComputedStyle`、`getBoundingClientRect`、timers / RAF、`callMethod`、`triggerEvent`；service 侧 descriptor 覆盖 `selectComponent`、`getDataset`、`setStyle`、`callMethod`、`triggerEvent`，只用于承接 render WXS handler 的 `callMethod` / `triggerEvent` effect，不执行 WXS handler 本身。`getState` 按 descriptor 元素存储，使 `change:prop` 观察器与后续事件 handler 看到同一份 state；`setStyle` 的 rpx 固定按 750 转成 vw。微信 3.17.5 的 pageframe descriptor 不包含 `getData()`，WXS 通过 `getDataset()` 或事件的 `target` / `currentTarget` 读取渲染数据。
 
@@ -529,16 +529,16 @@ iOS 没有 OffscreenCanvas。service 侧记录 Canvas 2D 调用，native 渲染�
 ::::cards
 
 
-:::card{tag="事件" tone="warn" title="target 语义仍是近似"}
-`tree.event` 已带 `target` / `currentTarget` 的 offset 几何，但两者目前都解析到绑定 handler 的节点；嵌套元素的 `event.target` 语义和微信仍有差别。
+:::card{tag="事件" tone="good" title="target 语义已对齐"}
+`tree.event` 和 `tree.templateEvent` 会携带最内层 target locator；service 用它解析真实逻辑节点，因此页级和组件 shadow 内的嵌套元素都能区分 `event.target` 与 `currentTarget`。
 :::
 
 :::card{tag="tabBar" tone="warn" title="独立 tabBar 仍使用快照"}
 页面根和自定义 tabBar 都已经走 pageframe。tabBar 通过独立 `tabFrame` 从组件模板挂载，source 仍由 service 逻辑树维护；页面和 tab 根共享同一个渲染批次。
 :::
 
-:::card{tag="组件" tone="warn" title="trait/chaining 和平台组件仍有缺口"}
-trait behaviors / chaining API 和 20 个平台/开放能力组件仍未实现；componentPlaceholder、generics、definitionFilter、pureDataPattern 和 6 个 `wx://` behavior 已接入。
+:::card{tag="组件" tone="warn" title="chaining 和平台组件仍有缺口"}
+trait behaviors 已接入；chaining API 和 20 个平台/开放能力组件仍未实现。componentPlaceholder、generics、definitionFilter、pureDataPattern 和 6 个 `wx://` behavior 已接入。
 :::
 
 :::card{tag="页面" tone="warn" title="页面形态仍以 devtool 宿主为主"}

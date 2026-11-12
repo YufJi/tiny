@@ -2,5 +2,9 @@
 <view id="probe" class="probe" data-local="{{local}}" bindtap="{{t.tap}}">
   <text>component-data: {{local}}</text>
   <text>probe-seen: {{seen}}</text>
+  <view id="probe-target-outer" data-role="outer" bindtap="recordTarget">
+    <view id="probe-target-inner" data-role="inner">probe-target</view>
+  </view>
+  <text>probe-target: {{targetSeen}}</text>
 </view>
 <button id="fire" bindtap="fire">fire-probe</button>

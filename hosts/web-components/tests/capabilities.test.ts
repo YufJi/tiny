@@ -71,7 +71,7 @@ function renderInventory(inventory: Inventory): string {
     ' * definitions, and this file mirrors their WXML attribute names. A probe',
     ' * means "the built-in component defines this attribute", exactly like',
     ' * WeChat answering from its component table; per-attribute visual parity is',
-    ' * tracked in docs/component-reference-diff.md instead.',
+    ' * tracked in docs/archive/component-reference-diff-2.33.0.md instead.',
     ' *',
     ' * Regenerate with `UPDATE_BUILTIN_CAPABILITIES=1 pnpm --filter @tiny/host-web-components test`',
     ' * (the guard test in that package compares this file with the definitions and',

@@ -10,6 +10,8 @@ Page({
     stopParentStatus: 'idle',
     captureStatus: 'idle',
     captureParentStatus: 'idle',
+    mutStatus: '',
+    targetStatus: 'idle',
     counterStatus: 'idle',
     stateStatus: 'idle',
     computedStatus: 'idle',
@@ -41,12 +43,34 @@ Page({
     this.setData({ stopParentStatus: 'parent' })
   },
 
+  onMutNormalParent() {
+    const next = this.data.mutStatus
+      ? `${this.data.mutStatus},normal-parent`
+      : 'normal-parent'
+    this.setData({ mutStatus: next })
+  },
+
   recordStop(value) {
     this.setData({ stopStatus: String(value) })
   },
 
   recordCaptureParent(value) {
     this.setData({ captureParentStatus: String(value) })
+  },
+
+  recordMut(value) {
+    const next = this.data.mutStatus
+      ? `${this.data.mutStatus},${String(value)}`
+      : String(value)
+    this.setData({ mutStatus: next })
+  },
+
+  onTargetProbe(event) {
+    const target = event.target
+    const currentTarget = event.currentTarget
+    this.setData({
+      targetStatus: `target:${target.id}/${target.dataset.role}->${currentTarget.id}/${currentTarget.dataset.role}`,
+    })
   },
 
   recordCapture(value) {

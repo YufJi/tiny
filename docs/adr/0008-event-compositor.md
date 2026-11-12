@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted. Implemented for tap / longpress / canceltap / touch projections.
+Accepted. Implemented for tap / longpress / canceltap / touch projections,
+including `mut-bind` listener levels.
 
 ## Context
 
@@ -42,10 +43,11 @@ One compositor per render tree (`hosts/web-components/src/event-compositor`):
 - the render tree stops registering per-node DOM listeners and stops mapping
   `tap` to `click`.
 
-`catch` travels with the render protocol: `snapshotRenderTree` maps glass's
-`Final`/`Mut` listener levels to `catch`/`mutated`, and the render listener
-turns `catch` into `stopPropagation()` (and `preventDefault()` for the raw
-event).
+`catch` and `mut-bind` travel with the render protocol: `snapshotRenderTree`
+maps glass's `Final`/`Mut` listener levels to `catch`/`mutated`, and the render
+listener passes both levels back to glass. `catch` stops propagation
+(and prevents the raw event default); the first `mut` listener marks the event
+so later mut listeners are skipped while ordinary bind/catch listeners continue.
 
 ## Scroll locking
 

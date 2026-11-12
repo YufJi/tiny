@@ -95,7 +95,15 @@ function handleTemplateEvent(
     changedTouches?: unknown[]
     id?: string
     dataset?: Record<string, unknown>
+    targetId?: string
     currentTarget?: {
+      offsetLeft?: number
+      offsetTop?: number
+      offsetWidth?: number
+      offsetHeight?: number
+    }
+    target?: {
+      viewId?: string
       offsetLeft?: number
       offsetTop?: number
       offsetWidth?: number
@@ -114,7 +122,9 @@ function handleTemplateEvent(
       ...(payload.changedTouches ? { changedTouches: payload.changedTouches } : {}),
       ...(payload.id ? { id: payload.id } : {}),
       ...(payload.dataset ? { dataset: payload.dataset } : {}),
+      ...(payload.targetId ? { targetId: payload.targetId } : {}),
       ...(payload.currentTarget ? { currentTarget: payload.currentTarget } : {}),
+      ...(payload.target ? { target: payload.target } : {}),
     })
     if (!handled) {
       connection.sendDiagnostic('warn', {

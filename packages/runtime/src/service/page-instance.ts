@@ -359,7 +359,10 @@ export class MiniProgramPageInstance implements ObserverHost {
   }
 
   hasBehavior(behavior: unknown): boolean {
-    return this.definition?.behaviors.has(behavior as object | string) ?? false
+    return Boolean(
+      this.definition?.behaviors.has(behavior as object | string)
+      || this.definition?.traits.some(({ trait }) => trait === behavior),
+    )
   }
 
   /** `this.getTabBar([callback])`: the page-local custom tab bar, if any. */

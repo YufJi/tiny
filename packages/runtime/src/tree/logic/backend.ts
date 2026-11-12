@@ -670,6 +670,49 @@ export class LogicBackendContext {
     }
     const rootViewId = nodeToViewId.get(root) ?? root.id ?? ''
     walk(root, rootViewId, [])
+    // Custom component shadow trees are evaluated in render and therefore are
+    // not part of the page snapshot sent to the host. Their logical elements
+    // still need component-scoped locators so event targets inside a component
+    // template resolve to the same node as the pageframe.
+    const indexedComponents = new Set<LogicBackendElement>()
+    const indexComponentShadow = (component: LogicBackendElement): void => {
+      if (indexedComponents.has(component) || !component.shadowRoot) return
+      indexedComponents.add(component)
+      const owner = this.ensureViewId(component)
+      const indexChildren = (
+        children: LogicBackendElement[],
+        prefix: number[],
+        state: { index: number },
+      ): void => {
+        for (const child of children) {
+          if (child.nodeType === 'fragment' || child.nodeType === 'virtual') {
+            indexChildren(child.children, prefix, state)
+            continue
+          }
+          const path = [...prefix, state.index]
+          state.index += 1
+          if (child.nodeType === 'text') continue
+          const locator = formatLocator(owner, path)
+          locators.set(this.ensureViewId(child), locator)
+          nodesByLocator.set(locator, child)
+          if (child.nodeType === 'component') {
+            indexComponentShadow(child)
+          } else if (child.shadowRoot) {
+            indexChildren(child.shadowRoot.children, path, { index: 0 })
+          } else {
+            indexChildren(child.children, path, { index: 0 })
+          }
+        }
+      }
+      indexChildren(component.shadowRoot.children, [], { index: 0 })
+    }
+    const indexComponents = (node: RenderNode): void => {
+      if (node.type !== 'element') return
+      const logic = nodeToLogic.get(node)
+      if (node.component === true && logic) indexComponentShadow(logic)
+      for (const child of node.children ?? []) indexComponents(child)
+    }
+    indexComponents(root)
     const previous = this.pageLocatorEntries.get(locatorKey)
     if (previous) {
       for (const viewId of previous.viewIds) this.renderLocators.delete(viewId)

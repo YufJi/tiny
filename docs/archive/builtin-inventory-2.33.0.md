@@ -1,8 +1,10 @@
 # 内置组件与 behaviors 缺口清单（WAWebview 2.33.0）
 
-> **快照**：2026-11-05 · **参考实现**：`~/Downloads/wechat-miniprogram/2.33.0/WAWebview.js`、`WAWebview.css` · **组件目标**：沿用 [wechat-webview-parity.md 附录 B](./wechat-webview-parity.md#附录-bwebview-组件清单40) 的 40 个 WebView 公共组件
+> **历史归档**：本文只用于查阅 2.33.0 时期的组件与 behavior 缺口，不代表当前实现目标。后续对齐统一使用微信 3.17.5 WebView + glass-easel，相关新任务应另开文档/issue。
 >
-> 本文只回答“还差哪些、占位在哪”，不重复各组件的对齐细节；已实现组件的状态看 [component-reference-diff.md](./component-reference-diff.md)。
+> **快照**：2026-11-05 · **参考实现**：`~/Downloads/wechat-miniprogram/2.33.0/WAWebview.js`、`WAWebview.css` · **组件目标**：沿用 [wechat-webview-parity.md 附录 B](../wechat-webview-parity.md#附录-bwebview-组件清单40) 的 40 个 WebView 公共组件
+>
+> 本文只回答“还差哪些、占位在哪”，不重复各组件的对齐细节；已实现组件的状态看 [component-reference-diff-2.33.0.md](./component-reference-diff-2.33.0.md)。
 
 ## 1. 结论
 
@@ -14,13 +16,13 @@
 - 组件缺口已清零：剩余 DOM/CSS、音视频与 web-view 标签均已落地；video/audio/web-view 是浏览器近似实现。
 - behaviors 缺口按类别：共享/DOM 4 个、媒体/原生 6 个、宿主平台 1 个。`wx://request-filter` / `wx://request-sender` 按基线不做，声明时回落到 `UNSUPPORTED_BEHAVIOR`。
 - 组件占位目录已全部删除；11 个缺失宿主 behavior 占位保留，每个目录只有 `PLACEHOLDER.md`。含该标记的组件目录会被 `build-templates.mjs` / `build-styles.mjs` 跳过，不会被注册成空壳组件。
-- 6 个 runtime `wx://` 内置 behavior 已在 [packages/runtime/src/component/behaviors](../packages/runtime/src/component/behaviors/index.ts:1) 实现，**不在内核里放占位**（service 侧是 marker，可观察语义在渲染侧或框架里）；`functional-page-behavior` 按基线不做。
+- 6 个 runtime `wx://` 内置 behavior 已在 [packages/runtime/src/component/behaviors](../../packages/runtime/src/component/behaviors/index.ts:1) 实现，**不在内核里放占位**（service 侧是 marker，可观察语义在渲染侧或框架里）；`functional-page-behavior` 按基线不做。
 
 ## 2. 口径
 
 ### 2.1 组件
 
-- **目标 40**：与 [wechat-webview-parity.md 附录 B](./wechat-webview-parity.md#附录-bwebview-组件清单40) 一致。剔除 Skyline 专属、XR-FRAME、`native-component` 说明页，以及 `share-element`（当前文档归在 Skyline）。
+- **目标 40**：与 [wechat-webview-parity.md 附录 B](../wechat-webview-parity.md#附录-bwebview-组件清单40) 一致。剔除 Skyline 专属、XR-FRAME、`native-component` 说明页，以及 `share-element`（当前文档归在 Skyline）。
 - **2.33.0 包内**：`WAWebview.js` 的 `is: "wx-<tag>"` 元素、webview 启用表（`b`，61 个 `wx-*` 标签，含内部 `wx-refresher`）和 `WAWebview.css` 的 `wx-*` 宿主规则。
 - **新增组件**：无；`reward` 也已按暂不支持移除。
 - **文档页**：`aria-component` 不是自定义元素，而是“无障碍访问”的文档页；ARIA 属性由所有组件的 `base` behavior 提供，不建标签、不建占位。`selection` 是 3.6.4 新增、不在 2.33.0 范围内；2.33.0 新增 `grid-view`，已实现。
@@ -66,7 +68,7 @@
 
 `view`、`grid-view`、`cover-view`、`cover-image`、`root-portal`、`page-container`、`movable-area`、`movable-view`、`scroll-view`、`swiper`、`swiper-item`、`match-media`、`icon`、`text`、`rich-text`、`progress`、`button`、`checkbox`、`checkbox-group`、`radio`、`radio-group`、`slider`、`switch`、`input`、`label`、`picker`、`picker-view`、`picker-view-column`、`form`、`textarea`、`navigator`、`page-meta`、`navigation-bar`、`image`、`audio`、`video`、`map`、`web-view`、`canvas`。
 
-实现入口：[components/](../hosts/web-components/src/components)、标签清单 [builtin.ts](../packages/manifest/src/builtin.ts:3)、定义注册 [index.ts](../hosts/web-components/src/index.ts:50)。
+实现入口：[components/](../../hosts/web-components/src/components)、标签清单 [builtin.ts](../../packages/manifest/src/builtin.ts:3)、定义注册 [index.ts](../../hosts/web-components/src/index.ts:50)。
 
 ## 4. behaviors 缺口（11）
 
@@ -74,26 +76,26 @@
 
 | 参考 behavior | 实现位置 |
 | --- | --- |
-| `wx-base` / `wx-hover` / `wx-reload` / `wx-disabled` / `wx-group` / `wx-item` / `wx-data-component` / `wx-size-normalizer` / `wx-class-prefix` / `wx-autofill` / `wx-label-aria` / `wx-label-target` / `wx-touchtrack` / `wx-scroller` | [behaviors/](../hosts/web-components/src/behaviors/index.ts:40) 的 14 个工厂 |
-| `wx://component-export` / `wx://form-field` / `wx://form-field-button` / `wx://form-field-group` / `wx://label-target` / `wx://style-filter` | [packages/runtime/src/component/behaviors/](../packages/runtime/src/component/behaviors/index.ts:1) 的 6 个独立模块 |
+| `wx-base` / `wx-hover` / `wx-reload` / `wx-disabled` / `wx-group` / `wx-item` / `wx-data-component` / `wx-size-normalizer` / `wx-class-prefix` / `wx-autofill` / `wx-label-aria` / `wx-label-target` / `wx-touchtrack` / `wx-scroller` | [behaviors/](../../hosts/web-components/src/behaviors/index.ts:40) 的 14 个工厂 |
+| `wx://component-export` / `wx://form-field` / `wx://form-field-button` / `wx://form-field-group` / `wx://label-target` / `wx://style-filter` | [packages/runtime/src/component/behaviors/](../../packages/runtime/src/component/behaviors/index.ts:1) 的 6 个独立模块 |
 
 ### 4.2 宿主 behaviors 缺口（11）
 
-占位目录：[hosts/web-components/src/behaviors/pending/](../hosts/web-components/src/behaviors/pending/README.md)。
+占位目录：[hosts/web-components/src/behaviors/pending/](../../hosts/web-components/src/behaviors/pending/README.md)。
 
 | 参考 behavior | 类别 | 参考使用方 |
 | --- | --- | --- |
-| [`wx-autofill-provider`](../hosts/web-components/src/behaviors/pending/autofill-provider/PLACEHOLDER.md) | 共享/DOM | form |
-| [`wx-image-route`](../hosts/web-components/src/behaviors/pending/image-route/PLACEHOLDER.md) | 共享/DOM | map |
-| [`wx-keyboard-accessory-host`](../hosts/web-components/src/behaviors/pending/keyboard-accessory-host/PLACEHOLDER.md) | 共享/DOM | input, textarea |
-| [`wx-mask-behavior`](../hosts/web-components/src/behaviors/pending/mask-behavior/PLACEHOLDER.md) | 共享/DOM | toast, action-sheet, modal |
-| [`wx-player`](../hosts/web-components/src/behaviors/pending/player/PLACEHOLDER.md) | 媒体/原生 | audio, video |
-| [`wx-request`](../hosts/web-components/src/behaviors/pending/request/PLACEHOLDER.md) | 宿主平台 | video |
-| [`wx-video-ad`](../hosts/web-components/src/behaviors/pending/video-ad/PLACEHOLDER.md) | 媒体/原生 | video |
-| [`wx-video-android`](../hosts/web-components/src/behaviors/pending/video-android/PLACEHOLDER.md) | 媒体/原生 | video |
-| [`wx-video-devtools`](../hosts/web-components/src/behaviors/pending/video-devtools/PLACEHOLDER.md) | 媒体/原生 | video |
-| [`wx-video-ios`](../hosts/web-components/src/behaviors/pending/video-ios/PLACEHOLDER.md) | 媒体/原生 | video |
-| [`wx-video-mina`](../hosts/web-components/src/behaviors/pending/video-mina/PLACEHOLDER.md) | 媒体/原生 | video |
+| [`wx-autofill-provider`](../../hosts/web-components/src/behaviors/pending/autofill-provider/PLACEHOLDER.md) | 共享/DOM | form |
+| [`wx-image-route`](../../hosts/web-components/src/behaviors/pending/image-route/PLACEHOLDER.md) | 共享/DOM | map |
+| [`wx-keyboard-accessory-host`](../../hosts/web-components/src/behaviors/pending/keyboard-accessory-host/PLACEHOLDER.md) | 共享/DOM | input, textarea |
+| [`wx-mask-behavior`](../../hosts/web-components/src/behaviors/pending/mask-behavior/PLACEHOLDER.md) | 共享/DOM | toast, action-sheet, modal |
+| [`wx-player`](../../hosts/web-components/src/behaviors/pending/player/PLACEHOLDER.md) | 媒体/原生 | audio, video |
+| [`wx-request`](../../hosts/web-components/src/behaviors/pending/request/PLACEHOLDER.md) | 宿主平台 | video |
+| [`wx-video-ad`](../../hosts/web-components/src/behaviors/pending/video-ad/PLACEHOLDER.md) | 媒体/原生 | video |
+| [`wx-video-android`](../../hosts/web-components/src/behaviors/pending/video-android/PLACEHOLDER.md) | 媒体/原生 | video |
+| [`wx-video-devtools`](../../hosts/web-components/src/behaviors/pending/video-devtools/PLACEHOLDER.md) | 媒体/原生 | video |
+| [`wx-video-ios`](../../hosts/web-components/src/behaviors/pending/video-ios/PLACEHOLDER.md) | 媒体/原生 | video |
+| [`wx-video-mina`](../../hosts/web-components/src/behaviors/pending/video-mina/PLACEHOLDER.md) | 媒体/原生 | video |
 
 ### 4.3 runtime / 插件 behaviors（6，已实现）
 
@@ -101,12 +103,12 @@
 
 | 参考 behavior | 实现文件 |
 | --- | --- |
-| `wx://component-export` | [component-export.ts](../packages/runtime/src/component/behaviors/component-export.ts) |
-| `wx://form-field` | [form-field.ts](../packages/runtime/src/component/behaviors/form-field.ts) |
-| `wx://form-field-button` | [form-field-button.ts](../packages/runtime/src/component/behaviors/form-field-button.ts) |
-| `wx://form-field-group` | [form-field-group.ts](../packages/runtime/src/component/behaviors/form-field-group.ts) |
-| `wx://label-target` | [label-target.ts](../packages/runtime/src/component/behaviors/label-target.ts) |
-| `wx://style-filter` | [style-filter.ts](../packages/runtime/src/component/behaviors/style-filter.ts) |
+| `wx://component-export` | [component-export.ts](../../packages/runtime/src/component/behaviors/component-export.ts) |
+| `wx://form-field` | [form-field.ts](../../packages/runtime/src/component/behaviors/form-field.ts) |
+| `wx://form-field-button` | [form-field-button.ts](../../packages/runtime/src/component/behaviors/form-field-button.ts) |
+| `wx://form-field-group` | [form-field-group.ts](../../packages/runtime/src/component/behaviors/form-field-group.ts) |
+| `wx://label-target` | [label-target.ts](../../packages/runtime/src/component/behaviors/label-target.ts) |
+| `wx://style-filter` | [style-filter.ts](../../packages/runtime/src/component/behaviors/style-filter.ts) |
 
 ### 4.4 明确不做（4）
 
@@ -158,7 +160,7 @@ hosts/web-components/src/behaviors/pending/<name>/PLACEHOLDER.md  # 11 个宿主
 
 | 元素 | 原因 |
 | --- | --- |
-| `action-sheet` / `action-sheet-cancel` / `action-sheet-item` | 平台内部 UI，已有 `wx.showActionSheet` 的宿主 overlay（[api-handlers.ts](../tests/host/src/host-api.ts:286)），不是用户标签 |
+| `action-sheet` / `action-sheet-cancel` / `action-sheet-item` | 平台内部 UI，已有 `wx.showActionSheet` 的宿主 overlay（[api-handlers.ts](../../tests/host/src/host-api.ts:286)），不是用户标签 |
 | `modal` / `toast` / `loading` / `mask` | 同上，走 `wx.showModal` / `showToast` / `showLoading` 的宿主 overlay |
 | `video-ad` / `entry-banner` / `refresher` | 平台内部组件：广告、入口 banner、下拉刷新私有实现 |
 | `trade-service` / `wecom-user-profile` / `cloud-storage-simple-component` | 交易、企业微信、云存储的开放能力内部组件 |
@@ -169,7 +171,7 @@ hosts/web-components/src/behaviors/pending/<name>/PLACEHOLDER.md  # 11 个宿主
 ## 7. 维护
 
 - 完成一个组件/behavior 后，先删占位标记，再更新本表；计数以第 1 节和第 3.1 节为准。
-- 本表的 40 组件口径与 [wechat-webview-parity.md](./wechat-webview-parity.md) 附录 B 一致；如果目标版本升级，先改附录 B，再回来重算缺口。
+- 本表的 40 组件口径与 [wechat-webview-parity.md](../wechat-webview-parity.md) 附录 B 一致；如果目标版本升级，先改附录 B，再回来重算缺口。
 - 重新提取参考数据（2.33.0）：在包目录里检索 `WAWebview.js` 的 `registerBehavior`、`is: "wx-..."` 和 webview 启用表；属性白名单在同一个文件的 `S = { ... }` 对象里。
 
 ## 8. 实施顺序

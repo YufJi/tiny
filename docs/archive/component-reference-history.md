@@ -4,7 +4,7 @@
 >
 > 本文件保留 2026-10-25/26 的差异审计、逐组件参考结构、修复方案和历史状态，**不再作为当前状态来源**。
 >
-> 当前结论、问题清单、剩余问题和验收结果见 [component-reference-diff.md](../component-reference-diff.md)。
+> 当前结论、问题清单、剩余问题和验收结果见 [component-reference-diff-2.33.0.md](./component-reference-diff-2.33.0.md)。
 >
 > 原始标题：内置组件与微信 2.7.0 参考实现差异与修复方案
 

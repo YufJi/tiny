@@ -1,0 +1,4 @@
+<view>
+  <slot />
+  <text>trait-relation: {{relationText}}</text>
+</view>

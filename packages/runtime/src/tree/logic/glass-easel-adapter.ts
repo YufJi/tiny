@@ -18,9 +18,12 @@ import { createRuntimeDiagnostic } from '../../diagnostics'
 import { mapCssAssetUrls, type AssetUrlResolver } from '../../assets'
 import { readComponentGenerics } from '../../component'
 import {
+  isTraitBehavior,
   parsePureDataPattern,
   type NormalizedComponentDefinition,
   type NormalizedRelation,
+  type NormalizedTraitImplementation,
+  type MiniProgramTraitBehavior,
 } from '../../component'
 
 
@@ -226,6 +229,8 @@ export class GlassEaselRuntimeAdapter {
   private readonly sharedStylesApplied = new Set<string>()
   private appPageScopeTemplate?: { style: StyleArtifact; css: string }
   private readonly componentDefinitions = new Map<string, glassEasel.GeneralComponentDefinition>()
+  private readonly glassTraits = new Map<string, glassEasel.TraitBehavior<Record<string, unknown>, Record<string, unknown>>>()
+  private readonly traitComponents = new WeakSet<object>()
   private readonly registeringComponents = new Set<string>()
   private readonly pages = new Map<string, PageArtifact>()
   private readonly pageInitialData = new Map<string, Record<string, unknown>>()
@@ -478,6 +483,9 @@ export class GlassEaselRuntimeAdapter {
     // A component-as-page owns relations like any other component; without
     // them glass cannot link its children and `this.getRelationNodes` is empty.
     const pageComponent = this.logicComponentDefinitions?.get(page.path)
+    if (pageComponent) {
+      builder = this.applyTraitImplementations(builder, pageComponent.traits)
+    }
     if (pageComponent && pageComponent.relations.length > 0) {
       builder = this.applyRelations(builder, pageComponent.relations, methods)
     }
@@ -494,9 +502,11 @@ export class GlassEaselRuntimeAdapter {
     for (const relation of relations) {
       const params: Record<string, unknown> = {
         type: relation.type,
-        // Glass resolves string targets relative to the owner's `is`; relation
-        // targets are already normalized to the root, so keep them absolute.
-        target: `/${relation.targetPath}`,
+        target: relation.trait
+          ? this.glassTraitFor(relation.trait)
+          // Glass resolves string targets relative to the owner's `is`; relation
+          // targets are already normalized to the root, so keep them absolute.
+          : `/${relation.targetPath}`,
       }
       for (const name of ['linked', 'unlinked', 'linkChanged', 'linkFailed'] as const) {
         const handler = relation[name]
@@ -506,6 +516,56 @@ export class GlassEaselRuntimeAdapter {
       builder = builder.relation(relation.key, params)
     }
     return builder
+  }
+
+  private glassTraitFor(
+    trait: MiniProgramTraitBehavior,
+  ): glassEasel.TraitBehavior<Record<string, unknown>, Record<string, unknown>> {
+    const existing = this.glassTraits.get(trait.id)
+    if (existing) return existing
+    const created = trait.transform
+      ? this.componentSpace.defineTraitBehavior(
+          trait.transform as (impl: Record<string, unknown>) => Record<string, unknown>,
+        )
+      : this.componentSpace.defineTraitBehavior<Record<string, unknown>>()
+    this.glassTraits.set(trait.id, created)
+    return created
+  }
+
+  private applyTraitImplementations(
+    builder: any,
+    traits: NormalizedTraitImplementation[],
+  ): any {
+    for (const { trait, impl } of traits) {
+      builder = builder.implement(this.glassTraitFor(trait), impl)
+    }
+    return builder
+  }
+
+  private installTraitAPI(component: glassEasel.GeneralComponent): void {
+    const key = component as unknown as object
+    if (this.traitComponents.has(key)) return
+    this.traitComponents.add(key)
+    const hasBehavior = component.hasBehavior.bind(component)
+    const traitBehavior = component.traitBehavior.bind(component)
+    Object.defineProperty(component, 'hasBehavior', {
+      configurable: true,
+      enumerable: false,
+      get: () => (behavior: unknown) => (
+        isTraitBehavior(behavior)
+          ? hasBehavior(this.glassTraitFor(behavior))
+          : hasBehavior(behavior as never)
+      ),
+    })
+    Object.defineProperty(component, 'traitBehavior', {
+      configurable: true,
+      enumerable: false,
+      get: () => (behavior: unknown) => (
+        isTraitBehavior(behavior)
+          ? traitBehavior(this.glassTraitFor(behavior))
+          : traitBehavior(behavior as never)
+      ),
+    })
   }
 
   private resolvePageIsolation(page: PageArtifact): 'isolated' | 'apply-shared' | 'shared' {
@@ -1378,6 +1438,7 @@ export class GlassEaselRuntimeAdapter {
         builder = builder.observer(observer.paths, handler)
       }
       builder = this.applyRelations(builder, logicDefinition.relations, methods)
+      builder = this.applyTraitImplementations(builder, logicDefinition.traits)
     }
     const definition = builder
       .lifetime('detached', function (this: glassEasel.GeneralComponent) {
@@ -1684,6 +1745,7 @@ export class GlassEaselRuntimeAdapter {
       this.ensureCustomEventForwarding(component)
     }
     if (component && framework) this.installFrameworkProperties(component, framework)
+    if (component) this.installTraitAPI(component)
     return new Proxy(instanceFields, {
       has() {
         return true
