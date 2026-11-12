@@ -1091,6 +1091,45 @@ describe('P0 built-in components', () => {
     expect(swiperHost.data.nextMargin).toBe('10px')
   })
 
+  test('scroll-view scrolls its own box for scroll-into-view', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { 'scroll-view': builtins['scroll-view'] },
+      template: compilePage(
+        '<scroll-view id="scroll" scroll-y><view id="target">target</view></scroll-view>',
+      ),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const scrollHost = instance.getShadowRoot()?.getElementById('scroll')?.asGeneralComponent()!
+    attach(scrollHost)
+    const calls: Array<{ top: number; left: number; behavior: string }> = []
+    let viewportScrollCalls = 0
+    const target = {
+      getBoundingClientRect: () => ({ top: 280, left: 40 }),
+      scrollIntoView: () => { viewportScrollCalls += 1 },
+    }
+    const backend = {
+      scrollTop: 20,
+      scrollLeft: 5,
+      getBoundingClientRect: () => ({ top: 80, left: 10 }),
+      querySelector: (selector: string) => selector === '#target' ? target : null,
+      scrollTo: (options: { top: number; left: number; behavior: string }) => calls.push(options),
+    }
+    const main = scrollHost.getShadowRoot()?.getElementById('main') as {
+      getBackendElement?: () => unknown
+    }
+    main.getBackendElement = () => backend
+    ;(scrollHost as unknown as { initScroller: (element: unknown) => void }).initScroller(backend)
+
+    scrollHost.setData({ scrollIntoView: 'target' })
+    await flush()
+
+    expect(calls).toEqual([{ top: 220, left: 5, behavior: 'auto' }])
+    expect(viewportScrollCalls).toBe(0)
+  })
+
   test('swiper keeps hidden items in the list and exposes displayMultipleItems', async () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)

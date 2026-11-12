@@ -527,22 +527,40 @@ export class LogicBackendContext {
       node: LogicBackendElement,
     ): Array<{ id: string; path: string }> => {
       const instances: Array<{ id: string; path: string }> = []
-      const walk = (children: LogicBackendElement[]): void => {
+      const seenComponents = new Set<LogicBackendElement>()
+      const walk = (
+        children: LogicBackendElement[],
+        slotContent?: LogicBackendElement[],
+      ): void => {
         for (const child of children) {
           if (child.nodeType === 'component') {
-            const path = componentPathOf(child)
-            if (path) instances.push({ id: nextId(child), path })
-            if (child.shadowRoot) walk(child.shadowRoot.children)
+            if (!seenComponents.has(child)) {
+              seenComponents.add(child)
+              const path = componentPathOf(child)
+              if (path) instances.push({ id: nextId(child), path })
+            }
+            if (child.shadowRoot) walk(child.shadowRoot.children, child.children)
+            else walk(child.children)
+            continue
+          }
+          if (child.nodeType === 'virtual'
+            && (child.virtualName === 'slot' || child.tagName === 'slot')) {
+            const slotName = child.slotName ?? ''
+            const matched = slotContent?.filter(
+              (candidate) => (candidate.slot || '') === slotName,
+            ) ?? []
+            walk(matched.length > 0 ? matched : child.children)
             continue
           }
           if (child.shadowRoot) {
-            walk(child.shadowRoot.children)
+            walk(child.shadowRoot.children, child.children)
             continue
           }
-          walk(child.children)
+          walk(child.children, slotContent)
         }
       }
-      if (node.shadowRoot) walk(node.shadowRoot.children)
+      if (node.shadowRoot) walk(node.shadowRoot.children, node.children)
+      else walk(node.children)
       return instances
     }
     const nodeToViewId = new WeakMap<object, string>()

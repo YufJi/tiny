@@ -7,6 +7,7 @@ import {
   type StyleArtifact,
 } from '@tiny/manifest'
 import type { LogicBackendElement, LogicStyleSheetRole } from './backend'
+import { queryLogicNodes } from './query'
 import type {
   InspectNode,
   MiniProgramComponentSchema,
@@ -1746,6 +1747,21 @@ export class GlassEaselRuntimeAdapter {
     }
     if (component && framework) this.installFrameworkProperties(component, framework)
     if (component) this.installTraitAPI(component)
+    const selectComponents = (selector: string, all: boolean): unknown[] => {
+      if (!component) return []
+      const element = (component as unknown as {
+        getBackendElement?: () => LogicBackendElement | null
+      }).getBackendElement?.()
+      if (!element) return []
+      return queryLogicNodes(element, selector, all, true)
+        .filter((node) => node.nodeType === 'component' && node.__wxElement)
+        .map((node) => {
+          const selected = node.__wxElement as unknown as {
+            getMethodCaller?: () => unknown
+          }
+          return selected.getMethodCaller?.() ?? selected
+        })
+    }
     return new Proxy(instanceFields, {
       has() {
         return true
@@ -1753,6 +1769,22 @@ export class GlassEaselRuntimeAdapter {
       get(target, property) {
         if (typeof property !== 'string') return undefined
         if (Object.prototype.hasOwnProperty.call(target, property)) return target[property]
+        if (property === 'selectComponent') {
+          return (selector: string) => selectComponents(selector, false)[0] ?? null
+        }
+        if (property === 'selectAllComponents') {
+          return (selector: string) => selectComponents(selector, true)
+        }
+        if (property === 'selectOwnerComponent') {
+          return () => {
+            const host = (component as unknown as {
+              ownerShadowRoot?: { getHostNode?: () => unknown } | null
+            } | undefined)?.ownerShadowRoot?.getHostNode?.() as {
+              getMethodCaller?: () => unknown
+            } | undefined
+            return host?.getMethodCaller?.() ?? host ?? null
+          }
+        }
         if (logicMode && component && !property.startsWith('_$')) {
           const value = (component as unknown as Record<string, unknown>)[property]
           if (value !== undefined) {

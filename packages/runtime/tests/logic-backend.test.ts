@@ -226,6 +226,80 @@ describe('logic backend', () => {
       expect(tree.findNodeByViewId(entry.id)).toBeDefined()
     }
   })
+  test('lists component instances passed through a slot as light children', async () => {
+    const PAGE = 'pages/slot-instances/slot-instances'
+    const OUTER = 'components/slot-outer/slot-outer'
+    const INNER = 'components/slot-inner/slot-inner'
+    const group = TmplGroup.newDev({
+      directivePrefix: 'wx',
+      templateExtension: '.wxml',
+      templateScriptExtension: '.wxs',
+    })
+    group.addTmpl(PAGE, '<outer><inner wx:if="{{ showInner }}" /></outer>')
+    group.addTmpl(OUTER, '<view><slot /></view>')
+    group.addTmpl(INNER, '<text>inner</text>')
+    const groupList = new Function(`return ${group.getTmplGenObjectGroups()}`)() as Record<string, unknown>
+    const templates = {
+      groupList,
+      content(path: string, name = '') {
+        const entry = groupList[path]
+        if (!entry) throw new Error(`template not found: ${path}`)
+        return (entry as (name?: string) => unknown)(name)
+      },
+    }
+    const artifact = (path: string, using: Record<string, string>) => ({
+      path,
+      template: { path, outputPath: 'templates.js', sourcePath: `${path}.wxml` },
+      configuration: {
+        path,
+        sourcePath: `${path}.json`,
+        effective: { component: true, usingComponents: using },
+      },
+    })
+    const manifest: Manifest = {
+      schemaVersion: 2,
+      runtimeCompatibility: WECHAT_RUNTIME_COMPATIBILITY,
+      entries: { service: 'service.js', templates: 'templates.js' },
+      pages: [{
+        path: PAGE,
+        template: { path: PAGE, outputPath: 'templates.js', sourcePath: `${PAGE}.wxml` },
+        configuration: {
+          path: PAGE,
+          sourcePath: `${PAGE}.json`,
+          effective: { usingComponents: { outer: `/${OUTER}`, inner: `/${INNER}` } },
+        },
+      }],
+      components: [artifact(OUTER, { inner: `/${INNER}` }), artifact(INNER, {})],
+      styles: [],
+      assets: [],
+    }
+    const tree = new LogicTreeAdapter({ manifest, templates })
+    tree.registerComponentSchemas(buildComponentSchemas(manifest.components, new Map([
+      [OUTER, normalizeComponentDefinition({}, OUTER)],
+      [INNER, normalizeComponentDefinition({}, INNER)],
+    ])))
+    tree.mountPage(PAGE, { showInner: true }, 'page-slot-instances')
+    await tree.glass.whenRendered()
+
+    const readOuterInstances = () => {
+      const page = tree.snapshotRenderTree('page-slot-instances')
+      const children = page && 'children' in page ? page.children ?? [] : []
+      const outer = children.find((node) => node.type === 'element' && node.tag === 'outer')
+      return outer?.type === 'element' ? outer.componentInstances ?? [] : []
+    }
+    let instances = readOuterInstances()
+    expect(instances.map((entry) => entry.path)).toEqual([INNER])
+    expect(tree.findNodeByViewId(instances[0]!.id)).toBeDefined()
+
+    tree.applyPageData('page-slot-instances', { showInner: false })
+    await tree.glass.whenRendered()
+    expect(readOuterInstances()).toEqual([])
+
+    tree.applyPageData('page-slot-instances', { showInner: true })
+    await tree.glass.whenRendered()
+    instances = readOuterInstances()
+    expect(instances.map((entry) => entry.path)).toEqual([INNER])
+  })
   test('exposes the page usingComponents map for the render tree', async () => {
     const manifest = createManifest()
     const tree = new LogicTreeAdapter({ manifest, templates: createTemplates() })

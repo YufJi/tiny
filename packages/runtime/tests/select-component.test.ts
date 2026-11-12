@@ -93,10 +93,13 @@ describe('selectComponent', () => {
     const globalObject = globalThis as unknown as Record<string, unknown>
     ;(globalObject.App as (options: Record<string, unknown>) => unknown)({})
     ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
-      data: { selected: '', inner: '', owner: '', all: 0 },
+      data: { selected: '', inner: '', owner: '', self: '', all: 0 },
       onReady() {
         const panel = this.selectComponent('#panel') as {
           data: { label: string }
+          getMethodCaller?(): {
+            selectComponent(selector: string): { data: { label: string } } | null
+          }
           selectComponent(selector: string): {
             data: { label: string }
             selectOwnerComponent(): { data: { label: string } } | null
@@ -104,11 +107,14 @@ describe('selectComponent', () => {
         } | null
         const inner = panel?.selectComponent('#inner') ?? null
         const owner = inner?.selectOwnerComponent() ?? null
+        const self = panel?.getMethodCaller?.()
+          ?.selectComponent('#inner')
         const deep = this.selectComponent('panel >>> .inner') as { data: { label: string } } | null
         this.setData({
           selected: panel?.data.label ?? 'missing',
           inner: inner?.data.label ?? 'missing',
           owner: owner?.data.label ?? 'missing',
+          self: self?.data.label ?? 'missing',
           all: this.selectAllComponents('.inner').length,
           deep: deep?.data.label ?? 'missing',
         })
@@ -127,6 +133,7 @@ describe('selectComponent', () => {
     expect(page.data.selected).toBe('panel')
     expect(page.data.inner).toBe('child')
     expect(page.data.owner).toBe('panel')
+    expect(page.data.self).toBe('child')
     expect(page.data.all).toBe(0)
     expect((render.adapter.getComponentSnapshot() as Array<{ path: string }>).map((item) => item.path)).toContain(CHILD_PATH)
     expect(result.service.componentSchemas).toHaveLength(2)

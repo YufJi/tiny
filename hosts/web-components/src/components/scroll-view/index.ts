@@ -11,6 +11,7 @@ type ScrollBackend = {
   scrollWidth?: number
   clientHeight?: number
   clientWidth?: number
+  getBoundingClientRect?: () => { top: number; left: number }
   style?: {
     scrollBehavior?: string
     overflowX?: string
@@ -19,7 +20,9 @@ type ScrollBackend = {
     transform?: string
     [key: string]: string | undefined
   }
-  querySelector?: (selector: string) => { scrollIntoView?: (options?: unknown) => void } | null
+  querySelector?: (selector: string) => {
+    getBoundingClientRect?: () => { top: number; left: number }
+  } | null
 }
 
 type ScrollRuntime = {
@@ -175,8 +178,22 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         if (!element) return
         try {
           const target = element.querySelector?.(`#${id}`)
-          if (target?.scrollIntoView) {
-            target.scrollIntoView({ behavior: this.data.scrollWithAnimation ? 'smooth' : 'auto' })
+          const targetRect = target?.getBoundingClientRect?.()
+          const elementRect = element.getBoundingClientRect?.()
+          if (targetRect && elementRect) {
+            const scrollTop = this.data.scrollY
+              ? Math.max(0, Number(element.scrollTop ?? 0) + targetRect.top - elementRect.top)
+              : Number(element.scrollTop ?? 0)
+            const scrollLeft = this.data.scrollX
+              ? Math.max(0, Number(element.scrollLeft ?? 0) + targetRect.left - elementRect.left)
+              : Number(element.scrollLeft ?? 0)
+            ;(this as unknown as {
+              scrollTo: (top: number, left: number, behavior: 'auto' | 'smooth') => void
+            }).scrollTo(
+              scrollTop,
+              scrollLeft,
+              this.data.scrollWithAnimation ? 'smooth' : 'auto',
+            )
             return
           }
         } catch {
