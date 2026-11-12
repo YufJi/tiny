@@ -1,5 +1,4 @@
-import Page from '../../common/page';
-
+const Page = require('../../common/page');
 Page({
   data: {
     checkbox1: true,
@@ -16,17 +15,14 @@ Page({
     activeIcon: 'https://img.yzcdn.cn/vant/user-active.png',
     inactiveIcon: 'https://img.yzcdn.cn/vant/user-inactive.png',
   },
-
   onChange(event) {
     const { key } = event.currentTarget.dataset;
     this.setData({ [key]: event.detail });
   },
-
   toggle(event) {
     const { index } = event.currentTarget.dataset;
     const checkbox = this.selectComponent(`.checkboxes-${index}`);
     checkbox.toggle();
   },
-
   noop() {},
 });
