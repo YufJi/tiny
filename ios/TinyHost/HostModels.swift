@@ -66,6 +66,8 @@ struct TabBarItemState: Decodable, Identifiable, Equatable {
 }
 
 struct TabBarState: Decodable, Equatable {
+  let visible: Bool
+  let custom: Bool
   let position: String
   let color: String
   let selectedColor: String
@@ -86,19 +88,48 @@ struct HostUIState: Decodable, Equatable {
 }
 
 struct HostSystemInfo {
-  let system: [String: Any]
-  let menuButton: [String: Any]
+  let screenWidth: CGFloat
+  let screenHeight: CGFloat
+  let pixelRatio: CGFloat
+  let deviceSystem: String
+  let deviceModel: String
+  let language: String
+  let theme: String
+  let safeAreaRect: CGRect
+  let menuButtonRect: CGRect
+
   let safeAreaTop: CGFloat
   let safeAreaBottom: CGFloat
-  let screenWidth: CGFloat
+
+  var menuButtonTopInset: CGFloat {
+    max(0, menuButtonRect.minY - safeAreaTop)
+  }
+
+  var menuButtonTrailingInset: CGFloat {
+    max(0, screenWidth - menuButtonRect.maxX)
+  }
+
+  var menuButtonWidth: CGFloat { menuButtonRect.width }
+  var menuButtonHeight: CGFloat { menuButtonRect.height }
+
+  var menuButton: [String: Any] {
+    [
+      "width": Double(menuButtonRect.width),
+      "height": Double(menuButtonRect.height),
+      "top": Double(menuButtonRect.minY),
+      "right": Double(menuButtonRect.maxX),
+      "bottom": Double(menuButtonRect.maxY),
+      "left": Double(menuButtonRect.minX),
+    ]
+  }
 
   static func current() -> HostSystemInfo {
     let screen = UIScreen.main
-    let bounds = screen.bounds
     let scene = UIApplication.shared.connectedScenes
       .compactMap { $0 as? UIWindowScene }
       .first
     let window = scene?.windows.first(where: \.isKeyWindow)
+    let bounds = window?.bounds ?? screen.bounds
     let insets = window?.safeAreaInsets ?? .zero
     let statusBarHeight = insets.top > 0
       ? insets.top
@@ -107,54 +138,69 @@ struct HostSystemInfo {
       .replacingOccurrences(of: "-", with: "_") ?? "en"
     let systemVersion = UIDevice.current.systemVersion
 
-    let system: [String: Any] = [
-      "pixelRatio": Double(screen.scale),
-      "windowWidth": Double(bounds.width),
-      "windowHeight": Double(bounds.height),
-      "screenWidth": Double(bounds.width),
-      "screenHeight": Double(bounds.height),
-      "statusBarHeight": Double(statusBarHeight),
-      "safeArea": [
-        "top": Double(insets.top),
-        "left": Double(insets.left),
-        "right": Double(insets.right),
-        "bottom": Double(insets.bottom),
-      ],
-      "platform": "ios",
-      "system": "\(UIDevice.current.systemName) \(systemVersion)",
-      "model": UIDevice.current.model,
-      "brand": "Apple",
-      "language": language,
-      "version": systemVersion,
-      "SDKVersion": "3.0.0",
-      "theme": "light",
-    ]
-
-    let right = Double(bounds.width) - 8
-    let top = Double(statusBarHeight) + 4
-    let menuButton: [String: Any] = [
-      "width": 87.0,
-      "height": 32.0,
-      "top": top,
-      "right": right,
-      "bottom": top + 32,
-      "left": right - 87,
-    ]
+    let safeTop = max(insets.top, statusBarHeight)
+    let safeAreaRect = CGRect(
+      x: insets.left,
+      y: safeTop,
+      width: max(0, bounds.width - insets.left - insets.right),
+      height: max(0, bounds.height - safeTop - insets.bottom)
+    )
+    let menuButtonRect = CGRect(
+      x: bounds.width - 8 - 87,
+      y: statusBarHeight + 4,
+      width: 87,
+      height: 32
+    )
 
     return HostSystemInfo(
-      system: system,
-      menuButton: menuButton,
-      safeAreaTop: insets.top,
-      safeAreaBottom: insets.bottom,
       screenWidth: bounds.width,
+      screenHeight: bounds.height,
+      pixelRatio: screen.scale,
+      deviceSystem: "\(UIDevice.current.systemName) \(systemVersion)",
+      deviceModel: UIDevice.current.model,
+      language: language,
+      theme: "light",
+      safeAreaRect: safeAreaRect,
+      menuButtonRect: menuButtonRect,
+      safeAreaTop: safeTop,
+      safeAreaBottom: insets.bottom,
     )
+  }
+
+  func systemInfo(windowWidth: CGFloat, windowHeight: CGFloat) -> [String: Any] {
+    [
+      "pixelRatio": Double(pixelRatio),
+      "windowWidth": Double(windowWidth),
+      "windowHeight": Double(windowHeight),
+      "screenWidth": Double(screenWidth),
+      "screenHeight": Double(screenHeight),
+      "statusBarHeight": Double(safeAreaTop),
+      "safeArea": [
+        "top": Double(safeAreaRect.minY),
+        "left": Double(safeAreaRect.minX),
+        "right": Double(safeAreaRect.maxX),
+        "bottom": Double(safeAreaRect.maxY),
+        "width": Double(safeAreaRect.width),
+        "height": Double(safeAreaRect.height),
+      ],
+      "platform": "ios",
+      "system": deviceSystem,
+      "model": deviceModel,
+      "brand": "Apple",
+      "language": language,
+      "version": "8.0.0",
+      "SDKVersion": "3.0.0",
+      "theme": theme,
+      "host": "WeChat",
+      "enableDebug": false,
+    ]
   }
 
   func payload(appId: String, smoke: Bool) -> [String: Any] {
     [
       "appId": appId,
       "smoke": smoke,
-      "system": system,
+      "system": systemInfo(windowWidth: screenWidth, windowHeight: screenHeight),
       "menuButton": menuButton,
     ]
   }

@@ -1,8 +1,8 @@
 /* Simulated host chrome: iOS status bar + mini-program navigation bar */
 
-.td-host-chrome {
+.td-host-statusbar,
+.td-host-navbar {
   position: absolute;
-  top: 0;
   right: 0;
   left: 0;
   z-index: 4;
@@ -10,11 +10,21 @@
   user-select: none;
 }
 
+.td-host-statusbar {
+  top: 0;
+  pointer-events: none;
+}
+
+.td-host-navbar {
+  display: flex;
+  align-items: center;
+}
+
 .td-statusbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 44px;
+  height: 100%;
   padding: 0 22px 0 28px;
   font-size: 12px;
   font-weight: 650;
@@ -96,9 +106,6 @@
 
 .td-navbar {
   position: relative;
-  display: flex;
-  align-items: center;
-  height: 44px;
   padding: 0 10px 0 8px;
   border-bottom: 1px solid rgba(127, 127, 127, 0.13);
 }
@@ -155,7 +162,7 @@
 
 .td-nav-loading {
   position: absolute;
-  right: 46px;
+  right: 108px;
   width: 14px;
   height: 14px;
   border: 2px solid currentColor;

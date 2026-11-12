@@ -11,6 +11,7 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
   let pageId: String
   let appId: String
   let generatedRoot: URL
+  let templatesSource: String?
   private(set) var webView: WKWebView!
 
   var onReady: (() -> Void)?
@@ -19,10 +20,16 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
   private var ready = false
   private var pendingFrames: [String] = []
 
-  init(pageId: String, appId: String, generatedRoot: URL) {
+  init(
+    pageId: String,
+    appId: String,
+    generatedRoot: URL,
+    templatesSource: String? = nil
+  ) {
     self.pageId = pageId
     self.appId = appId
     self.generatedRoot = generatedRoot
+    self.templatesSource = templatesSource
     super.init()
     let configuration = WKWebViewConfiguration()
     configuration.websiteDataStore = .nonPersistent()
@@ -47,7 +54,25 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
       injectionTime: .atDocumentStart,
       forMainFrameOnly: true
     ))
+    if let templatesSource,
+       let literal = Self.javascriptStringLiteral(templatesSource) {
+      configuration.userContentController.addUserScript(WKUserScript(
+        source: """
+        (() => {
+          Object.defineProperty(window, '__TINY_NATIVE_TEMPLATES_SOURCE__', {
+            value: \(literal),
+            configurable: true,
+          })
+        })()
+        """,
+        injectionTime: .atDocumentStart,
+        forMainFrameOnly: true
+      ))
+    }
     let webView = WKWebView(frame: .zero, configuration: configuration)
+    // Host chrome may follow a dark navigation style, but the mini-program
+    // WebView itself is currently a light-theme page.
+    webView.overrideUserInterfaceStyle = .light
     webView.backgroundColor = .white
     webView.isOpaque = false
     webView.scrollView.backgroundColor = .white
@@ -156,5 +181,17 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
     for frame in frames {
       receive(frame: frame)
     }
+  }
+
+  private static func javascriptStringLiteral(_ value: String) -> String? {
+    guard
+      let data = try? JSONSerialization.data(
+        withJSONObject: value,
+        options: [.fragmentsAllowed]
+      )
+    else {
+      return nil
+    }
+    return String(data: data, encoding: .utf8)
   }
 }

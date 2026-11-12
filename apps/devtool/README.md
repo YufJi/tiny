@@ -50,17 +50,20 @@ pnpm compile:devtool:all
 
 - 左侧：iPhone X 逻辑尺寸 `375 × 812` 的预览窗口；窗口空间不足时等比缩放并显示缩放比例
 - 无前台应用时显示 **Mini programs** 列表：每个 fixture 的状态、当前页面、保活/关闭操作
-- 预览内：宿主状态栏 + 导航栏。导航栏读取**当前页面**的标题/背景/文字色，左侧返回按钮
-  调用 `navigate.back`；capsule 左侧三点打开 Host controls，右侧圆圈把当前应用送入后台
-  并回到列表页
+- 预览内：宿主状态栏、默认导航栏和固定胶囊都从同一份 iPhone X 设备模型派生。导航栏
+  读取**当前页面**的标题/背景/文字色，左侧返回按钮调用 `navigate.back`；capsule
+  左侧三点打开 Host controls，右侧圆圈把当前应用送入后台并回到列表页
 - tab 页底部/顶部显示内置 tabBar（图标、文字、选中色、badge、红点）；点击调用 `switchTab`
 - 右上：当前应用、运行状态、页面栈深度（`n / maxPageStack`）、Runtime / Navigation 控制
 - 右下：Console / Lifecycle / Elements 调试栏，分别展示结构化诊断、页面生命周期时间线和可展开的组件树（只保留页面 / 用户组件 / 内置组件这些 glass 组件层级，宿主 DOM 包装节点会被折叠）
 
 预览内容区按当前页面是否使用 `navigationStyle: "custom"`、当前 tab 页是否显示 tabBar
-动态扣除 `88px` 导航栏 / `50px` tabBar，并通过 `runtime.resize` 同步给
-`wx.getSystemInfoSync()` 和 `onResize`。自定义导航页由页面自绘导航栏，宿主不再重复渲染；
-同时保留一个 debugger-only 的浮动圆圈，用于把应用送入后台并返回列表。
+动态扣除 `88px` 默认导航栏 / `50px` tabBar，并通过 `runtime.resize` 同步给
+`wx.getSystemInfoSync()`、`wx.getWindowInfo()` 和 `onResize`。自定义导航页由页面自绘
+导航栏，内容从 `y=0` 开始；状态栏透明覆盖页面背景，原生胶囊固定绘制在
+`getMenuButtonBoundingClientRect()` 返回的 `87 × 32` 区域。页面 WXSS 中的
+`env(safe-area-inset-*)` / `constant(safe-area-inset-*)` 会按模拟设备解析，不依赖
+桌面浏览器自身为 0 的安全区。
 
 ## 多应用保活
 

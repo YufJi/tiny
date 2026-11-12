@@ -84,7 +84,7 @@ React 不直接发送协议消息。它订阅 `DevtoolRuntimeClient` 投影出�
 :::
 
 :::card{tag="PreviewStage" title="设备壳"}
-iPhone X 的 375×812 设备框、自动缩放、状态栏和导航栏；页面设置 `navigationStyle: custom` 时不渲染宿主导航栏。tabBar 由宿主绘制。
+iPhone X 的 375×812 设备框、自动缩放、状态栏、默认导航栏和固定胶囊。页面设置 `navigationStyle: custom` 时不渲染宿主导航栏，但状态栏与胶囊仍覆盖在自绘导航页上。tabBar 由宿主绘制。
 :::
 ::::
 

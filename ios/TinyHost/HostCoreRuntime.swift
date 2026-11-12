@@ -11,6 +11,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   let app: AppInfo
   let generatedRoot: URL
   let container: UIView
+  let hostInfo: HostSystemInfo
 
   private let service = ServiceEngine()
   private let smoke: Bool
@@ -34,6 +35,8 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private var meta: [String: Any] = [:]
   private var manifest: [String: Any] = [:]
   private var systemInfo: [String: Any] = [:]
+  private var renderTemplatesSource: String?
+  private var viewportSize: CGSize
   private var nativePicker: NativePickerController?
   private var pickerSessionId: String?
   private var pickerColumns: [[String: Any]] = []
@@ -42,14 +45,26 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   var onUIState: ((HostUIState) -> Void)?
   var onError: ((String) -> Void)?
 
-  init(app: AppInfo, generatedRoot: URL, container: UIView, smoke: Bool = false) {
+  init(
+    app: AppInfo,
+    generatedRoot: URL,
+    container: UIView,
+    smoke: Bool = false,
+    hostInfo: HostSystemInfo = .current(),
+    viewportSize: CGSize = .zero
+  ) {
     self.app = app
     self.generatedRoot = generatedRoot
     self.container = container
     self.smoke = smoke
+    self.hostInfo = hostInfo
+    self.viewportSize = viewportSize
     self.storagePrefix = "tiny.storage.\(app.id)."
     self.storage = Self.loadStorage(prefix: "tiny.storage.\(app.id).")
     super.init()
+    let width = viewportSize.width > 0 ? viewportSize.width : hostInfo.screenWidth
+    let height = viewportSize.height > 0 ? viewportSize.height : hostInfo.screenHeight
+    self.systemInfo = hostInfo.systemInfo(windowWidth: width, windowHeight: height)
     container.clipsToBounds = true
     let gesture = UIScreenEdgePanGestureRecognizer(
       target: self,
@@ -93,7 +108,15 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     }
     self.meta = meta
     self.manifest = manifest
-    self.systemInfo = HostSystemInfo.current().system
+    let templatesFile = generatedRoot.appendingPathComponent(
+      "apps/\(app.id)/assets/templates.js"
+    )
+    renderTemplatesSource = try? String(contentsOf: templatesFile, encoding: .utf8)
+    if let renderTemplatesSource {
+      HostDebug.log("native render templates loaded \(renderTemplatesSource.utf8.count) bytes")
+    } else {
+      HostDebug.log("native render templates missing \(templatesFile.path)")
+    }
 
     service.onFrame = { [weak self] frame in
       guard let self, let core = self.core else { return }
@@ -136,6 +159,22 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     self.core = core
     try core.start()
     startNetworkMonitor()
+  }
+
+  func updateWindowSize(width: CGFloat, height: CGFloat) {
+    guard width > 0, height > 0 else { return }
+    if viewportSize.width == width, viewportSize.height == height { return }
+    viewportSize = CGSize(width: width, height: height)
+    systemInfo = hostInfo.systemInfo(windowWidth: width, windowHeight: height)
+    try? core?.command([
+      "type": "resize",
+      "width": Int(width.rounded()),
+      "height": Int(height.rounded()),
+    ])
+  }
+
+  var systemSnapshot: [String: Any] {
+    systemInfo
   }
 
   func back(delta: Int = 1) {
@@ -216,7 +255,8 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     let surface = NativeRenderSurface(
       pageId: pageId,
       appId: app.id,
-      generatedRoot: generatedRoot
+      generatedRoot: generatedRoot,
+      templatesSource: renderTemplatesSource
     )
     surface.webView.frame = container.bounds
     surface.webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -590,8 +630,11 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     var tabBar: TabBarState?
     if let raw = details["tabBar"],
        JSONSerialization.isValidJSONObject(raw),
-       let data = try? JSONSerialization.data(withJSONObject: raw) {
-      tabBar = try? JSONDecoder().decode(TabBarState.self, from: data)
+       let data = try? JSONSerialization.data(withJSONObject: raw),
+       let decoded = try? JSONDecoder().decode(TabBarState.self, from: data),
+       decoded.visible,
+       !decoded.custom {
+      tabBar = decoded
     }
     return HostUIState(
       appId: app.id,
@@ -697,6 +740,8 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     switch method {
     case "system.info":
       result = systemInfo
+    case "system.menuButton":
+      result = hostInfo.menuButton
     case "storage.get":
       let key = params["key"] as? String ?? ""
       result = ["value": storage[key] ?? NSNull()]

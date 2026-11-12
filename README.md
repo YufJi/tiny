@@ -10,6 +10,27 @@
 
 **在线体验**：[Tiny 调试器在线版](https://yufji.github.io/tiny/devtool/index.html)，无需本地构建，可直接选择 `tests/apps` 下的示例应用运行。
 
+## 一份代码，多端渲染
+
+同一个 `tests/apps/wechat-demo` 编译产物，既可以在 Web Devtool 中运行，也可以由 iOS
+原生宿主加载。service 逻辑与 render 模板不变，差异只在宿主注入的线程、iframe/WKWebView、
+Canvas 和系统 API。
+
+<table>
+  <tr>
+    <th align="center">Web Devtool</th>
+    <th align="center">iPhone 14 Pro Max</th>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/readme/web-devtool-wechat-demo.png" width="320" alt="Web Devtool running the WeChat demo" />
+    </td>
+    <td align="center">
+      <img src="assets/readme/ios-wechat-demo.png" width="320" alt="iPhone 14 Pro Max running the same WeChat demo" />
+    </td>
+  </tr>
+</table>
+
 ## 架构
 
 内核绝对纯粹：`packages/runtime` 不依赖任何宿主，浏览器、iOS 和测试宿主共享同一份内核，环境能力全部从边界注入。

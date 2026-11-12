@@ -128,15 +128,65 @@ function performanceExtension(): Record<string, unknown> {
  * context: the menu-button geometry comes from the native chrome, performance
  * from the engine's own clock.
  */
-function createIOSApiExtensions(iosHost: HostGlobal): ApiHost {
+function createIOSApiExtensions(
+  iosHost: HostGlobal,
+  readSystemInfo: () => HostGlobal,
+): ApiHost {
+  const currentWindowInfo = () => {
+    const info = readSystemInfo()
+    return info && typeof info === 'object' ? info : {}
+  }
+
   return {
-    getMenuButtonBoundingClientRect: () => iosHost.menuButton ?? {
-      width: 87,
-      height: 32,
-      top: 48,
-      right: 365,
-      bottom: 80,
-      left: 278,
+    getDeviceInfo: () => {
+      const info = currentWindowInfo()
+      return {
+        brand: info.brand,
+        model: info.model,
+        system: info.system,
+        platform: info.platform,
+        pixelRatio: info.pixelRatio,
+      }
+    },
+    getWindowInfo: () => {
+      const info = currentWindowInfo()
+      return {
+        pixelRatio: info.pixelRatio,
+        screenWidth: info.screenWidth,
+        screenHeight: info.screenHeight,
+        windowWidth: info.windowWidth,
+        windowHeight: info.windowHeight,
+        statusBarHeight: info.statusBarHeight,
+        safeArea: info.safeArea,
+        screenTop: 0,
+      }
+    },
+    getAppBaseInfo: () => {
+      const info = currentWindowInfo()
+      return {
+        SDKVersion: info.SDKVersion,
+        language: info.language,
+        version: info.version,
+        theme: info.theme,
+        host: info.host,
+        enableDebug: info.enableDebug,
+      }
+    },
+    getMenuButtonBoundingClientRect: () => {
+      if (iosHost.menuButton) return iosHost.menuButton
+      const info = currentWindowInfo()
+      const width = Number(info.windowWidth ?? info.screenWidth ?? 375)
+      const statusBarHeight = Number(info.statusBarHeight ?? 20)
+      const top = statusBarHeight + 4
+      const right = width - 8
+      return {
+        width: 87,
+        height: 32,
+        top,
+        right,
+        bottom: top + 32,
+        left: right - 87,
+      }
     },
     getPerformance: performanceExtension,
   }
@@ -229,6 +279,18 @@ export function startTinyService(app: TinyIOSApp): void {
       )
     })
   }
+  const readSystemInfo = (): HostGlobal => {
+    if (typeof nativeSyncCall === 'function') {
+      try {
+        const raw = nativeSyncCall('system.info', '{}')
+        const parsed = raw ? JSON.parse(raw) : null
+        if (parsed && typeof parsed === 'object') return parsed as HostGlobal
+      } catch (error) {
+        reportError(`system.info: ${errorText(error)}`)
+      }
+    }
+    return (iosHost.system ?? {}) as HostGlobal
+  }
 
   const compatibility = app.manifest.runtimeCompatibility
   let runtime: ServiceThreadRuntime | undefined
@@ -261,7 +323,7 @@ export function startTinyService(app: TinyIOSApp): void {
       runtime?.setNextPageEventChannel(channel) ?? (() => {})
     ),
   }
-  const apiHost = createApiHost(apiContext, createIOSApiExtensions(iosHost))
+  const apiHost = createApiHost(apiContext, createIOSApiExtensions(iosHost, readSystemInfo))
   host.__tinyServiceStarted?.(initialPath)
 
   try {
