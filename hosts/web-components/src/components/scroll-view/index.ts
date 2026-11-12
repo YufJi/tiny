@@ -38,8 +38,8 @@ type ScrollBackend = {
 }
 
 type ScrollRuntime = {
-  __scrollStartTimer?: ReturnType<typeof setTimeout>
   __scrollEndTimer?: ReturnType<typeof setTimeout>
+  __scrollActive?: boolean
   __lastScrollEventTime?: number
   __lastScrollTop?: number
   __lastScrollLeft?: number
@@ -108,6 +108,7 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         ;(this as unknown as { initScroller: (element: unknown) => void }).initScroller(this.backend())
         const element = this.backend()
         instance.__lastScrollEventTime = undefined
+        instance.__scrollActive = false
         instance.__lastScrollTop = numericValue(this.data.scrollTop, numericValue(element?.scrollTop, 0))
         instance.__lastScrollLeft = numericValue(this.data.scrollLeft, numericValue(element?.scrollLeft, 0))
         instance.__lastScrollToUpperTime = 0
@@ -122,8 +123,8 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
       },
       detached() {
         const instance = this as unknown as ScrollRuntime
-        if (instance.__scrollStartTimer) clearTimeout(instance.__scrollStartTimer)
         if (instance.__scrollEndTimer) clearTimeout(instance.__scrollEndTimer)
+        instance.__scrollActive = false
       },
     },
     observers: {
@@ -381,16 +382,14 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         const previousLeft = Number(instance.__lastScrollLeft ?? scrollLeft)
         const deltaY = previousTop - scrollTop
         const deltaX = previousLeft - scrollLeft
-        if (!instance.__scrollStartTimer) {
-          instance.__scrollStartTimer = setTimeout(() => {
-            instance.__scrollStartTimer = undefined
-          }, 100)
+        if (!instance.__scrollActive) {
+          instance.__scrollActive = true
           this.triggerEvent('scrollstart', { scrollTop, scrollLeft }, { bubbles: true, composed: true })
         }
         if (instance.__scrollEndTimer) clearTimeout(instance.__scrollEndTimer)
         instance.__scrollEndTimer = setTimeout(() => {
           instance.__scrollEndTimer = undefined
-          instance.__scrollStartTimer = undefined
+          instance.__scrollActive = false
           this.triggerEvent('scrollend', { scrollTop, scrollLeft }, { bubbles: true, composed: true })
         }, 120)
         ;(this as unknown as ScrollRuntime).__scrollingUntil = Date.now() + 100

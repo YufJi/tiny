@@ -1282,6 +1282,54 @@ describe('P0 built-in components', () => {
     expect(backend.style.overscrollBehaviorY).toBe('none')
   })
 
+  test('scroll-view emits one scrollstart and scrollend per scroll sequence', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const events: Record<string, unknown> = {}
+    const page = space.defineComponent({
+      is: 'page',
+      using: { 'scroll-view': builtins['scroll-view'] },
+      template: compilePage(`
+        <scroll-view
+          id="scroll"
+          scroll-y
+          bindscrollstart="onStart"
+          bindscrollend="onEnd"
+        ><view>content</view></scroll-view>
+      `),
+      methods: {
+        onStart(event: glassEasel.ShadowedEvent<unknown>) { events.start = event.detail },
+        onEnd(event: glassEasel.ShadowedEvent<unknown>) { events.end = event.detail },
+      },
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const scrollHost = instance.getShadowRoot()?.getElementById('scroll')?.asGeneralComponent()!
+    const nativeScroll = scrollHost.getShadowRoot()?.getElementById('main')!
+    attach(scrollHost)
+
+    let now = 1_000
+    const nowSpy = vi.spyOn(Date, 'now').mockImplementation(() => now)
+    try {
+      for (const scrollTop of [10, 20, 30]) {
+        nativeScroll.triggerEvent('scroll', {
+          scrollTop,
+          scrollLeft: 0,
+          scrollHeight: 100,
+          scrollWidth: 100,
+          clientHeight: 50,
+          clientWidth: 100,
+        })
+        now += 30
+      }
+      expect(events.start).toEqual({ scrollTop: 10, scrollLeft: 0 })
+      expect(events.end).toBeUndefined()
+      await new Promise((resolve) => setTimeout(resolve, 140))
+      expect(events.end).toEqual({ scrollTop: 30, scrollLeft: 0 })
+    } finally {
+      nowSpy.mockRestore()
+    }
+  })
+
   test('scroll-view scrolls its own box for scroll-into-view', async () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)
