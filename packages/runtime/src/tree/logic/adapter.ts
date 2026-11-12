@@ -179,6 +179,7 @@ export class LogicTreeAdapter {
       logicComponentDefinitions: options.componentDefinitions,
       ...(options.frameworkContext ? { frameworkContext: options.frameworkContext } : {}),
       logicQueryFactory: (component) => this.createSelectorQueryFor(component),
+      componentHandleFactory: (component) => this.componentHandle(component),
       onLogicDataChange: options.onDataChange,
       ...(options.afterRender ? { afterRender: options.afterRender } : {}),
       logicTouchState: () => this.getActiveTouches(),
@@ -389,22 +390,10 @@ export class LogicTreeAdapter {
     if (!root) return []
     const tabBarRoot = pageTree.getTabBarRoot()
     if (selector.trim() === 'custom-tab-bar' && tabBarRoot?.__wxElement) {
-      return [this.componentHandle(tabBarRoot.__wxElement, pageId)]
+      return [this.componentHandle(tabBarRoot.__wxElement)]
     }
-    const deep = selector.split('>>>')
-    if (deep.length === 2) {
-      const ownerSelector = deep[0]!.trim()
-      const innerSelector = deep[1]!.trim()
-      const owner = queryLogicNodes(root, ownerSelector, false, true)
-        .find((node) => node.nodeType === 'component')
-      if (!owner) return []
-      const nodes = queryLogicNodes(owner, innerSelector, all)
-        .filter((node) => node.nodeType === 'component' && node.__wxElement)
-      return nodes.map((node) => this.componentHandle(node.__wxElement, pageId))
-    }
-    const nodes = queryLogicNodes(root, selector, all, true)
-      .filter((node) => node.nodeType === 'component' && node.__wxElement)
-    return nodes.map((node) => this.componentHandle(node.__wxElement, pageId))
+    return this.glass.selectComponents(root, selector, all)
+      .map((component) => this.componentHandle(component))
   }
 
   private reportMissingComponents(path: string): void {
@@ -432,7 +421,7 @@ export class LogicTreeAdapter {
     }
   }
 
-  private componentHandle(component: unknown, pageId: string): unknown {
+  private componentHandle(component: unknown): unknown {
     const target = component as Record<string, unknown>
     // WeChat returns the `export()` result for a component that declared
     // `wx://component-export`; `undefined` falls back to the instance proxy.
@@ -441,9 +430,8 @@ export class LogicTreeAdapter {
     const element = (target as { getBackendElement?: () => unknown }).getBackendElement?.()
     const select = (selector: string, all: boolean): unknown[] => {
       if (!element) return []
-      const nodes = queryLogicNodes(element as LogicBackendElement, selector, all, true)
-        .filter((node) => node.nodeType === 'component' && node.__wxElement)
-      return nodes.map((node) => this.componentHandle(node.__wxElement, pageId))
+      return this.glass.selectComponents(element as LogicBackendElement, selector, all)
+        .map((selected) => this.componentHandle(selected))
     }
     return new Proxy(target, {
       get: (source, property) => {
@@ -455,13 +443,10 @@ export class LogicTreeAdapter {
         }
         if (property === 'selectOwnerComponent') {
           return () => {
-            const componentId = this.glass.componentIdOf(component)
-            const snapshot = this.glass.getComponentSnapshot()
-              .find((item) => item.componentId === componentId)
-            const parent = snapshot?.parentComponentId
-              ? this.glass.getMountedComponentByComponentId(snapshot.parentComponentId)
-              : undefined
-            return parent ? this.componentHandle(parent, pageId) : null
+            const parent = this.glass.ownerComponentFor(
+              component as glassEasel.GeneralComponent,
+            )
+            return parent ? this.componentHandle(parent) : null
           }
         }
         const value = Reflect.get(source, property)

@@ -103,6 +103,8 @@ export type GlassEaselAdapterOptions = {
   logicComponentDefinitions?: ReadonlyMap<string, NormalizedComponentDefinition>
   /** Logic-layer selector query factory used by `this.createSelectorQuery()`. */
   logicQueryFactory?: (component: glassEasel.GeneralComponent) => unknown
+  /** Wrap a selected component with the service page/component handle. */
+  componentHandleFactory?: (component: glassEasel.GeneralComponent) => unknown
   /** Called after logic-tree page/component data changes. */
   onLogicDataChange?: (pageId: string) => void
   /** Touch payload currently being dispatched by the logic tree. */
@@ -251,6 +253,7 @@ export class GlassEaselRuntimeAdapter {
   private readonly logicPageOptions?: GlassEaselAdapterOptions['logicPageOptions']
   private readonly logicComponentDefinitions?: GlassEaselAdapterOptions['logicComponentDefinitions']
   private readonly logicQueryFactory?: GlassEaselAdapterOptions['logicQueryFactory']
+  private readonly componentHandleFactory?: GlassEaselAdapterOptions['componentHandleFactory']
   private readonly onLogicDataChange?: GlassEaselAdapterOptions['onLogicDataChange']
   private readonly logicTouchState?: GlassEaselAdapterOptions['logicTouchState']
   private readonly pageIdsByComponent = new WeakMap<object, string>()
@@ -284,6 +287,7 @@ export class GlassEaselRuntimeAdapter {
     this.logicPageOptions = options.logicPageOptions
     this.logicComponentDefinitions = options.logicComponentDefinitions
     this.logicQueryFactory = options.logicQueryFactory
+    this.componentHandleFactory = options.componentHandleFactory
     this.onLogicDataChange = options.onLogicDataChange
     this.logicTouchState = options.logicTouchState
     this.logicIntersectionFactory = options.logicIntersectionFactory
@@ -974,6 +978,43 @@ export class GlassEaselRuntimeAdapter {
 
   getMountedComponentByPageId(pageId: string): glassEasel.GeneralComponent | undefined {
     return this.pageTrees.get(pageId)?.component
+  }
+
+  /**
+   * Resolve `selectComponent` / `selectAllComponents` against one page or
+   * component scope. Both Page and Component call sites use this primitive so
+   * selector depth and component boundaries stay identical.
+   */
+  selectComponents(
+    root: LogicBackendElement,
+    selector: string,
+    all: boolean,
+  ): glassEasel.GeneralComponent[] {
+    const componentsOf = (nodes: LogicBackendElement[]): glassEasel.GeneralComponent[] => (
+      nodes.flatMap((node) => (
+        node.nodeType === 'component' && node.__wxElement
+          ? [node.__wxElement as glassEasel.GeneralComponent]
+          : []
+      ))
+    )
+    const deep = selector.split('>>>')
+    if (deep.length === 2) {
+      const ownerSelector = deep[0]!.trim()
+      const innerSelector = deep[1]!.trim()
+      const owner = queryLogicNodes(root, ownerSelector, false, true)
+        .find((node) => node.nodeType === 'component' && node.__wxElement)
+      if (!owner) return []
+      return componentsOf(queryLogicNodes(owner, innerSelector, all))
+    }
+    return componentsOf(queryLogicNodes(root, selector, all, true))
+  }
+
+  /** The owning custom component, or null when the parent is a page root. */
+  ownerComponentFor(
+    component: glassEasel.GeneralComponent,
+  ): glassEasel.GeneralComponent | undefined {
+    const ownerId = this.findParentComponentId(component)
+    return ownerId ? this.getMountedComponentByComponentId(ownerId) : undefined
   }
 
   /** Deliver a page lifetime to every logic component mounted on the page. */
@@ -1747,20 +1788,15 @@ export class GlassEaselRuntimeAdapter {
     }
     if (component && framework) this.installFrameworkProperties(component, framework)
     if (component) this.installTraitAPI(component)
+    const adapter = this
     const selectComponents = (selector: string, all: boolean): unknown[] => {
       if (!component) return []
       const element = (component as unknown as {
         getBackendElement?: () => LogicBackendElement | null
       }).getBackendElement?.()
       if (!element) return []
-      return queryLogicNodes(element, selector, all, true)
-        .filter((node) => node.nodeType === 'component' && node.__wxElement)
-        .map((node) => {
-          const selected = node.__wxElement as unknown as {
-            getMethodCaller?: () => unknown
-          }
-          return selected.getMethodCaller?.() ?? selected
-        })
+      return this.selectComponents(element, selector, all)
+        .map((selected) => this.componentHandleOf(selected))
     }
     return new Proxy(instanceFields, {
       has() {
@@ -1777,12 +1813,8 @@ export class GlassEaselRuntimeAdapter {
         }
         if (property === 'selectOwnerComponent') {
           return () => {
-            const host = (component as unknown as {
-              ownerShadowRoot?: { getHostNode?: () => unknown } | null
-            } | undefined)?.ownerShadowRoot?.getHostNode?.() as {
-              getMethodCaller?: () => unknown
-            } | undefined
-            return host?.getMethodCaller?.() ?? host ?? null
+            const owner = component ? adapter.ownerComponentFor(component) : undefined
+            return owner ? adapter.componentHandleOf(owner) : null
           }
         }
         if (logicMode && component && !property.startsWith('_$')) {
@@ -1798,6 +1830,12 @@ export class GlassEaselRuntimeAdapter {
         return true
       },
     })
+  }
+
+  private componentHandleOf(component: glassEasel.GeneralComponent): unknown {
+    return this.componentHandleFactory?.(component)
+      ?? (component as unknown as { getMethodCaller?: () => unknown }).getMethodCaller?.()
+      ?? component
   }
 
   /**

@@ -93,12 +93,26 @@ describe('selectComponent', () => {
     const globalObject = globalThis as unknown as Record<string, unknown>
     ;(globalObject.App as (options: Record<string, unknown>) => unknown)({})
     ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
-      data: { selected: '', inner: '', owner: '', self: '', all: 0 },
+      data: {
+        selected: '',
+        inner: '',
+        owner: '',
+        self: '',
+        selfOwner: '',
+        selfMethod: '',
+        all: 0,
+        componentAll: 0,
+      },
       onReady() {
         const panel = this.selectComponent('#panel') as {
           data: { label: string }
           getMethodCaller?(): {
-            selectComponent(selector: string): { data: { label: string } } | null
+            selectComponent(selector: string): {
+              data: { label: string }
+              readLabel?(): string
+              selectOwnerComponent(): { data: { label: string } } | null
+            } | null
+            selectAllComponents(selector: string): Array<{ data: { label: string } }>
           }
           selectComponent(selector: string): {
             data: { label: string }
@@ -109,22 +123,38 @@ describe('selectComponent', () => {
         const owner = inner?.selectOwnerComponent() ?? null
         const self = panel?.getMethodCaller?.()
           ?.selectComponent('#inner')
+        const selfOwner = self?.selectOwnerComponent() ?? null
+        const selfMethod = self?.readLabel?.() ?? 'missing'
+        const componentAll = panel?.getMethodCaller?.()?.selectAllComponents('.inner').length ?? -1
         const deep = this.selectComponent('panel >>> .inner') as { data: { label: string } } | null
         this.setData({
           selected: panel?.data.label ?? 'missing',
           inner: inner?.data.label ?? 'missing',
           owner: owner?.data.label ?? 'missing',
           self: self?.data.label ?? 'missing',
+          selfOwner: selfOwner?.data.label ?? 'missing',
+          selfMethod,
           all: this.selectAllComponents('.inner').length,
+          componentAll,
           deep: deep?.data.label ?? 'missing',
         })
       },
     })
     ;(globalObject.Component as (options: Record<string, unknown>) => unknown)({
       data: { label: 'panel' },
+      methods: {
+        readLabel() {
+          return this.data.label
+        },
+      },
     })
     ;(globalObject.Component as (options: Record<string, unknown>) => unknown)({
       data: { label: 'child' },
+      methods: {
+        readLabel() {
+          return this.data.label
+        },
+      },
     })
 
     const result = await host.bootstrap()
@@ -134,7 +164,11 @@ describe('selectComponent', () => {
     expect(page.data.inner).toBe('child')
     expect(page.data.owner).toBe('panel')
     expect(page.data.self).toBe('child')
+    expect(page.data.selfOwner).toBe('panel')
+    expect(page.data.selfMethod).toBe('child')
     expect(page.data.all).toBe(0)
+    expect(page.data.componentAll).toBe(1)
+    expect(page.data.deep).toBe('child')
     expect((render.adapter.getComponentSnapshot() as Array<{ path: string }>).map((item) => item.path)).toContain(CHILD_PATH)
     expect(result.service.componentSchemas).toHaveLength(2)
     await host.close()
@@ -183,6 +217,68 @@ describe('selectComponent', () => {
     await host.bootstrap()
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(service.activePage?.data.exported).toBe('exported-panel')
+    await host.close()
+  })
+
+  test('component-scoped selectors return the same export() handles', async () => {
+    const manifest = createManifest()
+    const [hostServiceTransport, serviceTransport] = createInMemoryTransportPair()
+    const service = bootServiceThread({
+      transport: serviceTransport,
+      manifest,
+      initialPath: PAGE_PATH,
+    })
+    const renderConnector = createHarnessRenderConnector({
+      manifest,
+      artifacts: { templates: createTemplateRegistry() },
+      initialPath: PAGE_PATH,
+    })
+    const host = createTestHost({
+      serviceTransport: hostServiceTransport,
+      renderConnector,
+      manifest,
+      initialPath: PAGE_PATH,
+    })
+
+    const globalObject = globalThis as unknown as Record<string, unknown>
+    ;(globalObject.App as (options: Record<string, unknown>) => unknown)({})
+    ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
+      data: { selected: 'missing', allTag: 'missing', all: 0 },
+      onReady() {
+        const panel = this.selectComponent('#panel') as {
+          getMethodCaller?(): {
+            selectComponent(selector: string): { tag?: string } | null
+            selectAllComponents(selector: string): Array<{ tag?: string }>
+          }
+        } | null
+        const caller = panel?.getMethodCaller?.()
+        const selected = caller?.selectComponent('#inner') ?? null
+        const all = caller?.selectAllComponents('.inner') ?? []
+        this.setData({
+          selected: selected?.tag ?? 'missing',
+          allTag: all[0]?.tag ?? 'missing',
+          all: all.length,
+        })
+      },
+    })
+    ;(globalObject.Component as (options: Record<string, unknown>) => unknown)({
+      data: { label: 'panel' },
+    })
+    ;(globalObject.Component as (options: Record<string, unknown>) => unknown)({
+      data: { label: 'child' },
+      behaviors: ['wx://component-export'],
+      export() {
+        return { tag: 'exported-child' }
+      },
+    })
+
+    await host.bootstrap()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(service.activePage?.data).toMatchObject({
+      selected: 'exported-child',
+      allTag: 'exported-child',
+      all: 1,
+    })
     await host.close()
   })
 })
