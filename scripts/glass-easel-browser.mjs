@@ -1567,7 +1567,22 @@ export async function runWechatDemoAcceptance({ baseUrl, app = 'wechat-demo', br
         null,
         { timeout: STEP_TIMEOUT },
       )
-      await byText(render, 'add line', { exact: true }).click()
+      const addButton = byText(render, 'add line', { exact: true })
+      const buttonLayout = await addButton.first().evaluate((element) => {
+        const rect = element.getBoundingClientRect()
+        const parentRect = element.parentElement.getBoundingClientRect()
+        return {
+          width: rect.width,
+          centerDelta: Math.abs(
+            rect.left + rect.width / 2 - (parentRect.left + parentRect.width / 2),
+          ),
+          marginTop: getComputedStyle(element).marginTop,
+        }
+      })
+      assert.equal(buttonLayout.width, 184, 'text example button width mismatch')
+      assert.ok(buttonLayout.centerDelta < 1, 'text example button is not horizontally centered')
+      assert.equal(buttonLayout.marginTop, '20px', 'text example button vertical margin mismatch')
+      await addButton.click()
       await render.waitForFunction(
         () => (document.querySelector('#app')?.innerText ?? '').includes('2011年1月，微信1.0发布'),
         null,

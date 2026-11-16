@@ -20,6 +20,8 @@ describe('button 3.17.5 WebView styles', () => {
     expect(base).toContain('border-radius: 4px;')
     expect(base).toContain('border: 0.5px solid rgba(0, 0, 0, 0.2);')
     expect(rule('tiny-button:not([size=mini])')).toContain('width: 184px;')
+    expect(rule('tiny-button:not([size=mini])')).toContain('margin-left: auto;')
+    expect(rule('tiny-button:not([size=mini])')).toContain('margin-right: auto;')
     expect(BUILTIN_HOST_STYLES).not.toContain('line-height: 2.55555556;')
     expect(BUILTIN_HOST_STYLES).not.toContain('tiny-button::after')
   })

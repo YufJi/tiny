@@ -24,6 +24,8 @@ tiny-button {
 
 tiny-button:not([size=mini]) {
   width: 184px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 tiny-button[hidden] {
