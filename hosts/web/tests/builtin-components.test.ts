@@ -1247,36 +1247,6 @@ describe('P0 built-in components', () => {
     expect(dotStyles.dot1.transform).toBe('translateX(-1px)')
   })
 
-  test('scroll-view closes refresh when the page has no refresh listener', () => {
-    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
-    const builtins = createBuiltinComponents(space)
-    const page = space.defineComponent({
-      is: 'page',
-      using: { 'scroll-view': builtins['scroll-view'] },
-      template: compilePage(`
-        <scroll-view id="scroll" scroll-y refresher-enabled refresher-default-style="none">
-          <view>content</view>
-        </scroll-view>
-      `),
-    })
-    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
-    const scrollHost = instance.getShadowRoot()?.getElementById('scroll')?.asGeneralComponent()!
-    attach(scrollHost)
-    const refresher = scrollHost.getShadowRoot()?.getElementById('refresher')?.asGeneralComponent()!
-    const contentBackend = { style: { transform: 'translateY(40px)' } }
-    const containerBackend = { style: { height: '53px' } }
-    ;(refresher as unknown as { _content: unknown })._content = contentBackend
-    ;(refresher as unknown as { _container: unknown })._container = containerBackend
-
-    ;(scrollHost as unknown as {
-      handleRefresherRefresh: (event: unknown) => void
-    }).handleRefresherRefresh({ detail: { dy: 80 } })
-
-    expect(contentBackend.style.transform).toBe('')
-    expect(containerBackend.style.height).toBe(`${refresher.data.threshold}px`)
-    expect(scrollHost.data.refresherTriggered).toBe(false)
-  })
-
   test('scroll-view applies paging and scrollbar chrome only in enhanced mode', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)

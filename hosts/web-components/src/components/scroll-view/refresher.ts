@@ -230,15 +230,6 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
         style['-webkit-transition'] = animate ? 'height 0.3s ease' : 'none'
         style.height = `${height}px`
       },
-      cancelRefresh(): void {
-        const runtime = this as unknown as RefresherRuntime
-        const threshold = Number(this.data.threshold ?? 55)
-        runtime._refreshing = false
-        runtime._cancelling = false
-        this.setContainerHeight(threshold, true)
-        this.applyOffset(0, true)
-        this.setDots('abort')
-      },
       handleStart(event: TouchEvent): void {
         const runtime = this as unknown as RefresherRuntime
         if (event.touches.length !== 1) return
