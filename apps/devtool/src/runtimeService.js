@@ -1,12 +1,15 @@
 import { bootServiceEntry } from '@tiny/host-web';
 import { createApiHost } from '@tiny/api';
 import { generatedBaseFor } from './appRegistry';
-import { getPreviewDevice } from './previewDevice';
+import { resolvePreviewDevice } from './previewDevice';
 import { resolvePreviewSafeArea } from './previewStyles';
 
 const search = new URLSearchParams(window.location.search);
 const appId = search.get('app') || 'demo';
-const device = getPreviewDevice(search.get('device'));
+const device = resolvePreviewDevice(
+  search.get('device'),
+  search.get('orientation') === 'landscape' ? 'landscape' : 'portrait',
+);
 const generatedBase = generatedBaseFor(appId);
 const resolveAssetUrl = (assetPath) => (
   `${generatedBase}/${assetPath.split('/').map(encodeURIComponent).join('/')}`

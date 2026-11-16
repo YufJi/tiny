@@ -12,7 +12,7 @@ import {
 import {
   DEFAULT_PREVIEW_DEVICE_ID,
   PREVIEW_DEVICES,
-  getPreviewDevice,
+  resolvePreviewDevice,
   previewContentHeight,
   previewMenuButtonRect,
   previewSystemInfo,
@@ -42,6 +42,7 @@ const EMPTY_RUNTIME_STATE = {
 
 const STACK_KEY_PREFIX = 'tiny.devtool.stack.'
 const DEVICE_KEY = 'tiny.devtool.device'
+const ORIENTATION_KEY = 'tiny.devtool.orientation'
 
 function readSavedStack(appId) {
   try {
@@ -112,6 +113,26 @@ function writeDeviceId(deviceId) {
   }
 }
 
+function readOrientation(search) {
+  const requested = new URLSearchParams(search).get('orientation')
+  if (requested === 'landscape' || requested === 'portrait') return requested
+  try {
+    const stored = window.localStorage.getItem(ORIENTATION_KEY)
+    if (stored === 'landscape' || stored === 'portrait') return stored
+  } catch {
+    // Storage is optional.
+  }
+  return 'portrait'
+}
+
+function writeOrientation(orientation) {
+  try {
+    window.localStorage.setItem(ORIENTATION_KEY, orientation)
+  } catch {
+    // Storage is optional.
+  }
+}
+
 function applyNavigationOverride(navigation, override) {
   if (!override) return navigation;
   return {
@@ -139,7 +160,11 @@ class RuntimePanel extends PureComponent {
     this.switchingDevice = false;
     this.maxPageStack = MAX_PAGE_STACK;
     this.maxLiveApps = MAX_LIVE_APPS;
-    this.deviceProfile = getPreviewDevice(readDeviceId(window.location.search));
+    this.orientation = readOrientation(window.location.search);
+    this.deviceProfile = resolvePreviewDevice(
+      readDeviceId(window.location.search),
+      this.orientation,
+    );
     this.state = {
       apps: [],
       loading: true,
@@ -157,6 +182,7 @@ class RuntimePanel extends PureComponent {
       maxLiveApps: MAX_LIVE_APPS,
       maxPageStack: MAX_PAGE_STACK,
       deviceId: this.deviceProfile.id,
+      orientation: this.orientation,
     };
   }
 
@@ -242,6 +268,8 @@ class RuntimePanel extends PureComponent {
       getMaxPageStack: () => this.state.maxPageStack,
       getDeviceId: () => this.deviceProfile.id,
       selectDevice: (deviceId) => this.selectDevice(deviceId),
+      getOrientation: () => this.orientation,
+      rotateDevice: () => this.rotateDevice(),
       tapStatusBar: () => this.tapStatusBar(),
       openApp: (appId, options) => this.openApp(appId, options),
       background: () => this.backgroundToLauncher(),
@@ -427,7 +455,9 @@ class RuntimePanel extends PureComponent {
         : firstPage;
       const contentHeight = this.initialContentHeight(app, manifest, initialPath);
       const threadUrl = (page) => new URL(
-        `./${page}?app=${encodeURIComponent(app.id)}&device=${encodeURIComponent(this.deviceProfile.id)}`,
+        `./${page}?app=${encodeURIComponent(app.id)}`
+          + `&device=${encodeURIComponent(this.deviceProfile.id)}`
+          + `&orientation=${encodeURIComponent(this.orientation)}`,
         window.location.href,
       ).href;
       const surface = this.createSurface(app.id);
@@ -621,8 +651,25 @@ class RuntimePanel extends PureComponent {
   }
 
   async selectDevice(deviceId) {
-    const nextDevice = getPreviewDevice(deviceId);
-    if (this.switchingDevice || nextDevice.id === this.deviceProfile.id) return;
+    await this.applyViewport(
+      resolvePreviewDevice(deviceId, this.orientation),
+      this.orientation,
+    );
+  }
+
+  async rotateDevice() {
+    const orientation = this.orientation === 'portrait' ? 'landscape' : 'portrait';
+    await this.applyViewport(
+      resolvePreviewDevice(this.deviceProfile.id, orientation),
+      orientation,
+    );
+  }
+
+  async applyViewport(nextDevice, orientation) {
+    if (
+      this.switchingDevice
+      || (nextDevice.id === this.deviceProfile.id && orientation === this.orientation)
+    ) return;
     this.switchingDevice = true;
     const active = this.activeSession;
     const appId = active?.appId ?? '';
@@ -638,11 +685,14 @@ class RuntimePanel extends PureComponent {
       // Device switching should still work when the runtime is unhealthy.
     }
     this.deviceProfile = nextDevice;
+    this.orientation = orientation;
     writeDeviceId(nextDevice.id);
+    writeOrientation(orientation);
     const url = new URL(window.location.href);
     url.searchParams.set('device', nextDevice.id);
+    url.searchParams.set('orientation', orientation);
     window.history.replaceState(null, '', url);
-    this.setState({ deviceId: nextDevice.id, actionError: '' });
+    this.setState({ deviceId: nextDevice.id, orientation, actionError: '' });
     try {
       for (const session of [...this.sessions.values()]) {
         await this.closeSession(session, { preserveSavedStack: true });
@@ -716,6 +766,7 @@ class RuntimePanel extends PureComponent {
     url.searchParams.set('app', session.appId);
     url.searchParams.set('restore', '1');
     url.searchParams.set('device', this.deviceProfile.id);
+    url.searchParams.set('orientation', this.orientation);
     const firstPage = session.manifest.pages[0]?.path;
     if (session.initialPath && session.initialPath !== firstPage) {
       url.searchParams.set('path', session.initialPath);
@@ -763,6 +814,7 @@ class RuntimePanel extends PureComponent {
       maxLiveApps,
       maxPageStack,
       deviceId,
+      orientation,
     } = this.state;
     const session = this.activeSession;
     const selectedApp = session?.app ?? null;
@@ -786,7 +838,7 @@ class RuntimePanel extends PureComponent {
     const running = status === 'running';
     const ready = Boolean(session);
     const alert = registryError || actionError || runtimeError || launcherError;
-    const device = getPreviewDevice(deviceId);
+    const device = resolvePreviewDevice(deviceId, orientation);
 
     return (
       <div className="tiny-devtool">
@@ -850,6 +902,8 @@ class RuntimePanel extends PureComponent {
             devices={PREVIEW_DEVICES}
             deviceId={deviceId}
             onDeviceChange={(nextDeviceId) => this.run(() => this.selectDevice(nextDeviceId))}
+            orientation={orientation}
+            onRotate={() => this.run(() => this.rotateDevice())}
           />
           <DebugPanel
             activeTab={activeTab}

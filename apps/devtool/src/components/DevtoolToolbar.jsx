@@ -27,6 +27,8 @@ function DevtoolToolbar({
   devices = [],
   deviceId,
   onDeviceChange,
+  orientation,
+  onRotate,
 }) {
   return (
     <div className="td-toolbar td-scroll">
@@ -71,16 +73,27 @@ function DevtoolToolbar({
 
       <div className="td-simulator-control">
         <label className="td-field-label" htmlFor="td-device-select">Simulator</label>
-        <select
-          id="td-device-select"
-          className="td-select"
-          value={deviceId}
-          onChange={(event) => onDeviceChange?.(event.target.value)}
-        >
-          {devices.map((device) => (
-            <option key={device.id} value={device.id}>{device.label}</option>
-          ))}
-        </select>
+        <div className="td-simulator-row">
+          <select
+            id="td-device-select"
+            className="td-select"
+            value={deviceId}
+            onChange={(event) => onDeviceChange?.(event.target.value)}
+          >
+            {devices.map((device) => (
+              <option key={device.id} value={device.id}>{device.label}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="td-btn td-simulator-rotate"
+            title={`Switch to ${orientation === 'landscape' ? 'portrait' : 'landscape'}`}
+            aria-label={`Switch to ${orientation === 'landscape' ? 'portrait' : 'landscape'}`}
+            onClick={onRotate}
+          >
+            {orientation === 'landscape' ? 'Portrait' : 'Landscape'}
+          </button>
+        </div>
         <span className="td-simulator-note">
           Switching reloads live apps with the selected device geometry.
         </span>

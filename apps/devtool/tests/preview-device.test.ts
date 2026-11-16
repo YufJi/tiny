@@ -3,6 +3,7 @@ import {
   PREVIEW_DEVICE,
   PREVIEW_DEVICES,
   getPreviewDevice,
+  resolvePreviewDevice,
   previewContentHeight,
   previewContentInsets,
   previewMenuButtonRect,
@@ -108,5 +109,48 @@ describe('preview device geometry', () => {
     })
     expect(previewMenuButtonRect(device)).toEqual(device.menuButton)
     expect(device.screenWidth - device.menuButton.right).toBe(7)
+  })
+
+  test('rotates profile geometry into landscape with horizontal safe areas', () => {
+    const device = resolvePreviewDevice('iphone-x', 'landscape')
+    expect(device).toMatchObject({
+      id: 'iphone-x',
+      orientation: 'landscape',
+      screenWidth: 812,
+      screenHeight: 375,
+      frameWidth: 836,
+      frameHeight: 399,
+      statusBarHeight: 0,
+      hostChromeHeight: 44,
+      menuButton: {
+        width: 87,
+        height: 32,
+        top: 4,
+        right: 758,
+        bottom: 36,
+        left: 671,
+      },
+      safeArea: {
+        top: 0,
+        bottom: 354,
+        left: 44,
+        right: 768,
+        width: 724,
+        height: 354,
+      },
+    })
+    expect(previewContentHeight({ customNavigation: false }, device)).toBe(331)
+    expect(previewContentHeight({
+      customNavigation: false,
+      tabBarVisible: true,
+    }, device)).toBe(281)
+    expect(previewSystemInfo(331, device)).toMatchObject({
+      windowWidth: 812,
+      windowHeight: 331,
+      screenWidth: 812,
+      screenHeight: 375,
+      statusBarHeight: 0,
+      safeArea: device.safeArea,
+    })
   })
 })

@@ -2452,6 +2452,58 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       })
     })
 
+    await step('rotate the simulator and rebuild runtime geometry', async () => {
+      currentStep = 'rotate the simulator and rebuild runtime geometry'
+      await page.getByRole('button', { name: 'Switch to landscape' }).click()
+      await page.waitForFunction(
+        () => window.__tinyDevtoolApps?.getOrientation?.() === 'landscape'
+          && window.__tinyDevtoolApps?.getSessions?.()[0]?.status === 'running',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const landscape = await page.evaluate(() => {
+        const screen = document.querySelector('.td-screen')
+        const frame = document.querySelector('.td-device')
+        const iframe = document.querySelector('.td-screen-surface iframe[data-state="active"]')
+        return {
+          screenWidth: screen?.offsetWidth,
+          screenHeight: screen?.offsetHeight,
+          className: frame?.className,
+          src: iframe?.src ?? '',
+        }
+      })
+      assert.equal(landscape.screenWidth, 812)
+      assert.equal(landscape.screenHeight, 375)
+      assert.ok(landscape.className?.includes('td-device--landscape'))
+      assert.ok(landscape.src.includes('orientation=landscape'))
+      const landscapePageId = (await state()).pageStack.at(-1)
+      let landscapeFrame
+      for (let attempt = 0; attempt < 100; attempt += 1) {
+        landscapeFrame = page.frames().find((frame) => (
+          frame.url().includes('render.html')
+          && frame.url().includes(`app=${primary.id}`)
+          && frame.url().includes(`pageId=${landscapePageId}`)
+          && frame.url().includes('orientation=landscape')
+        ))
+        if (landscapeFrame) break
+        await page.waitForTimeout(50)
+      }
+      assert.ok(landscapeFrame, 'rotation did not recreate the render frame')
+      assert.ok(
+        (await landscapeFrame.locator('#app').innerText()).includes(expectedText[primary.id]),
+        'rotation did not rerender the active page',
+      )
+
+      await page.getByRole('button', { name: 'Switch to portrait' }).click()
+      await page.waitForFunction(
+        () => window.__tinyDevtoolApps?.getOrientation?.() === 'portrait'
+          && window.__tinyDevtoolApps?.getSessions?.()[0]?.status === 'running',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      assert.equal(await page.locator('.td-screen').evaluate((node) => node.offsetWidth), 375)
+    })
+
     await step('navigate and go back from the debugger', async () => {
       currentStep = 'navigate and go back from the debugger'
       const primarySurface = surfaceSelector(primary.id)

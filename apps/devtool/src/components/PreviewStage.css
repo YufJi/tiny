@@ -131,6 +131,20 @@
   border-radius: 999px;
 }
 
+.td-device--landscape .td-screen::before {
+  top: 50%;
+  left: var(--td-cutout-left);
+  transform: translateY(-50%);
+}
+
+.td-device--landscape.td-device--notch .td-screen::before {
+  border-radius: 0 18px 18px 0;
+}
+
+.td-device--landscape.td-device--island .td-screen::before {
+  border-radius: 999px;
+}
+
 .td-device-side {
   position: absolute;
   width: 3px;
@@ -265,6 +279,13 @@
   opacity: 0.9;
   pointer-events: none;
   transform: translateX(-50%);
+}
+
+.td-home-indicator--landscape {
+  top: 50%;
+  left: auto;
+  width: 5px;
+  transform: translateY(-50%);
 }
 
 .td-screen-overlay {

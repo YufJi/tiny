@@ -78,6 +78,8 @@ function HostNavigationBar({
       style={{
         top: device.statusBarHeight,
         height: device.navigationBarHeight,
+        paddingLeft: Math.max(8, device.safeAreaInset.left),
+        paddingRight: Math.max(10, device.safeAreaInset.right),
         backgroundColor: navigation.backgroundColor,
         color: textColor,
       }}

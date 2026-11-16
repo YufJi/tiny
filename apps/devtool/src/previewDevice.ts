@@ -28,12 +28,14 @@ export type PreviewContentInsets = {
 }
 
 export type PreviewCutout = 'island' | 'notch' | 'none'
+export type PreviewOrientation = 'landscape' | 'portrait'
 
 export type PreviewDeviceProfile = {
   id: string
   label: string
   model: string
   system: string
+  orientation: PreviewOrientation
   screenWidth: number
   screenHeight: number
   frameWidth: number
@@ -53,6 +55,7 @@ export type PreviewDeviceProfile = {
   cutoutWidth: number
   cutoutHeight: number
   cutoutTop: number
+  cutoutLeft: number
   safeArea: PreviewSafeArea
   safeAreaInset: {
     top: number
@@ -74,6 +77,8 @@ function device(profile: Omit<
   | 'hostChromeHeight'
   | 'homeIndicatorHeight'
   | 'framePadding'
+  | 'cutoutLeft'
+  | 'orientation'
   | 'safeArea'
   | 'safeAreaInset'
 >): PreviewDeviceProfile {
@@ -81,6 +86,8 @@ function device(profile: Omit<
   const safeBottom = profile.screenHeight - HOME_INDICATOR_HEIGHT
   return {
     ...profile,
+    orientation: 'portrait',
+    cutoutLeft: 0,
     framePadding: DEVICE_FRAME_PADDING,
     frameWidth: profile.screenWidth + DEVICE_FRAME_PADDING * 2,
     frameHeight: profile.screenHeight + DEVICE_FRAME_PADDING * 2,
@@ -195,6 +202,59 @@ export const PREVIEW_DEVICE = PREVIEW_DEVICES[0]!
 
 export function getPreviewDevice(id?: string | null): PreviewDeviceProfile {
   return PREVIEW_DEVICES.find((deviceProfile) => deviceProfile.id === id) ?? PREVIEW_DEVICE
+}
+
+export function orientPreviewDevice(
+  deviceProfile: PreviewDeviceProfile,
+  orientation: PreviewOrientation,
+): PreviewDeviceProfile {
+  if (orientation === 'portrait') return deviceProfile
+  const screenWidth = deviceProfile.screenHeight
+  const screenHeight = deviceProfile.screenWidth
+  const safeAreaInset = {
+    top: 0,
+    right: 44,
+    bottom: 21,
+    left: 44,
+  }
+  return {
+    ...deviceProfile,
+    orientation: 'landscape',
+    screenWidth,
+    screenHeight,
+    frameWidth: screenWidth + deviceProfile.framePadding * 2,
+    frameHeight: screenHeight + deviceProfile.framePadding * 2,
+    statusBarHeight: 0,
+    hostChromeHeight: deviceProfile.navigationBarHeight,
+    cutoutWidth: deviceProfile.cutoutHeight,
+    cutoutHeight: deviceProfile.cutoutWidth,
+    cutoutTop: 0,
+    cutoutLeft: 0,
+    safeArea: {
+      top: safeAreaInset.top,
+      right: screenWidth - safeAreaInset.right,
+      bottom: screenHeight - safeAreaInset.bottom,
+      left: safeAreaInset.left,
+      width: screenWidth - safeAreaInset.left - safeAreaInset.right,
+      height: screenHeight - safeAreaInset.top - safeAreaInset.bottom,
+    },
+    safeAreaInset,
+    menuButton: {
+      width: 87,
+      height: 32,
+      top: 4,
+      right: screenWidth - safeAreaInset.right - 10,
+      bottom: 36,
+      left: screenWidth - safeAreaInset.right - 97,
+    },
+  }
+}
+
+export function resolvePreviewDevice(
+  id?: string | null,
+  orientation: PreviewOrientation = 'portrait',
+): PreviewDeviceProfile {
+  return orientPreviewDevice(getPreviewDevice(id), orientation)
 }
 
 export const PREVIEW_DEVICE_META = {

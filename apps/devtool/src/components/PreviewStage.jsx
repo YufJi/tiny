@@ -118,7 +118,7 @@ function PreviewStage({
         >
           <div className="td-device-shell" style={{ transform: `scale(${scale})` }}>
             <div
-              className={`td-device td-device--${device.cutout}`}
+              className={`td-device td-device--${device.cutout} td-device--${device.orientation}`}
               style={{
                 width: device.frameWidth,
                 height: device.frameHeight,
@@ -147,15 +147,18 @@ function PreviewStage({
                   '--td-cutout-width': `${device.cutoutWidth}px`,
                   '--td-cutout-height': `${device.cutoutHeight}px`,
                   '--td-cutout-top': `${device.cutoutTop}px`,
+                  '--td-cutout-left': `${device.cutoutLeft}px`,
                 }}
               >
-                <HostStatusBar
-                  navigation={navigation}
-                  overlay={!launcher && navigation.custom}
-                  device={device}
-                  enabled={!launcher && status === 'running'}
-                  onStatusBarTap={onStatusBarTap}
-                />
+                {device.statusBarHeight > 0 ? (
+                  <HostStatusBar
+                    navigation={navigation}
+                    overlay={!launcher && navigation.custom}
+                    device={device}
+                    enabled={!launcher && status === 'running'}
+                    onStatusBarTap={onStatusBarTap}
+                  />
+                ) : null}
                 {hostNavigation ? (
                   <HostNavigationBar
                     navigation={navigation}
@@ -224,11 +227,20 @@ function PreviewStage({
                   onClose={onCloseShare}
                 />
                 <div
-                  className="td-home-indicator"
-                  style={{
-                    bottom: device.homeIndicatorBottom,
-                    width: device.homeIndicatorWidth,
-                  }}
+                  className={
+                    device.orientation === 'landscape'
+                      ? 'td-home-indicator td-home-indicator--landscape'
+                      : 'td-home-indicator'
+                  }
+                  style={device.orientation === 'landscape'
+                    ? {
+                        right: device.homeIndicatorBottom,
+                        height: device.homeIndicatorWidth,
+                      }
+                    : {
+                        bottom: device.homeIndicatorBottom,
+                        width: device.homeIndicatorWidth,
+                      }}
                 />
                 <div className="td-screen-glare" />
                 {overlay ? (

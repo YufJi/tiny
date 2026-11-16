@@ -154,6 +154,24 @@
   margin-top: 16px;
 }
 
+.td-simulator-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.td-simulator-row .td-select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.td-simulator-rotate {
+  flex: none;
+  height: 36px;
+  padding: 0 10px;
+  font-size: 10px;
+}
+
 .td-simulator-note {
   display: block;
   margin-top: 6px;
