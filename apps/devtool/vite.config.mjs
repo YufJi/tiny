@@ -26,7 +26,7 @@ function brandAssetFile() {
     configureServer(server) {
       server.middlewares.use('/favicon.svg', (req, res) => {
         res.setHeader('Content-Type', 'image/svg+xml');
-        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Cache-Control', 'no-store');
         res.end(fs.readFileSync(brandAsset));
       });
     },
@@ -74,7 +74,7 @@ function serveRuntimeArtifacts() {
         extensions: [],
         setHeaders(res, filePath) {
           if (filePath.endsWith('.js')) res.setHeader('Content-Type', 'text/javascript');
-          res.setHeader('Cache-Control', 'no-cache');
+          res.setHeader('Cache-Control', 'no-store');
         },
       });
       // Registered in `configureServer`, so this runs before Vite's HTML
@@ -127,6 +127,12 @@ export default defineConfig(({ command, isPreview }) => {
     plugins: [copyRuntimeArtifacts(), serveRuntimeArtifacts(), brandAssetFile()],
     server: {
       port: Number(process.env.TINY_DEVTOOL_PORT || 8080),
+      // Never move to 8081 while the browser stays on the old 8080 server.
+      // A stale devtool is much more expensive than a clear startup failure.
+      strictPort: true,
+      headers: {
+        'Cache-Control': 'no-store',
+      },
       fs: { allow: [workspaceRoot] },
       hot: true,
       // `scripts/dev-devtool.mjs` rewrites the compiled fixtures on every
