@@ -32,8 +32,7 @@ tiny-button[hidden] {
   display: none;
 }
 
-tiny-button[type=default],
-tiny-button:not([type]) {
+tiny-button[type=default] {
   color: #06ae56;
   background-color: #f2f2f2;
 }
@@ -109,8 +108,7 @@ tiny-button.button-hover {
   color: rgba(0, 0, 0, 0.6);
   background-color: #dedede;
 }
-tiny-button.button-hover[type=default],
-tiny-button.button-hover:not([type]) {
+tiny-button.button-hover[type=default] {
   color: #06ae56;
   background-color: #d9d9d9;
 }

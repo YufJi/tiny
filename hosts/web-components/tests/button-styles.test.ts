@@ -19,6 +19,8 @@ describe('button 3.17.5 WebView styles', () => {
     expect(base).toContain('line-height: 1.41176471;')
     expect(base).toContain('border-radius: 4px;')
     expect(base).toContain('border: 0.5px solid rgba(0, 0, 0, 0.2);')
+    expect(base).toContain('color: #000000;')
+    expect(base).toContain('background-color: #f8f8f8;')
     expect(rule('tiny-button:not([size=mini])')).toContain('width: 184px;')
     expect(rule('tiny-button:not([size=mini])')).toContain('margin-left: auto;')
     expect(rule('tiny-button:not([size=mini])')).toContain('margin-right: auto;')
@@ -29,7 +31,6 @@ describe('button 3.17.5 WebView styles', () => {
   test('matches the WebUI type, plain, disabled and mini tokens', () => {
     expect(rule('tiny-button[type=default]')).toContain('color: #06ae56;')
     expect(rule('tiny-button[type=default]')).toContain('background-color: #f2f2f2;')
-    expect(rule('tiny-button:not([type])')).toContain('color: #06ae56;')
     expect(rule('tiny-button[type=primary]')).toContain('background-color: #07c160;')
     expect(rule('tiny-button[type=warn]')).toContain('color: #fa5151;')
     expect(rule('tiny-button[type=warn]')).toContain('background-color: #f2f2f2;')

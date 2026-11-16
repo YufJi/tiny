@@ -722,8 +722,8 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
         }
       })
       const buttonDefault = await styleOf('Default button')
-      assert.equal(buttonDefault.color, 'rgb(6, 174, 86)', 'default button text color mismatch')
-      assert.equal(buttonDefault.backgroundColor, 'rgb(242, 242, 242)', 'default button background mismatch')
+      assert.equal(buttonDefault.color, 'rgb(0, 0, 0)', 'default button text color mismatch')
+      assert.equal(buttonDefault.backgroundColor, 'rgb(248, 248, 248)', 'default button background mismatch')
       assert.equal(buttonDefault.borderRadius, '4px', 'default button radius mismatch')
       assert.equal(buttonDefault.fontSize, '17px', 'default button font size mismatch')
       assert.equal(buttonDefault.fontWeight, '700', 'default button weight mismatch')
@@ -1582,6 +1582,11 @@ export async function runWechatDemoAcceptance({ baseUrl, app = 'wechat-demo', br
       assert.equal(buttonLayout.width, 184, 'text example button width mismatch')
       assert.ok(buttonLayout.centerDelta < 1, 'text example button is not horizontally centered')
       assert.equal(buttonLayout.marginTop, '20px', 'text example button vertical margin mismatch')
+      assert.equal(
+        await addButton.first().evaluate((element) => getComputedStyle(element).color),
+        'rgb(0, 0, 0)',
+        'text example implicit-type button text color mismatch',
+      )
       await addButton.click()
       await render.waitForFunction(
         () => (document.querySelector('#app')?.innerText ?? '').includes('2011年1月，微信1.0发布'),
