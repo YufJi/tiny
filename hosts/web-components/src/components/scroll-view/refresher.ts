@@ -25,6 +25,7 @@ type DotBackend = {
 type RefresherRuntime = {
   _main?: ScrollBackend | null
   _content?: ScrollBackend | null
+  _container?: ScrollBackend | null
   _active?: boolean
   _refreshing?: boolean
   _cancelling?: boolean
@@ -89,6 +90,10 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
           } | null
         } | null)?.getShadowRoot?.()
         const shadow = ownerShadow ?? parentShadow
+        runtime._container = (
+          this.getShadowRoot?.()?.getElementById?.('container')
+            ?.getBackendElement?.() ?? null
+        ) as ScrollBackend | null
         runtime._main = shadow?.getElementById?.('main')?.getBackendElement?.() ?? null
         runtime._content = shadow?.getElementById?.('content')?.getBackendElement?.() ?? null
         if (runtime._content?.style) runtime._content.style.willChange = 'transform'
@@ -138,9 +143,11 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
       triggeredChanged(value: boolean): void {
         const runtime = this as unknown as RefresherRuntime
         const threshold = Number(this.data.threshold ?? 55)
+        const refreshHeight = this.refreshHeight()
         if (value) {
           runtime._refreshing = true
-          this.applyOffset(threshold, true)
+          this.setContainerHeight(refreshHeight, true)
+          this.applyOffset(refreshHeight, true)
           this.applyDotPull(threshold + 1)
           this.setDots('refreshing')
           return
@@ -149,6 +156,7 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
         const wasCancelling = Boolean(runtime._cancelling)
         runtime._refreshing = false
         const restoreOffset = Number(runtime._offset ?? 0)
+        this.setContainerHeight(threshold, true)
         this.applyOffset(0, true)
         if (wasRefreshing && !wasCancelling) {
           this.setDots('restored')
@@ -210,6 +218,18 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
         target.style.webkitTransform = transform
         target.style['-webkit-transform'] = transform
       },
+      refreshHeight(): number {
+        const threshold = Number(this.data.threshold ?? 55)
+        if (this.data.normalizedStyle === '') return threshold
+        return Math.min(threshold, Number(this.data.maxHeight ?? 53))
+      },
+      setContainerHeight(height: number, animate: boolean): void {
+        const style = (this as unknown as RefresherRuntime)._container?.style
+        if (!style) return
+        style.transition = animate ? 'height 0.3s ease' : 'none'
+        style['-webkit-transition'] = animate ? 'height 0.3s ease' : 'none'
+        style.height = `${height}px`
+      },
       handleStart(event: TouchEvent): void {
         const runtime = this as unknown as RefresherRuntime
         if (event.touches.length !== 1) return
@@ -259,16 +279,19 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
         if (!runtime._active) return
         runtime._active = false
         const threshold = Number(this.data.threshold ?? 55)
+        const refreshHeight = this.refreshHeight()
         const offset = Number(runtime._offset ?? 0)
         if (runtime._refreshing) {
           if (offset < threshold / 2) {
             runtime._refreshing = false
             runtime._cancelling = true
+            this.setContainerHeight(threshold, true)
             this.applyOffset(0, true)
             this.setDots('abort')
             this.triggerEvent('abort', { dy: offset })
           } else {
-            this.applyOffset(threshold, true)
+            this.setContainerHeight(refreshHeight, true)
+            this.applyOffset(refreshHeight, true)
             this.applyDotPull(threshold + 1)
             this.setDots('refreshing')
           }
@@ -276,7 +299,8 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
         }
         if (offset >= threshold) {
           runtime._refreshing = true
-          this.applyOffset(threshold, true)
+          this.setContainerHeight(refreshHeight, true)
+          this.applyOffset(refreshHeight, true)
           this.applyDotPull(threshold + 1)
           this.setDots('refreshing')
           this.triggerEvent('willrefresh', { dy: offset })

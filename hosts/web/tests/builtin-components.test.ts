@@ -1239,6 +1239,12 @@ describe('P0 built-in components', () => {
       })
     }
     expect((refresher as unknown as { _offset: number })._offset).toBe(78)
+
+    ;(refresher as unknown as {
+      triggeredChanged: (value: boolean) => void
+    }).triggeredChanged(true)
+    expect(contentBackend.style.transform).toBe('translateY(53px)')
+    expect(dotStyles.dot1.transform).toBe('translateX(-1px)')
   })
 
   test('scroll-view applies paging and scrollbar chrome only in enhanced mode', () => {
