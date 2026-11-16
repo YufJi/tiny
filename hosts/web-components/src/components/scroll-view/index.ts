@@ -51,6 +51,7 @@ type ScrollRuntime = {
   __scrollingUntil?: number
   __dragStart?: { x: number; y: number; scrollTop: number }
   __dragging?: boolean
+  __unsubscribeHostStatusBarTap?: () => void
 }
 
 function touchPoint(event: glassEasel.ShadowedEvent<unknown>): { x: number; y: number } {
@@ -122,6 +123,10 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         this.applyScrollPosition('scrollTop')
         this.applyScrollPosition('scrollLeft')
         this.applyScrollPosition('scrollIntoView')
+        instance.__unsubscribeHostStatusBarTap = ctx.options.hostEvents?.subscribe(
+          'statusBarTap',
+          () => this.scrollToTopFromHost(),
+        )
       },
       detached() {
         const instance = this as unknown as ScrollRuntime
@@ -131,6 +136,8 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
           instance.__scrollIntoViewRetryTimer = undefined
         }
         instance.__scrollActive = false
+        instance.__unsubscribeHostStatusBarTap?.()
+        instance.__unsubscribeHostStatusBarTap = undefined
       },
     },
     observers: {
@@ -380,18 +387,17 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         ;(this as unknown as ScrollRuntime).__refreshing = false
         this.triggerEvent('refresherabort', { dy: Number(detail.dy ?? 0) }, { bubbles: true, composed: true })
       },
-      handleTap() {
+      scrollToTopFromHost() {
         if (!this.data.enableBackToTop) return
-        const instance = this as unknown as { __lastTap?: number }
-        const now = Date.now()
-        if (instance.__lastTap && now - instance.__lastTap < 300) {
-          instance.__lastTap = 0
-          ;(this as unknown as {
-            scrollTo: (top: number, left: number, behavior: 'auto' | 'smooth') => void
-          }).scrollTo(0, 0, this.data.scrollWithAnimation ? 'smooth' : 'auto')
-          return
-        }
-        instance.__lastTap = now
+        if (!this.scrollAxes().vertical) return
+        const element = this.backend()
+        ;(this as unknown as {
+          scrollTo: (top: number, left: number, behavior: 'auto' | 'smooth') => void
+        }).scrollTo(
+          0,
+          Number(element?.scrollLeft ?? 0),
+          this.data.scrollWithAnimation ? 'smooth' : 'auto',
+        )
       },
       handleScroll(event: glassEasel.ShadowedEvent<unknown>) {
         const instance = this as unknown as ScrollRuntime

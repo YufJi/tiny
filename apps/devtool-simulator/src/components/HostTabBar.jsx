@@ -1,5 +1,4 @@
 import React from 'react';
-import { TAB_BAR_HEIGHT } from '../config';
 import './HostTabBar.css';
 
 function resolveIconUrl(base, path) {
@@ -10,14 +9,14 @@ function resolveIconUrl(base, path) {
 }
 
 // Native mini-program tabBar rendered outside the page iframe, like host chrome.
-function HostTabBar({ tabBar, assetBase, topOffset = 0, enabled, onTap }) {
+function HostTabBar({ tabBar, assetBase, topOffset = 0, enabled, onTap, device }) {
   if (!tabBar || !tabBar.visible) return null;
   const borderColor = tabBar.borderStyle === 'white'
     ? 'rgba(255, 255, 255, 0.35)'
     : 'rgba(0, 0, 0, 0.28)';
   const atTop = tabBar.position === 'top';
   const style = {
-    height: TAB_BAR_HEIGHT,
+    height: device.tabBarHeight,
     backgroundColor: tabBar.backgroundColor,
     color: tabBar.color,
     ...(atTop

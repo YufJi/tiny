@@ -6,15 +6,18 @@ import { createWasmHostCoreFactory } from './wasmHostCore';
 import './runtimePanel.css';
 import {
   APPS_REGISTRY_URL,
-  DEVICE_SCREEN_WIDTH,
   MAX_LIVE_APPS,
   MAX_PAGE_STACK,
 } from './config';
 import {
+  DEFAULT_PREVIEW_DEVICE_ID,
+  PREVIEW_DEVICES,
+  resolvePreviewDevice,
   previewContentHeight,
+  previewKeyboardHeight,
   previewMenuButtonRect,
   previewSystemInfo,
-} from './previewDevice';
+} from '@tiny/devtool-simulator';
 import {
   fetchJson,
   generatedBaseFor,
@@ -39,6 +42,8 @@ const EMPTY_RUNTIME_STATE = {
 };
 
 const STACK_KEY_PREFIX = 'tiny.devtool.stack.'
+const DEVICE_KEY = 'tiny.devtool.device'
+const ORIENTATION_KEY = 'tiny.devtool.orientation'
 
 function readSavedStack(appId) {
   try {
@@ -89,6 +94,46 @@ function clearSavedStack(appId) {
   }
 }
 
+function readDeviceId(search) {
+  const requested = new URLSearchParams(search).get('device')
+  if (requested && PREVIEW_DEVICES.some((device) => device.id === requested)) return requested
+  try {
+    const stored = window.localStorage.getItem(DEVICE_KEY)
+    if (stored && PREVIEW_DEVICES.some((device) => device.id === stored)) return stored
+  } catch {
+    // Storage is optional.
+  }
+  return DEFAULT_PREVIEW_DEVICE_ID
+}
+
+function writeDeviceId(deviceId) {
+  try {
+    window.localStorage.setItem(DEVICE_KEY, deviceId)
+  } catch {
+    // Storage is optional.
+  }
+}
+
+function readOrientation(search) {
+  const requested = new URLSearchParams(search).get('orientation')
+  if (requested === 'landscape' || requested === 'portrait') return requested
+  try {
+    const stored = window.localStorage.getItem(ORIENTATION_KEY)
+    if (stored === 'landscape' || stored === 'portrait') return stored
+  } catch {
+    // Storage is optional.
+  }
+  return 'portrait'
+}
+
+function writeOrientation(orientation) {
+  try {
+    window.localStorage.setItem(ORIENTATION_KEY, orientation)
+  } catch {
+    // Storage is optional.
+  }
+}
+
 function applyNavigationOverride(navigation, override) {
   if (!override) return navigation;
   return {
@@ -113,8 +158,14 @@ class RuntimePanel extends PureComponent {
     this.appRegistry = [];
     this.activeAppId = '';
     this.opening = false;
+    this.switchingDevice = false;
     this.maxPageStack = MAX_PAGE_STACK;
     this.maxLiveApps = MAX_LIVE_APPS;
+    this.orientation = readOrientation(window.location.search);
+    this.deviceProfile = resolvePreviewDevice(
+      readDeviceId(window.location.search),
+      this.orientation,
+    );
     this.state = {
       apps: [],
       loading: true,
@@ -131,6 +182,9 @@ class RuntimePanel extends PureComponent {
       manifestPath: '',
       maxLiveApps: MAX_LIVE_APPS,
       maxPageStack: MAX_PAGE_STACK,
+      deviceId: this.deviceProfile.id,
+      orientation: this.orientation,
+      keyboard: null,
     };
   }
 
@@ -214,6 +268,12 @@ class RuntimePanel extends PureComponent {
       getSessions: () => this.sessionSummaries(),
       getMaxLiveApps: () => this.state.maxLiveApps,
       getMaxPageStack: () => this.state.maxPageStack,
+      getDeviceId: () => this.deviceProfile.id,
+      selectDevice: (deviceId) => this.selectDevice(deviceId),
+      getOrientation: () => this.orientation,
+      rotateDevice: () => this.rotateDevice(),
+      tapStatusBar: () => this.tapStatusBar(),
+      getKeyboardState: () => this.state.keyboard,
       openApp: (appId, options) => this.openApp(appId, options),
       background: () => this.backgroundToLauncher(),
       closeApp: (appId) => this.closeApp(appId),
@@ -321,10 +381,10 @@ class RuntimePanel extends PureComponent {
       customNavigation: navigation.custom,
       tabBarVisible: Boolean(state.tabBar?.visible),
       tabBarPosition: state.tabBar?.position,
-    });
+    }, this.deviceProfile);
     if (force || height !== session.lastContentHeight) {
       session.lastContentHeight = height;
-      this.run(() => session.client.resize(DEVICE_SCREEN_WIDTH, height));
+      this.run(() => session.client.resize(this.deviceProfile.screenWidth, height));
     }
   }
 
@@ -341,7 +401,7 @@ class RuntimePanel extends PureComponent {
     return previewContentHeight({
       customNavigation: navigation.custom,
       tabBarVisible: resolveTabBarPage(manifest, initialPath),
-    });
+    }, this.deviceProfile);
   }
 
   createSurface(appId) {
@@ -398,7 +458,9 @@ class RuntimePanel extends PureComponent {
         : firstPage;
       const contentHeight = this.initialContentHeight(app, manifest, initialPath);
       const threadUrl = (page) => new URL(
-        `./${page}?app=${encodeURIComponent(app.id)}`,
+        `./${page}?app=${encodeURIComponent(app.id)}`
+          + `&device=${encodeURIComponent(this.deviceProfile.id)}`
+          + `&orientation=${encodeURIComponent(this.orientation)}`,
         window.location.href,
       ).href;
       const surface = this.createSurface(app.id);
@@ -411,9 +473,12 @@ class RuntimePanel extends PureComponent {
         renderUrl: threadUrl('render.html'),
         initialPath,
         container: surface,
-        systemInfo: previewSystemInfo(contentHeight),
-        menuButton: previewMenuButtonRect(),
+        systemInfo: previewSystemInfo(contentHeight, this.deviceProfile),
+        menuButton: previewMenuButtonRect(this.deviceProfile),
         maxPageStack: this.maxPageStack,
+        onHostRequest: (method, payload, context) => (
+          this.handleHostRequest(app.id, method, payload, context)
+        ),
         ...(savedStack[0]
           ? { initialExitState: launchExitState(savedStack[0]) }
           : {}),
@@ -488,6 +553,7 @@ class RuntimePanel extends PureComponent {
 
   async backgroundActive({ toLauncher = true } = {}) {
     const session = this.activeSession;
+    this.clearKeyboard();
     this.activeAppId = '';
     if (!session) {
       if (toLauncher) this.clearUrl();
@@ -553,9 +619,10 @@ class RuntimePanel extends PureComponent {
     if (restored.length > 0) writeSavedStack(session.appId, restored);
   }
 
-  async closeSession(session) {
+  async closeSession(session, { preserveSavedStack = false } = {}) {
     if (!this.sessions.has(session.appId)) return;
-    clearSavedStack(session.appId);
+    if (this.state.keyboard?.appId === session.appId) this.clearKeyboard();
+    if (!preserveSavedStack) clearSavedStack(session.appId);
     this.sessions.delete(session.appId);
     session.unsubscribe?.();
     if (this.activeAppId === session.appId) {
@@ -589,6 +656,64 @@ class RuntimePanel extends PureComponent {
   async closeActiveApp() {
     const session = this.activeSession;
     if (session) await this.closeSession(session);
+  }
+
+  async selectDevice(deviceId) {
+    await this.applyViewport(
+      resolvePreviewDevice(deviceId, this.orientation),
+      this.orientation,
+    );
+  }
+
+  async rotateDevice() {
+    const orientation = this.orientation === 'portrait' ? 'landscape' : 'portrait';
+    await this.applyViewport(
+      resolvePreviewDevice(this.deviceProfile.id, orientation),
+      orientation,
+    );
+  }
+
+  async applyViewport(nextDevice, orientation) {
+    if (
+      this.switchingDevice
+      || (nextDevice.id === this.deviceProfile.id && orientation === this.orientation)
+    ) return;
+    this.switchingDevice = true;
+    const active = this.activeSession;
+    const appId = active?.appId ?? '';
+    const initialPath = active?.initialPath;
+    let snapshot = [];
+    try {
+      if (active) {
+        snapshot = await active.client.snapshotPageState();
+        const routeStack = snapshot.map(({ path, query }) => ({ path, query }));
+        if (routeStack.length > 0) writeSavedStack(active.appId, routeStack);
+      }
+    } catch {
+      // Device switching should still work when the runtime is unhealthy.
+    }
+    this.deviceProfile = nextDevice;
+    this.orientation = orientation;
+    writeDeviceId(nextDevice.id);
+    writeOrientation(orientation);
+    const url = new URL(window.location.href);
+    url.searchParams.set('device', nextDevice.id);
+    url.searchParams.set('orientation', orientation);
+    window.history.replaceState(null, '', url);
+    this.setState({ deviceId: nextDevice.id, orientation, actionError: '' });
+    try {
+      for (const session of [...this.sessions.values()]) {
+        await this.closeSession(session, { preserveSavedStack: true });
+      }
+      if (active) {
+        await this.openApp(appId, {
+          initialPath: snapshot[0]?.path ?? initialPath,
+          restore: snapshot.length > 1,
+        });
+      }
+    } finally {
+      this.switchingDevice = false;
+    }
   }
 
   reloadActiveApp() {
@@ -638,10 +763,110 @@ class RuntimePanel extends PureComponent {
     if (session) this.run(() => session.client.tapTab(index));
   }
 
+  tapStatusBar() {
+    const session = this.activeSession;
+    if (!session || this.props.runtime.status !== 'running') return false;
+    return session.client.sendHostEvent('statusBarTap');
+  }
+
+  handleHostRequest(appId, method, payload, context) {
+    if (method === 'showKeyboard') return this.showKeyboard(appId, payload, context);
+    if (method === 'hideKeyboard') return this.hideKeyboardRequest(appId, payload);
+    return undefined;
+  }
+
+  showKeyboard(appId, payload, context) {
+    const session = this.sessions.get(appId);
+    const request = (payload ?? {});
+    const ownerId = typeof request.ownerId === 'string' ? request.ownerId : '';
+    const pageId = context?.pageId ?? session?.client.getState().pageStack.at(-1);
+    const activePageId = session?.client.getState().pageStack.at(-1);
+    const active = session && pageId === activePageId && (!this.activeAppId || this.activeAppId === appId);
+    if (!session || !ownerId || !active) {
+      return Promise.resolve({ status: 'ok', height: 0, duration: 0 });
+    }
+    const current = this.state.keyboard;
+    if (current?.visible
+      && current.appId === appId
+      && current.ownerId === ownerId
+      && current.pageId === pageId) {
+      return Promise.resolve({ status: 'ok', height: current.height, duration: 0 });
+    }
+    const height = previewKeyboardHeight(this.deviceProfile);
+    this.setState({
+      keyboard: {
+        visible: true,
+        appId,
+        pageId,
+        ownerId,
+        height,
+        source: request.source === 'textarea' ? 'textarea' : 'input',
+        confirmType: String(request.confirmType ?? 'done'),
+        confirmHold: Boolean(request.confirmHold),
+      },
+    });
+    session.client.sendHostEvent(
+      'keyboardHeightChange',
+      { height, duration: 0, ownerId },
+      pageId,
+    );
+    session.client.emitGlobalEvent('keyboardHeightChange', { height, duration: 0 });
+    return Promise.resolve({ status: 'ok', height, duration: 0 });
+  }
+
+  hideKeyboardRequest(appId, payload) {
+    const keyboard = this.state.keyboard;
+    const request = (payload ?? {});
+    if (!keyboard?.visible || keyboard.appId !== appId) {
+      return Promise.resolve({ status: 'ok', height: 0, duration: 0 });
+    }
+    if (typeof request.ownerId === 'string'
+      && keyboard.ownerId
+      && request.ownerId !== keyboard.ownerId) {
+      return Promise.resolve({ status: 'ok', height: 0, duration: 0 });
+    }
+    const session = this.sessions.get(appId);
+    session?.client.sendHostEvent(
+      'keyboardHeightChange',
+      {
+        height: 0,
+        duration: 0,
+        ownerId: keyboard.ownerId,
+        reason: String(request.reason ?? 'blur'),
+        blur: false,
+      },
+      keyboard.pageId,
+    );
+    this.setState({ keyboard: null });
+    session?.client.emitGlobalEvent('keyboardHeightChange', { height: 0, duration: 0 });
+    return Promise.resolve({ status: 'ok', height: 0, duration: 0 });
+  }
+
+  clearKeyboard() {
+    const keyboard = this.state.keyboard;
+    if (!keyboard?.visible) return;
+    const session = this.sessions.get(keyboard.appId);
+    session?.client.sendHostEvent(
+      'keyboardHeightChange',
+      {
+        height: 0,
+        duration: 0,
+        ownerId: keyboard.ownerId,
+        reason: 'background',
+        blur: false,
+      },
+      keyboard.pageId,
+    );
+    session?.client.emitGlobalEvent('keyboardHeightChange', { height: 0, duration: 0 });
+    this.setState({ keyboard: null });
+  }
+
   updateUrl(session) {
     const url = new URL(window.location.href);
     url.searchParams.set('app', session.appId);
     url.searchParams.set('restore', '1');
+    url.searchParams.set('device', this.deviceProfile.id);
+    url.searchParams.set('orientation', this.orientation);
     const firstPage = session.manifest.pages[0]?.path;
     if (session.initialPath && session.initialPath !== firstPage) {
       url.searchParams.set('path', session.initialPath);
@@ -688,6 +913,8 @@ class RuntimePanel extends PureComponent {
       manifestPath,
       maxLiveApps,
       maxPageStack,
+      deviceId,
+      orientation,
     } = this.state;
     const session = this.activeSession;
     const selectedApp = session?.app ?? null;
@@ -711,6 +938,7 @@ class RuntimePanel extends PureComponent {
     const running = status === 'running';
     const ready = Boolean(session);
     const alert = registryError || actionError || runtimeError || launcherError;
+    const device = resolvePreviewDevice(deviceId, orientation);
 
     return (
       <div className="tiny-devtool">
@@ -744,6 +972,8 @@ class RuntimePanel extends PureComponent {
           onShareSelect={this.shareActivePage}
           onCloseShare={this.closeShareSheet}
           refreshing={Boolean(refreshing)}
+          device={device}
+          onStatusBarTap={() => this.tapStatusBar()}
         />
 
         <aside className="td-side">
@@ -769,6 +999,11 @@ class RuntimePanel extends PureComponent {
             onInspect={() => this.inspectActive()}
             onBack={() => this.backActive()}
             onCloseApp={() => this.run(() => this.closeActiveApp())}
+            devices={PREVIEW_DEVICES}
+            deviceId={deviceId}
+            onDeviceChange={(nextDeviceId) => this.run(() => this.selectDevice(nextDeviceId))}
+            orientation={orientation}
+            onRotate={() => this.run(() => this.rotateDevice())}
           />
           <DebugPanel
             activeTab={activeTab}

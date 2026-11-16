@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
-import { resolvePreviewSafeArea } from '../src/previewStyles'
+import { getPreviewDevice } from '../src/device'
+import { resolvePreviewSafeArea } from '../src/styles'
 
 describe('preview safe area CSS', () => {
   test('resolves env() and constant() against the preview device', () => {
@@ -19,5 +20,12 @@ describe('preview safe area CSS', () => {
   test('leaves unrelated environment expressions untouched', () => {
     expect(resolvePreviewSafeArea('height: env(viewport-segment-height);'))
       .toBe('height: env(viewport-segment-height);')
+  })
+
+  test('resolves safe area against the selected device profile', () => {
+    expect(resolvePreviewSafeArea(
+      'padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);',
+      getPreviewDevice('iphone-14-pro-max'),
+    )).toBe('padding: 59px 0 34px;')
   })
 })

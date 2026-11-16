@@ -1,0 +1,72 @@
+/* Web adapter: iframe surfaces layered inside the shared simulator stage. */
+
+.td-screen-surface iframe {
+  display: block;
+  border: 0;
+}
+
+/* One iframe per page: hidden pages stay mounted behind the active WebView. */
+.td-screen-surface iframe[data-page-id] {
+  transition: opacity 120ms ease;
+}
+
+.td-screen-surface iframe[data-state="hidden"] {
+  opacity: 0;
+}
+
+/* Each warm app owns one absolutely positioned surface inside the device. */
+.td-app-surface {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.td-app-surface[data-state="active"] {
+  z-index: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Page transitions mirror navigateTo/navigateBack: the active page owns the
+   animation, while the previous page stays mounted behind it. */
+.td-app-surface[data-transition="forward"] iframe[data-state="active"] {
+  animation: td-page-push 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.td-app-surface[data-transition="back"] iframe[data-state="active"] {
+  animation: td-page-pop 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.td-app-surface[data-transition="replace"] iframe[data-state="active"] {
+  animation: td-page-replace 180ms ease-out;
+}
+
+/* Opacity-only: transforming or clipping the iframe shifts/clips the host's
+   pointer coordinates while a page settles and breaks immediate interactions. */
+@keyframes td-page-push {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes td-page-pop {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes td-page-replace {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}

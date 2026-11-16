@@ -1,0 +1,30 @@
+{
+  "name": "@tiny/devtool-simulator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./styles.css": "./dist/style.css"
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "react": "^17.0.2",
+    "vite": "^5.4.21",
+    "vitest": "^1.6.1"
+  },
+  "peerDependencies": {
+    "react": "^17.0.2"
+  }
+}

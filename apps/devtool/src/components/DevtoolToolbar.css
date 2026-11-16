@@ -150,6 +150,36 @@
   font-size: 9px;
 }
 
+.td-simulator-control {
+  margin-top: 16px;
+}
+
+.td-simulator-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.td-simulator-row .td-select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.td-simulator-rotate {
+  flex: none;
+  height: 36px;
+  padding: 0 10px;
+  font-size: 10px;
+}
+
+.td-simulator-note {
+  display: block;
+  margin-top: 6px;
+  color: var(--td-dim);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
 .td-page-card {
   margin-top: 16px;
   padding: 12px 13px;

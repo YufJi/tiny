@@ -1,5 +1,4 @@
 import React from 'react';
-import { PREVIEW_DEVICE } from '../previewDevice';
 import './HostNavigationBar.css';
 
 function StatusBarIcons() {
@@ -25,18 +24,34 @@ function StatusBarIcons() {
 
 // The iOS status bar stays above custom navigation pages. It is transparent
 // there so the page can paint a full-bleed header underneath it.
-export function HostStatusBar({ navigation, overlay = false }) {
+export function HostStatusBar({
+  navigation,
+  overlay = false,
+  device,
+  enabled = false,
+  onStatusBarTap,
+}) {
   const textColor = navigation.textStyle === 'white' ? '#ffffff' : '#111827';
   const scheme = navigation.textStyle === 'white' ? 'dark' : 'light';
+  const interactive = enabled && typeof onStatusBarTap === 'function';
   return (
     <div
-      className={`td-statusbar td-host-statusbar td-host-chrome--${scheme}${overlay ? ' td-host-statusbar--overlay' : ''}`}
+      className={`td-statusbar td-host-statusbar td-host-chrome--${scheme}${overlay ? ' td-host-statusbar--overlay' : ''}${interactive ? ' td-host-statusbar--interactive' : ''}`}
       style={{
-        height: PREVIEW_DEVICE.statusBarHeight,
+        height: device.statusBarHeight,
         backgroundColor: overlay ? 'transparent' : navigation.backgroundColor,
         color: textColor,
       }}
-      aria-hidden="true"
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-label={interactive ? 'Simulate status bar tap' : undefined}
+      aria-hidden={interactive ? undefined : 'true'}
+      onClick={interactive ? onStatusBarTap : undefined}
+      onKeyDown={interactive ? (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return
+        event.preventDefault()
+        onStatusBarTap()
+      } : undefined}
     >
       <span className="td-statusbar-time">9:41</span>
       <StatusBarIcons />
@@ -52,6 +67,7 @@ function HostNavigationBar({
   enabled,
   canGoBack,
   onBack,
+  device,
 }) {
   const textColor = navigation.textStyle === 'white' ? '#ffffff' : '#111827';
   const scheme = navigation.textStyle === 'white' ? 'dark' : 'light';
@@ -60,8 +76,10 @@ function HostNavigationBar({
     <div
       className={`td-navbar td-host-navbar td-host-chrome--${scheme}`}
       style={{
-        top: PREVIEW_DEVICE.statusBarHeight,
-        height: PREVIEW_DEVICE.navigationBarHeight,
+        top: device.statusBarHeight,
+        height: device.navigationBarHeight,
+        paddingLeft: Math.max(8, device.safeAreaInset.left),
+        paddingRight: Math.max(10, device.safeAreaInset.right),
         backgroundColor: navigation.backgroundColor,
         color: textColor,
       }}

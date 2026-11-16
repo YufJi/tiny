@@ -12,6 +12,7 @@ import {
 } from '@tiny/runtime'
 import type {
   ComponentDefinitionPayload,
+  BuiltinHostEventSource,
   CustomEventMessage,
   RenderAnimationRequest,
   RenderClearAnimationRequest,
@@ -123,6 +124,8 @@ export type GlassRenderTreeOptions = {
   backend?: glassEasel.GeneralBackendContext
   /** Trigger attached/ready after the tree is assembled. Defaults to true. */
   attach?: boolean
+  /** Host-owned capability events delivered to built-in components. */
+  hostEvents?: BuiltinHostEventSource
   /** Forward host events from render nodes back to the logic layer. */
   onEvent?: (event: GlassRenderEvent) => void
   /** Local override for host request/response capabilities. */
@@ -492,6 +495,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       return { ...(snapshotProps ?? {}), ...(captured ?? {}) }
     },
     hostAction: (action) => hostActionSink?.(action),
+    ...(options.hostEvents ? { hostEvents: options.hostEvents } : {}),
     hostRequest: (method, payload) => {
       if (options.hostRequest) return options.hostRequest(method, payload)
       if (hostRequestSink) return hostRequestSink(method, payload)

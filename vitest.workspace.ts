@@ -16,4 +16,5 @@ export default defineWorkspace([
   'hosts/web-components/vitest.config.ts',
   'tools/cli/vitest.config.ts',
   'apps/devtool/vitest.config.ts',
+  'apps/devtool-simulator/vitest.config.ts',
 ])

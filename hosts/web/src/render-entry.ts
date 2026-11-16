@@ -5,6 +5,7 @@ import { installPageLifecycleBridge } from './page-lifecycle'
 import type { PageBehaviorConfig } from '@tiny/manifest'
 import { listenForRuntimePort } from './runtime-port'
 import { createGlassRenderEntry, type GlassRenderEntryOptions } from './render/entry'
+import { createRenderHostEventBus, listenForRenderHostEvents } from './render/host-events'
 
 export type RenderEntryOptions = GlassRenderEntryOptions & {
   /** Page-shell gesture config supplied by the host (WebView or iframe query). */
@@ -18,6 +19,7 @@ export type RenderEntryOptions = GlassRenderEntryOptions & {
 
 /** Cleanup for the window listeners installed by the previous boot. */
 let disposePageLifecycle: (() => void) | undefined
+let disposeRenderHostEvents: (() => void) | undefined
 
 /**
  * Boot the render thread of a Web host.
@@ -34,7 +36,13 @@ let disposePageLifecycle: (() => void) | undefined
  */
 export function bootRenderEntry(options: RenderEntryOptions = {}): void {
   installOffscreenCanvasResponder()
-  const entry = createGlassRenderEntry(options)
+  const hostEvents = createRenderHostEventBus()
+  disposeRenderHostEvents?.()
+  disposeRenderHostEvents = listenForRenderHostEvents(hostEvents.emit)
+  const entry = createGlassRenderEntry({
+    ...options,
+    hostEvents: hostEvents.source,
+  })
   entry.prepare()
   options.prepare?.()
   const search = typeof location === 'undefined' ? undefined : new URLSearchParams(location.search)
