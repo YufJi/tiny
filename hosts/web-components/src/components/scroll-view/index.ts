@@ -32,6 +32,7 @@ type ScrollRuntime = {
   __scrollPendingDetail?: Record<string, unknown>
   __lastScrollEmit?: number
   __lastScrollIntoView?: string
+  __scrollIntoViewRetryTimer?: ReturnType<typeof setTimeout>
   __scrollingUntil?: number
   __dragStart?: { x: number; y: number; scrollTop: number }
   __dragging?: boolean
@@ -94,6 +95,10 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         if (instance.__scrollStartTimer) clearTimeout(instance.__scrollStartTimer)
         if (instance.__scrollEndTimer) clearTimeout(instance.__scrollEndTimer)
         if (instance.__scrollThrottleTimer) clearTimeout(instance.__scrollThrottleTimer)
+        if (instance.__scrollIntoViewRetryTimer) {
+          clearTimeout(instance.__scrollIntoViewRetryTimer)
+          instance.__scrollIntoViewRetryTimer = undefined
+        }
       },
     },
     observers: {
@@ -164,6 +169,11 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         const element = this.backend()
         if (!element) return
         if (field === 'scrollIntoView') {
+          const instance = this as unknown as ScrollRuntime
+          if (instance.__scrollIntoViewRetryTimer) {
+            clearTimeout(instance.__scrollIntoViewRetryTimer)
+            instance.__scrollIntoViewRetryTimer = undefined
+          }
           const id = String(this.data.scrollIntoView ?? '')
           if (!id) return
           this.scrollToElement(id, 0)
@@ -181,6 +191,14 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         }
       },
       scrollToElement(id: string, attempt: number) {
+        const instance = this as unknown as ScrollRuntime
+        if (!id || String(this.data.scrollIntoView ?? '') !== id) {
+          if (instance.__scrollIntoViewRetryTimer) {
+            clearTimeout(instance.__scrollIntoViewRetryTimer)
+            instance.__scrollIntoViewRetryTimer = undefined
+          }
+          return
+        }
         const element = this.backend()
         if (!element) return
         try {
@@ -201,12 +219,24 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
               scrollLeft,
               this.data.scrollWithAnimation ? 'smooth' : 'auto',
             )
+            if (instance.__scrollIntoViewRetryTimer) {
+              clearTimeout(instance.__scrollIntoViewRetryTimer)
+              instance.__scrollIntoViewRetryTimer = undefined
+            }
             return
           }
         } catch {
           // Ignore invalid selectors and retry; ids may be attached later.
         }
-        if (attempt < 5) setTimeout(() => this.scrollToElement(id, attempt + 1), 16)
+        if (attempt < 5) {
+          if (instance.__scrollIntoViewRetryTimer) {
+            clearTimeout(instance.__scrollIntoViewRetryTimer)
+          }
+          instance.__scrollIntoViewRetryTimer = setTimeout(() => {
+            instance.__scrollIntoViewRetryTimer = undefined
+            this.scrollToElement(id, attempt + 1)
+          }, 16)
+        }
       },
       handleTouchStart(event: glassEasel.ShadowedEvent<unknown>) {
         const instance = this as unknown as ScrollRuntime
