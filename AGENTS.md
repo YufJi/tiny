@@ -14,6 +14,13 @@ A mini-program engine built on glass-easel.
   renderer** and **glass-easel component framework**. Skyline, XR-FRAME and
   exparser-only behavior are out of scope unless explicitly requested. Older
   2.33.0/2.7.0 documents are historical references, not implementation targets.
+- **Host capability alignment**: WeChat-native events and capabilities that
+  require the host (status-bar taps, native bounce/inertia, keyboard, camera,
+  native view insertion) must enter through explicit host adapters
+  (`HostNode`/host events/API handlers). Web hosts may omit a capability and
+  report it; iOS/DevTools may implement or simulate it in their adapter. Never
+  fake a native event with an unrelated in-page gesture or put the simulation
+  into the shared runtime/component contract.
 
 The workspace is split by role. Keep dependencies pointing inward: core packages
 must not depend on tools, apps, hosts, or tests.
