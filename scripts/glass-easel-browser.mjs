@@ -2427,6 +2427,31 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       assert.equal(await page.locator(`${primarySurface} iframe[data-page-id]`).count(), 1)
     })
 
+    await step('deliver status-bar taps as host events', async () => {
+      currentStep = 'deliver status-bar taps as host events'
+      const statusBar = page.getByRole('button', { name: 'Simulate status bar tap' })
+      assert.equal(await statusBar.count(), 1, 'interactive simulator status bar is missing')
+      await page.evaluate(() => {
+        const client = window.__tinyDevtool
+        window.__tinyHostEvents = []
+        window.__restoreHostEventSender = client.sendHostEvent
+        client.sendHostEvent = (name, payload) => {
+          window.__tinyHostEvents.push({ name, payload })
+          return window.__restoreHostEventSender.call(client, name, payload)
+        }
+      })
+      await statusBar.click()
+      await page.waitForFunction(
+        () => window.__tinyHostEvents?.some((event) => event.name === 'statusBarTap'),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      await page.evaluate(() => {
+        window.__tinyDevtool.sendHostEvent = window.__restoreHostEventSender
+        delete window.__restoreHostEventSender
+      })
+    })
+
     await step('navigate and go back from the debugger', async () => {
       currentStep = 'navigate and go back from the debugger'
       const primarySurface = surfaceSelector(primary.id)

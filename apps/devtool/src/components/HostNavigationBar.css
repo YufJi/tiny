@@ -15,6 +15,16 @@
   pointer-events: none;
 }
 
+.td-host-statusbar--interactive {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.td-host-statusbar--interactive:focus-visible {
+  outline: 2px solid rgba(47, 111, 237, 0.7);
+  outline-offset: -3px;
+}
+
 .td-host-navbar {
   display: flex;
   align-items: center;

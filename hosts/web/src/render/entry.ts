@@ -1,4 +1,8 @@
-import type { TemplateRegistry, TreeRenderer } from '@tiny/runtime'
+import type {
+  BuiltinHostEventSource,
+  TemplateRegistry,
+  TreeRenderer,
+} from '@tiny/runtime'
 import {
   BUILTIN_BASE_STYLES,
   BUILTIN_COMPONENT_STYLES,
@@ -11,6 +15,8 @@ export type GlassRenderEntryOptions = {
   container?: HTMLElement
   /** Host hook mapping app asset paths to loadable URLs. */
   resolveAssetUrl?: (src: string, sourcePath?: string) => string | undefined
+  /** Host-owned capability events delivered to built-in components. */
+  hostEvents?: BuiltinHostEventSource
   /** Page id when the render document was created for a specific page. */
   pageId?: string
   /** Document used to install built-in styles; defaults to the current one. */
@@ -62,6 +68,7 @@ export function createGlassRenderEntry(options: GlassRenderEntryOptions = {}): G
     createRenderer: () => createGlassRenderTree({
       container: options.container ?? document.getElementById('app') ?? document.body,
       ...(options.resolveAssetUrl ? { resolveAssetUrl: options.resolveAssetUrl } : {}),
+      ...(options.hostEvents ? { hostEvents: options.hostEvents } : {}),
     }),
     ...(options.pageId ? { pageId: options.pageId } : {}),
     ...(options.loadTemplates ? { loadTemplates: options.loadTemplates } : {}),

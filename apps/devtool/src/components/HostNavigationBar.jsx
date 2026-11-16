@@ -24,18 +24,34 @@ function StatusBarIcons() {
 
 // The iOS status bar stays above custom navigation pages. It is transparent
 // there so the page can paint a full-bleed header underneath it.
-export function HostStatusBar({ navigation, overlay = false, device }) {
+export function HostStatusBar({
+  navigation,
+  overlay = false,
+  device,
+  enabled = false,
+  onStatusBarTap,
+}) {
   const textColor = navigation.textStyle === 'white' ? '#ffffff' : '#111827';
   const scheme = navigation.textStyle === 'white' ? 'dark' : 'light';
+  const interactive = enabled && typeof onStatusBarTap === 'function';
   return (
     <div
-      className={`td-statusbar td-host-statusbar td-host-chrome--${scheme}${overlay ? ' td-host-statusbar--overlay' : ''}`}
+      className={`td-statusbar td-host-statusbar td-host-chrome--${scheme}${overlay ? ' td-host-statusbar--overlay' : ''}${interactive ? ' td-host-statusbar--interactive' : ''}`}
       style={{
         height: device.statusBarHeight,
         backgroundColor: overlay ? 'transparent' : navigation.backgroundColor,
         color: textColor,
       }}
-      aria-hidden="true"
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-label={interactive ? 'Simulate status bar tap' : undefined}
+      aria-hidden={interactive ? undefined : 'true'}
+      onClick={interactive ? onStatusBarTap : undefined}
+      onKeyDown={interactive ? (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return
+        event.preventDefault()
+        onStatusBarTap()
+      } : undefined}
     >
       <span className="td-statusbar-time">9:41</span>
       <StatusBarIcons />

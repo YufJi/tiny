@@ -336,6 +336,11 @@ export class DevtoolRuntimeClient {
     })
   }
 
+  /** Deliver a simulator host capability event to the active page. */
+  sendHostEvent(name: string, payload?: unknown, pageId?: string): boolean {
+    return this.wasmHost?.sendHostEvent(name, payload, pageId ?? this.activePageId) ?? false
+  }
+
   /** Keep the configured system-info API and `onResize` in sync with host chrome. */
   async resize(width: number, height: number): Promise<void> {
     await this.requireWasmHost().command({ type: 'resize', width, height })

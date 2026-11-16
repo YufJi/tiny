@@ -242,6 +242,7 @@ class RuntimePanel extends PureComponent {
       getMaxPageStack: () => this.state.maxPageStack,
       getDeviceId: () => this.deviceProfile.id,
       selectDevice: (deviceId) => this.selectDevice(deviceId),
+      tapStatusBar: () => this.tapStatusBar(),
       openApp: (appId, options) => this.openApp(appId, options),
       background: () => this.backgroundToLauncher(),
       closeApp: (appId) => this.closeApp(appId),
@@ -704,6 +705,12 @@ class RuntimePanel extends PureComponent {
     if (session) this.run(() => session.client.tapTab(index));
   }
 
+  tapStatusBar() {
+    const session = this.activeSession;
+    if (!session || this.props.runtime.status !== 'running') return false;
+    return session.client.sendHostEvent('statusBarTap');
+  }
+
   updateUrl(session) {
     const url = new URL(window.location.href);
     url.searchParams.set('app', session.appId);
@@ -814,6 +821,7 @@ class RuntimePanel extends PureComponent {
           onCloseShare={this.closeShareSheet}
           refreshing={Boolean(refreshing)}
           device={device}
+          onStatusBarTap={() => this.tapStatusBar()}
         />
 
         <aside className="td-side">

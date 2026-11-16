@@ -280,6 +280,20 @@ export class WasmBrowserHost {
     return tree
   }
 
+  /** Deliver a host-owned capability event to one page render document. */
+  sendHostEvent(name: string, payload?: unknown, pageId?: string): boolean {
+    const targetId = pageId ?? this.activePageId
+    const target = targetId ? this.pages.get(targetId) : undefined
+    const contentWindow = target?.iframe.contentWindow
+    if (!contentWindow) return false
+    contentWindow.postMessage({
+      type: BROWSER_RUNTIME_NAMES.hostEvent,
+      name,
+      payload,
+    }, '*')
+    return true
+  }
+
   dispose(): void {
     if (this.disposed) return
     this.disposed = true

@@ -22,6 +22,7 @@ export type {
   BuiltinComponentFactory,
   BuiltinComponentFactoryContext,
   BuiltinComponents,
+  BuiltinHostEventSource,
   BuiltinStyleSheet,
 } from './render/builtin'
 

@@ -41,6 +41,7 @@ function PreviewStage({
   onCloseShare,
   refreshing,
   device,
+  onStatusBarTap,
 }) {
   const stageBodyRef = useRef(null);
   const [scale, setScale] = useState(1);
@@ -152,6 +153,8 @@ function PreviewStage({
                   navigation={navigation}
                   overlay={!launcher && navigation.custom}
                   device={device}
+                  enabled={!launcher && status === 'running'}
+                  onStatusBarTap={onStatusBarTap}
                 />
                 {hostNavigation ? (
                   <HostNavigationBar

@@ -4,6 +4,7 @@ import { TINY_ENGINE_NAMING } from '@tiny/runtime'
 export const BROWSER_RUNTIME_NAMES = Object.freeze({
   runtimePort: `${TINY_ENGINE_NAMING.prefix}runtime-port`,
   runtimePortReady: `${TINY_ENGINE_NAMING.prefix}runtime-port-ready`,
+  hostEvent: `${TINY_ENGINE_NAMING.prefix}host-event`,
   serviceFrameClass: `${TINY_ENGINE_NAMING.prefix}runtime-service-frame`,
   renderFrameClass: `${TINY_ENGINE_NAMING.prefix}runtime-render-frame`,
   renderFrameNamePrefix: `${TINY_ENGINE_NAMING.prefix}render-`,

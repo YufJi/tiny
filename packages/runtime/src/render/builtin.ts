@@ -1,5 +1,10 @@
 import type { RenderHostAction } from '../tree-protocol/protocol'
 
+/** Host-owned events exposed to built-in components without naming a platform. */
+export type BuiltinHostEventSource = {
+  subscribe: (name: string, listener: (payload: unknown) => void) => () => void
+}
+
 /** Context the runtime passes to a host-provided built-in component factory. */
 export type BuiltinComponentFactoryContext = {
   /** Register or reuse a render style scope shared with stylesheet registration. */
@@ -30,6 +35,11 @@ export type BuiltinComponentFactoryContext = {
    * stay in the host package; the runtime only owns the generic channel.
    */
   hostRequest?: (method: string, payload: unknown) => Promise<unknown>
+  /**
+   * Platform events that do not come from mini-program DOM nodes, such as a
+   * status-bar tap. Hosts omit this seam when the capability is unavailable.
+   */
+  hostEvents?: BuiltinHostEventSource
 }
 
 export type BuiltinComponentFactory = (
