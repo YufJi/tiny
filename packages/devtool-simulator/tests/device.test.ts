@@ -9,7 +9,7 @@ import {
   previewKeyboardHeight,
   previewMenuButtonRect,
   previewSystemInfo,
-} from '../src/previewDevice'
+} from '../src/device'
 
 describe('preview device geometry', () => {
   test('reserves host chrome only for default navigation', () => {

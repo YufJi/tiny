@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
-import { getPreviewDevice } from '../src/previewDevice'
-import { resolvePreviewSafeArea } from '../src/previewStyles'
+import { getPreviewDevice } from '../src/device'
+import { resolvePreviewSafeArea } from '../src/styles'
 
 describe('preview safe area CSS', () => {
   test('resolves env() and constant() against the preview device', () => {

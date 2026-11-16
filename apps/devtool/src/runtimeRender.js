@@ -1,8 +1,7 @@
 import { resolveAssetReference } from '@tiny/runtime';
 import { bootRenderEntry } from '@tiny/host-web';
 import { generatedBaseFor } from './appRegistry';
-import { resolvePreviewDevice } from './previewDevice';
-import { installPreviewSafeAreaVariables } from './previewStyles';
+import { resolvePreviewDevice, installPreviewSafeAreaVariables } from '@tiny/devtool-simulator';
 
 const search = new URLSearchParams(window.location.search);
 const appId = search.get('app') || 'demo';

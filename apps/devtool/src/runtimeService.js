@@ -1,8 +1,7 @@
 import { bootServiceEntry } from '@tiny/host-web';
 import { createApiHost } from '@tiny/api';
 import { generatedBaseFor } from './appRegistry';
-import { resolvePreviewDevice } from './previewDevice';
-import { resolvePreviewSafeArea } from './previewStyles';
+import { resolvePreviewDevice, resolvePreviewSafeArea } from '@tiny/devtool-simulator';
 
 const search = new URLSearchParams(window.location.search);
 const appId = search.get('app') || 'demo';

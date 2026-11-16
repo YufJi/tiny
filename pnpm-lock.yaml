@@ -26,6 +26,9 @@ importers:
       '@rematch/core':
         specifier: ^2.0.1
         version: 2.2.0(redux@4.2.1)
+      '@tiny/devtool-simulator':
+        specifier: workspace:*
+        version: link:../../packages/devtool-simulator
       '@tiny/host-core-wasm':
         specifier: workspace:*
         version: link:../../native/host-core-wasm
@@ -213,6 +216,18 @@ importers:
       vitest:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
+
+  packages/devtool-simulator:
+    devDependencies:
+      react:
+        specifier: ^17.0.2
+        version: 17.0.2
+      vite:
+        specifier: ^5.4.21
+        version: 5.4.21(@types/node@25.6.2)(less@3.13.1)
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@25.6.2)(@vitest/ui@1.6.1)(less@3.13.1)
 
   packages/manifest:
     devDependencies:

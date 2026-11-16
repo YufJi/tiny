@@ -17,7 +17,7 @@ import {
   previewKeyboardHeight,
   previewMenuButtonRect,
   previewSystemInfo,
-} from './previewDevice';
+} from '@tiny/devtool-simulator';
 import {
   fetchJson,
   generatedBaseFor,

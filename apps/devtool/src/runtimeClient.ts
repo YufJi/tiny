@@ -15,7 +15,7 @@ import { createDevtoolApiHost } from './host-api'
 import { projectComponentTree } from './componentTree'
 import { pollHostPicker, showHostPicker, updateHostPicker } from './hostPicker'
 import { launchExitState } from './pageStackState'
-import type { PreviewRect } from './previewDevice'
+import type { PreviewRect } from '@tiny/devtool-simulator'
 
 export type DevtoolRuntimeStatus = 'idle' | 'connecting' | 'running' | 'terminated' | 'error'
 

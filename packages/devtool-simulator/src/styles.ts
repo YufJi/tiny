@@ -1,7 +1,7 @@
 import {
   PREVIEW_DEVICE,
   type PreviewDeviceProfile,
-} from './previewDevice'
+} from './device'
 
 const SAFE_AREA_EXPRESSION = /(?:env|constant)\(\s*safe-area-inset-(top|right|bottom|left)\s*(?:,\s*[^)]*)?\)/g
 
