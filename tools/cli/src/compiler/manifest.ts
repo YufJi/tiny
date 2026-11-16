@@ -73,6 +73,7 @@ export async function createManifest(
   for (const entry of project.components.values()) {
     components.push(await createPageArtifact(context, project, entry))
   }
+  context.diagnostics.push(...unsupportedRendererDiagnostics([...pages, ...components]))
 
   return {
     schemaVersion: 2,
@@ -205,6 +206,37 @@ async function createPageArtifact(
       : undefined,
     configuration,
   }
+}
+
+function unsupportedRendererDiagnostics(artifacts: PageArtifact[]) {
+  const unsupported = new Map<string, Array<{ path: string; sourcePath: string }>>()
+  for (const artifact of artifacts) {
+    const configuration = artifact.configuration
+    if (!configuration) continue
+    const renderer = configuration.effective.renderer
+    if (
+      typeof renderer !== 'string'
+      || renderer.trim() === ''
+      || renderer.toLowerCase() === 'webview'
+    ) {
+      continue
+    }
+    const entries = unsupported.get(renderer) ?? []
+    entries.push({ path: artifact.path, sourcePath: configuration.sourcePath })
+    unsupported.set(renderer, entries)
+  }
+  return [...unsupported].map(([renderer, entries]) => diagnostic(
+    'warning',
+    'PAGE_RENDERER_UNSUPPORTED',
+    `${entries.length} page/component entr${entries.length === 1 ? 'y' : 'ies'} request renderer "${renderer}", but Tiny renders every page through the WebView/glass-easel host.`,
+    entries[0]?.sourcePath,
+    undefined,
+    {
+      renderer,
+      supportedRenderer: 'webview',
+      pages: entries.map((item) => item.path),
+    },
+  ))
 }
 
 /**

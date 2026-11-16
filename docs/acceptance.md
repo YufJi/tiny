@@ -56,9 +56,9 @@ The browser stage verifies:
     traversal, and external-class entry points such as `placeholder-class` are
     browser-verified. Component-as-page explicit isolation is resolved from the
     component definition, while ordinary Page roots remain shared.
-17. `button` renders WeChat-compatible default/primary/warn-plain/mini/loading/disabled
-    variants; computed colors, background, radius, font size, padding, border and loading
-    spinner are asserted.
+17. `button` renders the WeChat 3.17.5 WebView default/primary/warn-plain/mini/loading/
+    disabled variants; computed colors, the fixed `184px` width, `8px 24px` padding,
+    `17px/700` typography, radius, border and loading spinner are asserted.
 18. Runtime state diagnostics observe the todos → add-todo → router → semantics → todos
     page transitions.
 

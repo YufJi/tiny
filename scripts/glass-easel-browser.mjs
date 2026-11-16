@@ -703,47 +703,53 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       const buttonByText = (text) => render.locator('tiny-button').filter({ hasText: text }).first()
       const styleOf = (text) => buttonByText(text).evaluate((element) => {
         const style = getComputedStyle(element)
+        const rect = element.getBoundingClientRect()
         return {
           color: style.color,
           backgroundColor: style.backgroundColor,
           borderRadius: style.borderRadius,
           fontSize: style.fontSize,
+          fontWeight: style.fontWeight,
+          lineHeight: style.lineHeight,
           paddingLeft: style.paddingLeft,
+          paddingTop: style.paddingTop,
           display: style.display,
           borderTopWidth: style.borderTopWidth,
           borderTopColor: style.borderTopColor,
           opacity: style.opacity,
+          width: rect.width,
+          height: rect.height,
         }
       })
-      assert.deepEqual(
-        await styleOf('Default button'),
-        {
-          color: 'rgb(0, 0, 0)',
-          backgroundColor: 'rgb(248, 248, 248)',
-          borderRadius: '5px',
-          fontSize: '18px',
-          paddingLeft: '14px',
-          display: 'block',
-          borderTopWidth: '0px',
-          borderTopColor: 'rgb(0, 0, 0)',
-          opacity: '1',
-        },
-        'default button does not match WeChat defaults',
-      )
+      const buttonDefault = await styleOf('Default button')
+      assert.equal(buttonDefault.color, 'rgb(6, 174, 86)', 'default button text color mismatch')
+      assert.equal(buttonDefault.backgroundColor, 'rgb(242, 242, 242)', 'default button background mismatch')
+      assert.equal(buttonDefault.borderRadius, '4px', 'default button radius mismatch')
+      assert.equal(buttonDefault.fontSize, '17px', 'default button font size mismatch')
+      assert.equal(buttonDefault.fontWeight, '700', 'default button weight mismatch')
+      assert.equal(buttonDefault.paddingLeft, '24px', 'default button horizontal padding mismatch')
+      assert.equal(buttonDefault.paddingTop, '8px', 'default button vertical padding mismatch')
+      assert.equal(buttonDefault.display, 'flex', 'default button display mismatch')
+      assert.equal(buttonDefault.borderTopWidth, '1px', 'default button border width mismatch')
+      assert.equal(buttonDefault.borderTopColor, 'rgba(0, 0, 0, 0.2)', 'default button border color mismatch')
+      assert.equal(buttonDefault.opacity, '1', 'default button opacity must not be reduced')
+      assert.equal(buttonDefault.width, 184, 'default button width mismatch')
+      assert.ok(buttonDefault.height > 40, 'default button collapsed vertically')
       const primary = await styleOf('Primary button')
       assert.equal(primary.color, 'rgb(255, 255, 255)', 'primary button text color mismatch')
-      assert.equal(primary.backgroundColor, 'rgb(26, 173, 25)', 'primary button background mismatch')
+      assert.equal(primary.backgroundColor, 'rgb(7, 193, 96)', 'primary button background mismatch')
       const warnPlain = await styleOf('Warn plain')
-      assert.equal(warnPlain.color, 'rgb(230, 67, 64)', 'warn plain button text color mismatch')
+      assert.equal(warnPlain.color, 'rgb(250, 81, 81)', 'warn plain button text color mismatch')
       assert.equal(warnPlain.backgroundColor, 'rgba(0, 0, 0, 0)', 'plain button must be transparent')
       assert.equal(warnPlain.borderTopWidth, '1px', 'plain button border width mismatch')
-      assert.equal(warnPlain.borderTopColor, 'rgb(230, 67, 64)', 'plain button border color mismatch')
+      assert.equal(warnPlain.borderTopColor, 'rgb(250, 81, 81)', 'plain button border color mismatch')
       const mini = await styleOf('Mini button')
-      assert.equal(mini.fontSize, '13px', 'mini button font size mismatch')
-      assert.equal(mini.display, 'inline-block', 'mini button display mismatch')
+      assert.equal(mini.fontSize, '16px', 'mini button font size mismatch')
+      assert.equal(mini.lineHeight, '32px', 'mini button line height mismatch')
+      assert.equal(mini.display, 'flex', 'mini button display mismatch')
       const disabled = await styleOf('Disabled button')
-      assert.equal(disabled.color, 'rgba(0, 0, 0, 0.3)', 'disabled button text color mismatch')
-      assert.equal(disabled.backgroundColor, 'rgb(247, 247, 247)', 'disabled button background mismatch')
+      assert.equal(disabled.color, 'rgba(0, 0, 0, 0.18)', 'disabled button text color mismatch')
+      assert.equal(disabled.backgroundColor, 'rgb(250, 250, 250)', 'disabled button background mismatch')
       assert.equal(disabled.opacity, '1', 'disabled button opacity must not be reduced')
       const loading = await buttonByText('Loading button').evaluate((element) => {
         const style = getComputedStyle(element, '::before')
@@ -1493,6 +1499,41 @@ export async function runWechatDemoAcceptance({ baseUrl, app = 'wechat-demo', br
         { timeout: STEP_TIMEOUT },
       )
       assert.ok((await render.locator('tiny-button').count()) > 0, 'component buttons did not render')
+      const buttonStyle = (text) => render.locator('tiny-button')
+        .filter({ hasText: text })
+        .first()
+        .evaluate((element) => {
+          const style = getComputedStyle(element)
+          const rect = element.getBoundingClientRect()
+          return {
+            width: rect.width,
+            height: rect.height,
+            color: style.color,
+            backgroundColor: style.backgroundColor,
+            borderRadius: style.borderRadius,
+            display: style.display,
+            paddingLeft: style.paddingLeft,
+            paddingTop: style.paddingTop,
+          }
+        })
+      const primary = await buttonStyle('页面主操作 Normal')
+      assert.equal(primary.width, 184, 'WeChat demo primary button width mismatch')
+      assert.ok(primary.height > 40, 'WeChat demo primary button collapsed vertically')
+      assert.equal(primary.color, 'rgb(255, 255, 255)', 'WeChat demo primary button text color mismatch')
+      assert.equal(primary.backgroundColor, 'rgb(7, 193, 96)', 'WeChat demo primary button background mismatch')
+      assert.equal(primary.borderRadius, '4px', 'WeChat demo primary button radius mismatch')
+      assert.equal(primary.display, 'flex', 'WeChat demo primary button display mismatch')
+      assert.equal(primary.paddingLeft, '24px', 'WeChat demo primary button horizontal padding mismatch')
+      assert.equal(primary.paddingTop, '8px', 'WeChat demo primary button vertical padding mismatch')
+      const secondary = await buttonStyle('页面次要操作 Normal')
+      assert.equal(secondary.color, 'rgb(6, 174, 86)', 'WeChat demo secondary button text color mismatch')
+      assert.equal(secondary.backgroundColor, 'rgb(242, 242, 242)', 'WeChat demo secondary button background mismatch')
+      const warn = await buttonStyle('警告类操作 Normal')
+      assert.equal(warn.color, 'rgb(250, 81, 81)', 'WeChat demo warn button text color mismatch')
+      assert.equal(warn.backgroundColor, 'rgb(242, 242, 242)', 'WeChat demo warn button background mismatch')
+      const disabled = await buttonStyle('页面主操作 Disabled')
+      assert.equal(disabled.color, 'rgba(0, 0, 0, 0.18)', 'WeChat demo disabled button text color mismatch')
+      assert.equal(disabled.backgroundColor, 'rgb(250, 250, 250)', 'WeChat demo disabled button background mismatch')
     })
 
     await step('expose view aria roles', async () => {

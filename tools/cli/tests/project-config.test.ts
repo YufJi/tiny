@@ -166,6 +166,46 @@ describe('project and app configuration', () => {
     }
   })
 
+  test('reports non-WebView page renderers instead of silently falling back', async () => {
+    const rendererRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'cli-renderer-'))
+    try {
+      await write(rendererRoot, 'app.json', JSON.stringify({
+        pages: ['pages/skyline/index', 'pages/webview/index'],
+      }))
+      await write(rendererRoot, 'app.js', 'App({})\n')
+      await write(rendererRoot, 'pages/skyline/index.js', 'Page({})\n')
+      await write(rendererRoot, 'pages/skyline/index.json', JSON.stringify({
+        renderer: 'skyline',
+      }))
+      await write(rendererRoot, 'pages/skyline/index.wxml', '<view>skyline</view>\n')
+      await write(rendererRoot, 'pages/webview/index.js', 'Page({})\n')
+      await write(rendererRoot, 'pages/webview/index.json', JSON.stringify({
+        renderer: 'webview',
+      }))
+      await write(rendererRoot, 'pages/webview/index.wxml', '<view>webview</view>\n')
+
+      const result = await compileMiniProgram({
+        sourceDir: rendererRoot,
+        outputDir: path.join(rendererRoot, 'dist'),
+        clean: true,
+      })
+      const unsupported = result.diagnostics.filter(
+        (item) => item.code === 'PAGE_RENDERER_UNSUPPORTED',
+      )
+      expect(unsupported).toHaveLength(1)
+      expect(unsupported[0]).toMatchObject({
+        severity: 'warning',
+        details: {
+          renderer: 'skyline',
+          supportedRenderer: 'webview',
+          pages: ['pages/skyline/index'],
+        },
+      })
+    } finally {
+      await fs.rm(rendererRoot, { recursive: true, force: true })
+    }
+  })
+
   test('rejects a non-miniprogram compile type', async () => {
     const pluginRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'cli-plugin-'))
     try {
