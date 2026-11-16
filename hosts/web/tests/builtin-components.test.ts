@@ -1186,6 +1186,58 @@ describe('P0 built-in components', () => {
     expect(calls).toEqual([{ top: 280, left: 5, behavior: 'auto' }])
   })
 
+  test('scroll-view drops stale scroll-into-view retries when the target changes', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      data: { target: 'target' },
+      using: { 'scroll-view': builtins['scroll-view'] },
+      template: compilePage(
+        '<scroll-view id="scroll" scroll-y scroll-into-view="{{ target }}">'
+          + '<view id="target">target</view><view id="other">other</view>'
+          + '</scroll-view>',
+      ),
+    })
+    const instance = space.createComponentByUrl(
+      'root',
+      'page',
+      null,
+      new glassEasel.EmptyBackendContext(),
+    )
+    const scrollHost = instance.getShadowRoot()?.getElementById('scroll')?.asGeneralComponent()!
+    attach(scrollHost)
+    const calls: Array<{ top: number; left: number; behavior: string }> = []
+    const other = {
+      getBoundingClientRect: () => ({ top: 340, left: 50 }),
+    }
+    const backend = {
+      scrollTop: 20,
+      scrollLeft: 5,
+      getBoundingClientRect: () => ({ top: 80, left: 10 }),
+      querySelector: (selector: string) => {
+        if (selector === '#target') return null
+        if (selector === '#other') return other
+        return null
+      },
+      scrollTo: (options: { top: number; left: number; behavior: string }) => calls.push(options),
+    }
+    const main = scrollHost.getShadowRoot()?.getElementById('main') as {
+      getBackendElement?: () => unknown
+    }
+    main.getBackendElement = () => backend
+    ;(scrollHost as unknown as { initScroller: (element: unknown) => void }).initScroller(backend)
+    ;(scrollHost as unknown as {
+      applyScrollPosition: (field: 'scrollIntoView') => void
+    }).applyScrollPosition('scrollIntoView')
+
+    ;(instance as unknown as { setData: (patch: Record<string, unknown>) => void })
+      .setData({ target: 'other' })
+    await new Promise((resolve) => setTimeout(resolve, 120))
+
+    expect(calls).toEqual([{ top: 280, left: 5, behavior: 'auto' }])
+  })
+
   test('swiper keeps hidden items in the list and exposes displayMultipleItems', async () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)
