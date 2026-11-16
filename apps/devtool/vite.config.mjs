@@ -112,7 +112,7 @@ export default defineConfig(({ command, isPreview }) => {
         '@tiny/runtime/glass-easel': path.join(workspaceRoot, 'packages/runtime/src/glass-easel.ts'),
         '@tiny/runtime': path.join(workspaceRoot, 'packages/runtime/src/index.ts'),
         '@tiny/api': path.join(workspaceRoot, 'packages/api/src/index.ts'),
-        '@tiny/devtool-simulator': path.join(workspaceRoot, 'packages/devtool-simulator/src/index.ts'),
+        '@tiny/devtool-simulator': path.join(workspaceRoot, 'apps/devtool-simulator/src/index.ts'),
         '@tiny/host-web': path.join(workspaceRoot, 'hosts/web/src/index.ts'),
         '@tiny/host-web-components': path.join(workspaceRoot, 'hosts/web-components/src/index.ts'),
         '@tiny/manifest': path.join(workspaceRoot, 'packages/manifest/src/index.ts'),

@@ -4,7 +4,7 @@ Host-independent simulator UI and geometry for Tiny mini-programs.
 
 - `device.ts` owns device profiles, safe areas, orientation and host chrome geometry.
 - `styles.ts` resolves simulated safe-area CSS.
-- `react/` owns the device shell and host chrome.
+- `components/` owns the device shell and host chrome.
 - `runtime-port.ts` defines the adapter boundary for Web iframes, Electron
   `WebContentsView`, or future native surfaces.
 
