@@ -852,16 +852,16 @@ export class LogicTreeAdapter {
     let scroll: RenderAnimationRequest['scroll']
     if (typeof settings.scrollSource === 'string' && settings.scrollSource) {
       const source = this.animationTarget(component, settings.scrollSource)
-      if (source) {
-        const startOffset = Number(settings.startScrollOffset)
-        const endOffset = Number(settings.endScrollOffset)
-        const timeRange = Number(settings.timeRange)
-        scroll = {
-          sourceViewId: this.renderIdentity(source),
-          startOffset: Number.isFinite(startOffset) ? startOffset : 0,
-          endOffset: Number.isFinite(endOffset) ? endOffset : 0,
-          ...(Number.isFinite(timeRange) && timeRange > 0 ? { timeRange } : {}),
-        }
+      const startOffset = Number(settings.startScrollOffset)
+      const endOffset = Number(settings.endScrollOffset)
+      const timeRange = Number(settings.timeRange)
+      scroll = {
+        sourceViewId: source ? this.renderIdentity(source) : '',
+        sourceSelector: settings.scrollSource,
+        sourceScopeId: this.animationScopeId(component),
+        startOffset: Number.isFinite(startOffset) ? startOffset : 0,
+        endOffset: Number.isFinite(endOffset) ? endOffset : 0,
+        ...(Number.isFinite(timeRange) && timeRange > 0 ? { timeRange } : {}),
       }
     }
     this.viewAnimation?.play({

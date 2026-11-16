@@ -2669,7 +2669,12 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     for (const running of animationsByElement.get(element) ?? []) running.cancel()
     stopScrollAnimation(element)
     if (request.scroll) {
-      const sourceHost = elementForTarget(request.scroll.sourceViewId)
+      const sourceHost = (
+        request.scroll.sourceViewId
+          ? elementForTarget(request.scroll.sourceViewId)
+          : null
+      )
+        ?? scopedElement(request.scroll.sourceScopeId, request.scroll.sourceSelector)
       const source = sourceHost ? findScrollContainer(sourceHost) : null
       if (source) {
         const timeRange = request.scroll.timeRange ?? request.duration
