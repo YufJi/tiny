@@ -67,6 +67,21 @@ WebView renderer 和 glass-easel component framework 为准。
 - **区间**：当前权重下约 52.3%；调整权重会在 51–54% 之间浮动（把 API 权重降到 15%、框架权重升到 20% 约 53%），但不会到 60%。
 - 所有百分比都是**工程估算**，用于判断量级和优先级，不是精确指标。
 
+### 2.4 对齐原则
+
+- **微信行为是契约源**。WXML 属性、组件事件名、`event.detail`、生命周期和错误降级都先对照微信
+  3.17.5 WebView + glass-easel，而不是按浏览器现有能力反推。
+- **区分 DOM 事件与微信 native event**。微信源码里的 native event 是内置组件 HostNode
+  或宿主能力发出的事件，不等同于浏览器 `scroll`/`touch*`。能在组件内用 DOM 语义正确复现的，
+  才留在组件实现里。
+- **宿主能力必须通过显式适配层注入**。状态栏点击、原生回弹/惯性、键盘、相机、native view
+  insertion 等能力，必须走 HostNode、HostEvent 或宿主 API handler；通用 runtime、
+  service/render 协议和组件实现不得用无关的页面内手势伪造。例如不能用页面内双击代替微信的
+  状态栏点击。
+- **能力缺失要显式降级**。Web 宿主可以没有某项 native 能力并报告 unsupported/no-op；
+  iOS/DevTools 等宿主按各自能力实现或模拟。模拟必须留在 host/simulator 层，不能改变
+  通用组件的事件契约。
+
 ---
 
 ## 3. 总评分

@@ -35,6 +35,9 @@ export type RenderAnimationRequest = {
   /** Scroll-driven timing (`scrollSource` + offsets). */
   scroll?: {
     sourceViewId: RenderNodeId
+    /** Selector fallback when the source is a component-hosted node. */
+    sourceSelector?: string
+    sourceScopeId?: RenderNodeId
     startOffset: number
     endOffset: number
     timeRange?: number

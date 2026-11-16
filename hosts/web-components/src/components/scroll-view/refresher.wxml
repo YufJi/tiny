@@ -1,4 +1,4 @@
-<div id="container" class="tiny-refresher-container" style="height: {{threshold}}px; background: {{background}};">
+<div id="container" class="tiny-refresher-container" style="background: {{background}};">
   <block wx:if="{{normalizedStyle}}">
     <div class="tiny-refresher-default-wrap">
       <div class="tiny-refresher-default-inner" style="max-height: {{maxHeight}}px;">
@@ -9,6 +9,8 @@
     </div>
   </block>
   <block wx:else>
-    <div class="tiny-refresher-custom"><slot /></div>
+    <div class="tiny-refresher-custom">
+      <slot />
+    </div>
   </block>
 </div>

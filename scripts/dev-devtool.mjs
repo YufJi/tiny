@@ -19,13 +19,16 @@ console.log(
     '(restart after adding or removing tests/apps fixtures)',
 )
 
+let stopping = false
 const children = apps.map((app) => {
   const child = spawn(process.execPath, ['scripts/watch-mini.mjs', app.source, app.output], {
     cwd: rootDir,
     stdio: 'inherit',
   })
   child.on('exit', (code) => {
-    if (code !== 0) console.error(`[dev:devtool] ${app.id} watcher exited with ${code}`)
+    if (!stopping && code !== 0) {
+      console.error(`[dev:devtool] ${app.id} watcher exited with ${code}`)
+    }
   })
   return child
 })
@@ -37,8 +40,7 @@ const devtool = spawn('pnpm', ['--filter', 'devtool', 'dev'], {
 })
 children.push(devtool)
 
-let stopping = false
-function shutdown() {
+function shutdown(exitCode = 0) {
   if (stopping) return
   stopping = true
   for (const child of children) {
@@ -50,8 +52,15 @@ function shutdown() {
       child.kill('SIGTERM')
     }
   }
-  setTimeout(() => process.exit(0), 500)
+  setTimeout(() => process.exit(exitCode), 500)
 }
 
-process.on('SIGINT', shutdown)
-process.on('SIGTERM', shutdown)
+devtool.on('exit', (code, signal) => {
+  if (stopping) return
+  const reason = signal ? `signal ${signal}` : `code ${code ?? 1}`
+  console.error(`[dev:devtool] devtool server exited (${reason})`)
+  shutdown(code ?? 1)
+})
+
+process.on('SIGINT', () => shutdown(0))
+process.on('SIGTERM', () => shutdown(0))

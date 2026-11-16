@@ -1,21 +1,8 @@
 <div id="wrap" class="tiny-scroll-view {{enableFlex ? 'tiny-scroll-view-flex' : ''}}">
-  <refresher-impl
-    wx:if="{{refresherEnabled}}"
-    id="refresher"
-    default-style="{{refresherDefaultStyle}}"
-    threshold="{{refresherThreshold}}"
-    background="{{refresherBackground}}"
-    triggered="{{refresherTriggered}}"
-    enable-passive="{{enablePassive}}"
-    bindpulling="handleRefresherPulling"
-    bindrefresh="handleRefresherRefresh"
-    bindrestore="handleRefresherRestore"
-    bindabort="handleRefresherAbort"
-  ><slot name="refresher" /></refresher-impl>
   <div
     id="main"
-    style="position: relative; z-index: 1;"
-    class="tiny-scroll-view {{enableFlex ? 'tiny-scroll-view-flex' : ''}} {{scrollX ? 'is-horizontal' : ''}} {{showScrollbar ? '' : 'is-hidden-scrollbar'}} {{pagingEnabled ? 'is-paging' : ''}}"
+    style="position: relative; z-index: 1; overflow-x: hidden; overflow-y: hidden;"
+    class="tiny-scroll-view {{enableFlex ? 'tiny-scroll-view-flex' : ''}} {{scrollX ? 'is-horizontal' : ''}} {{enhanced && !showScrollbar ? 'is-hidden-scrollbar' : ''}} {{enhanced && pagingEnabled ? 'is-paging' : ''}}"
     bindscroll="handleScroll"
     bindtap="handleTap"
     bindtouchstart="handleTouchStart"
@@ -23,6 +10,19 @@
     bindtouchend="handleTouchEnd"
     bindtouchcancel="handleTouchCancel"
   >
+    <refresher-impl
+      wx:if="{{refresherEnabled}}"
+      id="refresher"
+      default-style="{{refresherDefaultStyle}}"
+      threshold="{{refresherThreshold}}"
+      background="{{refresherBackground}}"
+      triggered="{{refresherTriggered}}"
+      enable-passive="{{enablePassive}}"
+      bindpulling="handleRefresherPulling"
+      bindrefresh="handleRefresherRefresh"
+      bindrestore="handleRefresherRestore"
+      bindabort="handleRefresherAbort"
+    ><slot name="refresher" /></refresher-impl>
     <div id="content" class="tiny-scroll-view-content"><slot /></div>
   </div>
   <div id="barWrap" class="tiny-wins-scrollbar" style="display: none;">

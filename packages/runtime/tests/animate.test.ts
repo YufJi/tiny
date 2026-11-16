@@ -187,8 +187,10 @@ describe('this.animate', () => {
       startOffset: 10,
       endOffset: 110,
       timeRange: 2000,
+      sourceSelector: '.source',
     })
     expect(scrollPlay?.scroll?.sourceViewId).toBeTruthy()
+    expect(scrollPlay?.scroll?.sourceScopeId).toBeTruthy()
     await host.close()
   })
 

@@ -2553,6 +2553,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const activeAnimationRequests = new Map<string, RenderAnimationRequest>()
   const animatedElementById = new Map<string, Element>()
   const PENDING_ANIMATION_LIMIT = 64
+  const PENDING_ANIMATION_RETRY_LIMIT = 120
+  let pendingAnimationRetryTimer: ReturnType<typeof setTimeout> | null = null
+  let pendingAnimationRetryCount = 0
 
   const matchesQueryToken = (element: Element, token: string): boolean => {
     const match = /^([A-Za-z_][\w-]*)?(#[\w-]+)?((?:\.[\w-]+)*)$/.exec(token)
@@ -2669,7 +2672,12 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     for (const running of animationsByElement.get(element) ?? []) running.cancel()
     stopScrollAnimation(element)
     if (request.scroll) {
-      const sourceHost = elementForTarget(request.scroll.sourceViewId)
+      const sourceHost = (
+        request.scroll.sourceViewId
+          ? elementForTarget(request.scroll.sourceViewId)
+          : null
+      )
+        ?? scopedElement(request.scroll.sourceScopeId, request.scroll.sourceSelector)
       const source = sourceHost ? findScrollContainer(sourceHost) : null
       if (source) {
         const timeRange = request.scroll.timeRange ?? request.duration
@@ -2712,17 +2720,39 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const flushPendingAnimations = (): void => {
     if (pendingAnimations.size === 0) return
     for (const [viewId, request] of [...pendingAnimations]) {
-      const element = elementForViewId(viewId)
+      const element = elementForTarget(viewId)
+        ?? scopedElement(request.scopeId, request.selector)
       if (!element) continue
       pendingAnimations.delete(viewId)
       animatedElementById.set(viewId, element)
       playOn(element, request)
     }
+    if (pendingAnimations.size > 0) schedulePendingAnimationRetry()
+  }
+
+  const stopPendingAnimationRetry = (): void => {
+    if (pendingAnimationRetryTimer !== null) clearTimeout(pendingAnimationRetryTimer)
+    pendingAnimationRetryTimer = null
+    pendingAnimationRetryCount = 0
+  }
+
+  const schedulePendingAnimationRetry = (): void => {
+    if (
+      pendingAnimations.size === 0
+      || pendingAnimationRetryTimer !== null
+      || pendingAnimationRetryCount >= PENDING_ANIMATION_RETRY_LIMIT
+    ) return
+    pendingAnimationRetryCount += 1
+    pendingAnimationRetryTimer = setTimeout(() => {
+      pendingAnimationRetryTimer = null
+      flushPendingAnimations()
+    }, 16)
   }
 
   const replayReplacedAnimations = (): void => {
     for (const [viewId, request] of activeAnimationRequests) {
-      const element = elementForViewId(viewId)
+      const element = elementForTarget(viewId)
+        ?? scopedElement(request.scopeId, request.selector)
       if (!element) continue
       const previous = animatedElementById.get(viewId)
       if (previous === element) continue
@@ -2757,6 +2787,8 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         if (oldest !== undefined) pendingAnimations.delete(oldest)
       }
       pendingAnimations.set(viewId, request)
+      pendingAnimationRetryCount = 0
+      schedulePendingAnimationRetry()
     }
   }
 
@@ -2772,6 +2804,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       animationsByElement.delete(element)
       stopScrollAnimation(element)
     }
+    if (pendingAnimations.size === 0) stopPendingAnimationRetry()
   }
 
   const clearTabBar = (): void => {

@@ -1576,6 +1576,56 @@ export async function runWechatDemoAcceptance({ baseUrl, app = 'wechat-demo', br
       assert.notEqual(activeDot, 0, 'swiper autoplay did not advance after enabling it')
     })
 
+    await step('drive scroll animations from the scroll-view source', async () => {
+      currentStep = 'drive scroll animations from the scroll-view source'
+      await page.goto(appUrl(baseUrl, app, { path: 'packageComponent/pages/view/scroll-view/scroll-view' }), {
+        waitUntil: 'domcontentloaded',
+        timeout: STEP_TIMEOUT,
+      })
+      await page.waitForFunction(() => Boolean(window.__tinyRuntime), null, { timeout: STEP_TIMEOUT })
+      const render = await activeRender()
+      await render.waitForFunction(
+        () => document.getElementById('scroll-sample-object1')?.getAnimations().length === 1,
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const scrollTo = async (scrollTop) => {
+        await render.evaluate((offset) => {
+          const source = document.getElementById('scroll-view_D')
+          if (!(source instanceof HTMLElement)) throw new Error('scroll source not found')
+          const scroller = [source, ...source.querySelectorAll('*')].find((element) => (
+            /(auto|scroll)/.test(getComputedStyle(element).overflowY)
+          ))
+          if (!(scroller instanceof HTMLElement)) throw new Error('scroll container not found')
+          scroller.scrollTop = offset
+        }, scrollTop)
+      }
+
+      await scrollTo(75)
+      await render.waitForFunction(
+        () => getComputedStyle(document.getElementById('scroll-sample-object1')).borderTopLeftRadius === '25%',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      await scrollTo(150)
+      await render.waitForFunction(
+        () => getComputedStyle(document.getElementById('scroll-sample-object1')).borderTopLeftRadius === '50%',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      await scrollTo(225)
+      await render.waitForFunction(
+        () => Number(getComputedStyle(document.getElementById('scroll-sample-object2')).opacity) < 1,
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const animationState = await render.evaluate(() => ({
+        one: document.getElementById('scroll-sample-object1')?.getAnimations()[0]?.playState,
+        two: document.getElementById('scroll-sample-object2')?.getAnimations()[0]?.playState,
+      }))
+      assert.deepEqual(animationState, { one: 'paused', two: 'paused' })
+    })
+
     await step('render the radio demo', async () => {
       currentStep = 'render the radio demo'
       await page.goto(appUrl(baseUrl, app, { path: 'packageComponent/pages/form/radio/radio' }), {
