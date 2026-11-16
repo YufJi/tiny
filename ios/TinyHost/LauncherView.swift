@@ -1,13 +1,27 @@
 import SwiftUI
+import UIKit
+
+struct MiniProgramPresentation: Identifiable {
+  let app: AppInfo
+  let session: MiniProgramSession
+
+  var id: String { app.id }
+}
 
 @MainActor
 final class LauncherModel: ObservableObject {
+  static let maxLiveSessions = 3
+
   @Published var apps: [AppInfo] = []
   @Published var loadError: String?
-  @Published var selectedApp: AppInfo?
+  @Published var activePresentation: MiniProgramPresentation?
+  @Published private(set) var liveAppIds: [String] = []
   @Published var smoke: Bool
 
   private let launchAppId: String?
+  private let runSessionSmoke: Bool
+  private var sessions: [String: MiniProgramSession] = [:]
+  private var recency: [String] = []
 
   init() {
     let arguments = ProcessInfo.processInfo.arguments
@@ -17,6 +31,7 @@ final class LauncherModel: ObservableObject {
       launchAppId = nil
     }
     smoke = arguments.contains("-TINY_SMOKE")
+    runSessionSmoke = arguments.contains("-TINY_LRU_SMOKE")
   }
 
   func load() {
@@ -24,12 +39,136 @@ final class LauncherModel: ObservableObject {
       apps = try AppRegistry.load()
       HostDebug.log("apps loaded: \(apps.map { $0.id }.joined(separator: ","))")
       loadError = nil
-      if let launchAppId, let app = apps.first(where: { $0.id == launchAppId }) {
-        selectedApp = app
+      if runSessionSmoke {
+        runSessionPoolSmoke()
+      } else if let launchAppId, let app = apps.first(where: { $0.id == launchAppId }) {
+        open(app)
       }
     } catch {
       loadError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
       HostDebug.log("app registry failed: \(loadError ?? "")")
+    }
+  }
+
+  func open(_ app: AppInfo) {
+    let session = acquireSession(for: app)
+    activePresentation = MiniProgramPresentation(app: app, session: session)
+    session.setVisible(true)
+    HostDebug.log("launcher open \(app.id); live=\(liveAppIds.joined(separator: ","))")
+  }
+
+  func close(_ session: MiniProgramSession) {
+    if activePresentation?.session === session {
+      activePresentation = nil
+    }
+    removeSession(appId: session.app.id)
+  }
+
+  func evictInactiveSessions() {
+    let activeId = activePresentation?.app.id
+    let victims = recency.filter { $0 != activeId }
+    guard !victims.isEmpty else { return }
+    HostDebug.log("launcher memory warning; evicting \(victims.joined(separator: ","))")
+    for appId in victims {
+      removeSession(appId: appId)
+    }
+  }
+
+  func isLive(_ app: AppInfo) -> Bool {
+    sessions[app.id] != nil
+  }
+
+  private func acquireSession(for app: AppInfo) -> MiniProgramSession {
+    let session = reusableSession(for: app)
+    touch(app.id)
+    var protectedIds: Set<String> = [app.id]
+    if let activeId = activePresentation?.app.id {
+      protectedIds.insert(activeId)
+    }
+    evictIfNeeded(protecting: protectedIds)
+    publishLiveApps()
+    return session
+  }
+
+  private func reusableSession(for app: AppInfo) -> MiniProgramSession {
+    if let session = sessions[app.id], !session.isClosed {
+      return session
+    }
+    if let stale = sessions.removeValue(forKey: app.id) {
+      stale.close()
+      recency.removeAll { $0 == app.id }
+    }
+    let session = MiniProgramSession(app: app, smoke: smoke)
+    sessions[app.id] = session
+    recency.removeAll { $0 == app.id }
+    recency.append(app.id)
+    HostDebug.log("launcher session create \(app.id)")
+    return session
+  }
+
+  private func touch(_ appId: String) {
+    recency.removeAll { $0 == appId }
+    recency.append(appId)
+  }
+
+  private func evictIfNeeded(protecting protectedIds: Set<String>) {
+    while sessions.count > Self.maxLiveSessions {
+      guard let victim = recency.first(where: { !protectedIds.contains($0) }) else { break }
+      HostDebug.log("launcher LRU evict \(victim)")
+      removeSession(appId: victim)
+    }
+  }
+
+  private func removeSession(appId: String) {
+    recency.removeAll { $0 == appId }
+    sessions.removeValue(forKey: appId)?.close()
+    publishLiveApps()
+  }
+
+  private func publishLiveApps() {
+    liveAppIds = Array(recency.reversed())
+  }
+
+  private func runSessionPoolSmoke() {
+    guard apps.count >= 4 else {
+      HostDebug.writeResult([
+        "ok": false,
+        "error": "need at least four apps for the LRU smoke",
+        "apps": apps.map(\.id),
+      ], name: "session-lru-smoke.json")
+      return
+    }
+    let firstApp = apps[0]
+    let evictedApp = apps[1]
+    let thirdApp = apps[2]
+    let fourthApp = apps[3]
+    let first = acquireSession(for: firstApp)
+    _ = acquireSession(for: evictedApp)
+    _ = acquireSession(for: thirdApp)
+    let reopened = acquireSession(for: firstApp)
+    let reused = first === reopened
+    _ = acquireSession(for: fourthApp)
+    let live = Set(sessions.keys)
+    let expected = Set([firstApp.id, thirdApp.id, fourthApp.id])
+    let evicted = !live.contains(evictedApp.id)
+    let ok = reused && evicted && live == expected && sessions.count == LauncherModel.maxLiveSessions
+    let result: [String: Any] = [
+      "ok": ok,
+      "runId": HostDebug.runId,
+      "reused": reused,
+      "evicted": evicted,
+      "evictedApp": evictedApp.id,
+      "maxLiveSessions": LauncherModel.maxLiveSessions,
+      "expected": Array(expected),
+      "live": Array(live),
+    ]
+    HostDebug.writeResult(result, name: "session-lru-smoke.json")
+    HostDebug.log(
+      "session LRU smoke ok=\(ok) reused=\(reused) evicted=\(evicted) " +
+      "live=\(live.sorted().joined(separator: ","))"
+    )
+    for appId in recency {
+      removeSession(appId: appId)
     }
   }
 }
@@ -52,7 +191,7 @@ struct LauncherView: View {
           } else {
             ForEach(Array(model.apps.enumerated()), id: \.element.id) { index, app in
               Button {
-                model.selectedApp = app
+                model.open(app)
               } label: {
                 appCard(app, index: index)
               }
@@ -70,8 +209,10 @@ struct LauncherView: View {
       .navigationTitle("Tiny 小程序")
       .navigationBarTitleDisplayMode(.large)
     }
-    .fullScreenCover(item: $model.selectedApp) { app in
-      MiniProgramView(app: app, smoke: model.smoke)
+    .fullScreenCover(item: $model.activePresentation) { presentation in
+      MiniProgramView(session: presentation.session) {
+        model.close(presentation.session)
+      }
     }
     .task {
       model.load()
@@ -81,6 +222,11 @@ struct LauncherView: View {
           NativeHostCoreSmoke.run()
         }
       }
+    }
+    .onReceive(NotificationCenter.default.publisher(
+      for: UIApplication.didReceiveMemoryWarningNotification
+    )) { _ in
+      model.evictInactiveSessions()
     }
   }
 
@@ -93,6 +239,14 @@ struct LauncherView: View {
         .font(.system(size: 15))
         .foregroundColor(.primary)
         .fixedSize(horizontal: false, vertical: true)
+      if !model.liveAppIds.isEmpty {
+        Label(
+          "\(model.liveAppIds.count)/\(LauncherModel.maxLiveSessions) 个会话保活中",
+          systemImage: "memorychip"
+        )
+        .font(.system(size: 12, weight: .medium))
+        .foregroundColor(Color.accentColor)
+      }
     }
     .padding(.vertical, 6)
   }
@@ -117,9 +271,18 @@ struct LauncherView: View {
           .font(.system(size: 13))
           .foregroundColor(.secondary)
           .lineLimit(1)
-        Text("\(app.pages) 个页面")
-          .font(.system(size: 11))
-          .foregroundColor(Color.secondary.opacity(0.8))
+        HStack(spacing: 6) {
+          Text("\(app.pages) 个页面")
+            .foregroundColor(Color.secondary.opacity(0.8))
+          if model.isLive(app) {
+            Text("保活中")
+              .foregroundColor(.green)
+              .padding(.horizontal, 6)
+              .padding(.vertical, 2)
+              .background(Capsule().fill(Color.green.opacity(0.12)))
+          }
+        }
+        .font(.system(size: 11, weight: .medium))
       }
 
       Spacer(minLength: 8)
@@ -175,7 +338,7 @@ struct LauncherView: View {
       Text("Tiny 引擎")
         .font(.system(size: 12, weight: .semibold))
         .foregroundColor(.secondary)
-      Text("渲染层 WKWebView · 逻辑层 JavaScriptCore · 页面按 WKWebView 隔离")
+      Text("渲染层 WKWebView · 逻辑层 JavaScriptCore · 最近 3 个会话保活")
         .font(.system(size: 11))
         .foregroundColor(Color.secondary.opacity(0.75))
     }

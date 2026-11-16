@@ -110,6 +110,9 @@ pnpm ios:smoke:jsc    # 在 macOS jsc 里启动 demo 的 service engine + app-da
 
 真机安装使用 `pnpm ios:device`（Xcode 自动签名 + `devicectl`）；首次启动前仍需在设备上信任开发者证书。真机 smoke 不替代性能、安全或长时运行测试。
 
+会话池另有轻量断言：以 `-TINY_LRU_SMOKE` 启动后读取 app 容器的
+`Documents/session-lru-smoke.json`，验证已有会话被复用、打开第 4 个应用时淘汰最久未使用的后台会话。
+
 ## 测试宿主和调试器不是一回事 {#hosts kicker="两种宿主"}
 
 两者都通过 @tiny/host-web 的 WasmBrowserHost 启动 service 和每页 render 线程，但一个服务自动化，一个服务人。
