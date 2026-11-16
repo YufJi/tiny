@@ -1044,14 +1044,13 @@ describe('P0 built-in components', () => {
         'swiper-item': builtins['swiper-item'],
       },
       template: compilePage(`
-        <scroll-view id="scroll" type="list" scroll-y upper-threshold="10" lower-threshold="20" enhanced refresher-enabled paging-enabled show-scrollbar="{{false}}" bindscroll="onScroll" bindscrolltoupper="onUpper" bindscrolltolower="onLower" bindrefresherwillrefresh="onWillRefresh" bindrefresherrefresh="onRefresh" bindrefresherrestore="onRestore" bindrefresherabort="onAbort" binddragstart="onDragStart"><view>content</view></scroll-view>
+        <scroll-view id="scroll" type="list" scroll-y upper-threshold="10" lower-threshold="20" enhanced refresher-enabled paging-enabled show-scrollbar="{{false}}" bindscroll="onScroll" bindscrolltoupper="onUpper" bindscrolltolower="onLower" bindrefresherrefresh="onRefresh" bindrefresherrestore="onRestore" bindrefresherabort="onAbort" binddragstart="onDragStart"><view>content</view></scroll-view>
         <swiper id="swiper" indicator-dots indicator-color="#112233" indicator-active-color="#445566" current-item-id="b" previous-margin="20px" next-margin="10px"><swiper-item id="item-a" item-id="a">a</swiper-item><swiper-item id="item-b" item-id="b">b</swiper-item></swiper>
       `),
       methods: {
         onScroll(event: glassEasel.ShadowedEvent<unknown>) { events.scroll = event.detail },
         onUpper(event: glassEasel.ShadowedEvent<unknown>) { events.upper = event.detail },
         onLower(event: glassEasel.ShadowedEvent<unknown>) { events.lower = event.detail },
-        onWillRefresh(event: glassEasel.ShadowedEvent<unknown>) { events.willRefresh = event.detail },
         onRefresh(event: glassEasel.ShadowedEvent<unknown>) { events.refresh = event.detail },
         onRestore(event: glassEasel.ShadowedEvent<unknown>) { events.restore = event.detail },
         onAbort(event: glassEasel.ShadowedEvent<unknown>) { events.abort = event.detail },
@@ -1081,20 +1080,19 @@ describe('P0 built-in components', () => {
     expect(events.dragstart).toMatchObject({ scrollTop: expect.any(Number) })
     nativeScroll.triggerEvent('touchend', { changedTouches: [{ clientX: 120, clientY: 20 }] })
 
-    ;(scrollHost as unknown as { handleRefresherWillRefresh: (event: unknown) => void })
-      .handleRefresherWillRefresh({ detail: { dy: 80 } })
-    expect(events.willRefresh).toEqual({ dy: 80 })
     ;(scrollHost as unknown as { handleRefresherRefresh: (event: unknown) => void })
       .handleRefresherRefresh({ detail: { dy: 80 } })
     expect(events.refresh).toMatchObject({ dy: 80 })
-    expect(scrollHost.data.refresherTriggered).toBe(true)
+    expect(scrollHost.data.refresherTriggered).toBe(false)
+    expect((scrollHost as unknown as { __refreshing?: boolean }).__refreshing).toBe(true)
     ;(scrollHost as unknown as { handleRefresherRestore: (event: unknown) => void })
       .handleRefresherRestore({ detail: { dy: 40 } })
     expect(events.restore).toEqual({ dy: 40 })
+    expect((scrollHost as unknown as { __refreshing?: boolean }).__refreshing).toBe(false)
     ;(scrollHost as unknown as { handleRefresherAbort: (event: unknown) => void })
       .handleRefresherAbort({ detail: { dy: 10 } })
     expect(events.abort).toEqual({ dy: 10 })
-    expect(scrollHost.data.refresherTriggered).toBe(true)
+    expect(scrollHost.data.refresherTriggered).toBe(false)
 
     await new Promise((resolve) => setTimeout(resolve, 30))
     const swiperHost = instance.getShadowRoot()?.getElementById('swiper')?.asGeneralComponent()!
@@ -1167,7 +1165,7 @@ describe('P0 built-in components', () => {
     }
   })
 
-  test('scroll-view default refresher follows WeChat dot positioning and states', () => {
+  test('scroll-view default refresher follows WeChat dot positioning and states', async () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)
     const page = space.defineComponent({
@@ -1196,9 +1194,13 @@ describe('P0 built-in components', () => {
       }
       dot.getBackendElement = () => ({ style: dotStyles[id] })
     }
+    ;(refresher as unknown as { applyDotPull: (dy: number) => void }).applyDotPull(40)
+    expect(dotStyles.dot1.transform).toBe('translateX(3.69px)')
+    expect(dotStyles.dot3.transform).toBe('translateX(-3.69px)')
+
     ;(refresher as unknown as { applyDotPull: (dy: number) => void }).applyDotPull(80)
-    expect(dotStyles.dot1.transform).toBe('translateX(-10.75px)')
-    expect(dotStyles.dot3.transform).toBe('translateX(10.75px)')
+    expect(dotStyles.dot1.transform).toBe('translateX(-1px)')
+    expect(dotStyles.dot3.transform).toBe('translateX(1px)')
 
     ;(refresher as unknown as { setDots: (state: string) => void }).setDots('refreshing')
     expect(refresher.data.dot1Class).toContain('blink-anim')
@@ -1209,17 +1211,20 @@ describe('P0 built-in components', () => {
     expect(refresher.data.dot1Class).toBe('')
     expect(refresher.data.dot3Class).toBe('')
 
-    const mainBackend = { style: {} as Record<string, string> }
+    const containerBackend = { style: {} as Record<string, string> }
     const contentBackend = { style: {} as Record<string, string> }
-    ;(refresher as unknown as { _main: unknown })._main = mainBackend
+    ;(refresher as unknown as { _container: unknown })._container = containerBackend
     ;(refresher as unknown as { _content: unknown })._content = contentBackend
     ;(refresher as unknown as {
-      applyOffset: (offset: number, animate: boolean) => void
-    }).applyOffset(40, false)
+      applyTransform: (offset: number) => void
+    }).applyTransform(40)
     expect(contentBackend.style.transform).toBe('translateY(40px)')
-    expect(mainBackend.style.transform).toBeUndefined()
+    expect(containerBackend.style.transform).toBe('translateY(40px)')
 
     ;(refresher as unknown as { _offset: number })._offset = 0
+    ;(refresher as unknown as {
+      _parent: { getBoundingClientRect: () => { height: number } }
+    })._parent = { getBoundingClientRect: () => ({ height: 150 }) }
     ;(refresher as unknown as {
       _main: {
         scrollTop: number
@@ -1229,22 +1234,99 @@ describe('P0 built-in components', () => {
     })._main = { scrollTop: 0, clientHeight: 150, style: {} }
     ;(refresher as unknown as {
       handleStart: (event: unknown) => void
-    }).handleStart({ touches: [{ clientY: 100 }] })
+    }).handleStart({
+      changedTouches: [{ identifier: 1, clientX: 10, clientY: 100, screenX: 10, screenY: 100 }],
+    })
     for (let offset = 5; offset <= 230; offset += 5) {
       ;(refresher as unknown as {
         handleMove: (event: unknown) => void
       }).handleMove({
         cancelable: false,
-        touches: [{ clientY: 100 + offset }],
+        changedTouches: [{
+          identifier: 1,
+          clientX: 10,
+          clientY: 100 + offset,
+          screenX: 10,
+          screenY: 100 + offset,
+        }],
       })
     }
-    expect((refresher as unknown as { _offset: number })._offset).toBe(78)
+    expect((refresher as unknown as { _offset: number })._offset).toBeGreaterThan(55)
 
+    ;(refresher as unknown as { _state: string | null })._state = null
+    ;(refresher as unknown as { _offset: number })._offset = 0
+    refresher.setData({ triggered: true })
+    await new Promise((resolve) => setTimeout(resolve, 470))
+    expect(contentBackend.style.transform).toBe('translateY(55px)')
+    expect(containerBackend.style.transform).toBe('translateY(55px)')
+    expect(refresher.data.dot1Class).toContain('blink-anim')
+    refresher.setData({ triggered: false })
+    await new Promise((resolve) => setTimeout(resolve, 240))
+    expect(contentBackend.style.transform).toBe('')
+    expect(containerBackend.style.transform).toBe('')
+  })
+
+  test('scroll-view leaves the refreshing state page-controlled', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space)
+    const page = space.defineComponent({
+      is: 'page',
+      using: { 'scroll-view': builtins['scroll-view'] },
+      template: compilePage(`
+        <scroll-view id="scroll" scroll-y refresher-enabled refresher-threshold="80" refresher-default-style="none">
+          <view>content</view>
+        </scroll-view>
+      `),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const scrollHost = instance.getShadowRoot()?.getElementById('scroll')?.asGeneralComponent()!
+    attach(scrollHost)
+    const refresher = scrollHost.getShadowRoot()?.getElementById('refresher')?.asGeneralComponent()!
+    const contentBackend = { style: {} as Record<string, string> }
+    const containerBackend = { style: {} as Record<string, string> }
+    ;(refresher as unknown as { _content: unknown })._content = contentBackend
+    ;(refresher as unknown as { _container: unknown })._container = containerBackend
     ;(refresher as unknown as {
-      triggeredChanged: (value: boolean) => void
-    }).triggeredChanged(true)
-    expect(contentBackend.style.transform).toBe('translateY(53px)')
-    expect(dotStyles.dot1.transform).toBe('translateX(-1px)')
+      _parent: { getBoundingClientRect: () => { height: number } }
+    })._parent = { getBoundingClientRect: () => ({ height: 400 }) }
+    ;(refresher as unknown as {
+      _main: { scrollTop: number; clientHeight: number }
+    })._main = { scrollTop: 0, clientHeight: 400 }
+
+    ;(refresher as unknown as { handleStart: (event: unknown) => void }).handleStart({
+      changedTouches: [{ identifier: 1, clientX: 100, clientY: 100, screenX: 100, screenY: 100 }],
+    })
+    ;(refresher as unknown as { handleMove: (event: unknown) => void }).handleMove({
+      cancelable: false,
+      changedTouches: [{ identifier: 1, clientX: 100, clientY: 160, screenX: 100, screenY: 160 }],
+    })
+    expect((refresher as unknown as { _offset: number })._offset).toBeLessThan(80)
+    ;(refresher as unknown as { handleEnd: (event: unknown) => void }).handleEnd({})
+    await new Promise((resolve) => setTimeout(resolve, 330))
+    expect(contentBackend.style.transform).toBe('')
+    expect(containerBackend.style.transform).toBe('')
+
+    ;(refresher as unknown as { handleStart: (event: unknown) => void }).handleStart({
+      changedTouches: [{ identifier: 1, clientX: 100, clientY: 100, screenX: 100, screenY: 100 }],
+    })
+    ;(refresher as unknown as { handleMove: (event: unknown) => void }).handleMove({
+      cancelable: false,
+      changedTouches: [{ identifier: 1, clientX: 100, clientY: 260, screenX: 100, screenY: 260 }],
+    })
+    expect((refresher as unknown as { _offset: number })._offset).toBeGreaterThan(80)
+    ;(refresher as unknown as { handleEnd: (event: unknown) => void }).handleEnd({})
+    await new Promise((resolve) => setTimeout(resolve, 350))
+    expect(contentBackend.style.transform).toBe('translateY(80px)')
+    expect(containerBackend.style.transform).toBe('translateY(80px)')
+    expect(scrollHost.data.refresherTriggered).toBe(false)
+
+    await new Promise((resolve) => setTimeout(resolve, 700))
+    expect(contentBackend.style.transform).toBe('translateY(80px)')
+
+    refresher.setData({ triggered: false })
+    await new Promise((resolve) => setTimeout(resolve, 240))
+    expect(contentBackend.style.transform).toBe('')
+    expect(containerBackend.style.transform).toBe('')
   })
 
   test('scroll-view applies paging and scrollbar chrome only in enhanced mode', () => {

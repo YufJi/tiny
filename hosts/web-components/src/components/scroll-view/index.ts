@@ -39,6 +39,7 @@ type ScrollBackend = {
 
 type ScrollRuntime = {
   __scrollEndTimer?: ReturnType<typeof setTimeout>
+  __refreshing?: boolean
   __scrollActive?: boolean
   __lastScrollEventTime?: number
   __lastScrollTop?: number
@@ -89,7 +90,7 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
       refresherTriggered: { type: Boolean, value: false },
       refresherThreshold: { type: Number, value: 45 },
       refresherDefaultStyle: { type: String, value: 'black' },
-      refresherBackground: { type: String, value: '#FFF' },
+      refresherBackground: { type: String, value: '' },
       enhanced: { type: Boolean, value: false },
       showScrollbar: { type: Boolean, value: true },
       bounces: { type: Boolean, value: true },
@@ -158,9 +159,6 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
       },
       scrollEnabled() {
         this.applyOverflow()
-      },
-      refresherTriggered(value: boolean) {
-        this.triggerEvent('refresherstatuschange', { status: value ? 'refreshing' : 'complete' }, { bubbles: true, composed: true })
       },
     },
     methods: {
@@ -337,21 +335,19 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
         const detail = (event.detail ?? {}) as { dy?: number }
         this.triggerEvent('refresherpulling', { dy: Number(detail.dy ?? 0) }, { bubbles: true, composed: true })
       },
-      handleRefresherWillRefresh(event: glassEasel.ShadowedEvent<unknown>) {
-        const detail = (event.detail ?? {}) as { dy?: number }
-        this.triggerEvent('refresherwillrefresh', { dy: Number(detail.dy ?? 0) }, { bubbles: true, composed: true })
-      },
       handleRefresherRefresh(event: glassEasel.ShadowedEvent<unknown>) {
         const detail = (event.detail ?? {}) as { dy?: number }
-        if (!this.data.refresherTriggered) this.setData({ refresherTriggered: true })
+        ;(this as unknown as ScrollRuntime).__refreshing = true
         this.triggerEvent('refresherrefresh', { dy: Number(detail.dy ?? 0) }, { bubbles: true, composed: true })
       },
       handleRefresherRestore(event: glassEasel.ShadowedEvent<unknown>) {
         const detail = (event.detail ?? {}) as { dy?: number }
+        ;(this as unknown as ScrollRuntime).__refreshing = false
         this.triggerEvent('refresherrestore', { dy: Number(detail.dy ?? 0) }, { bubbles: true, composed: true })
       },
       handleRefresherAbort(event: glassEasel.ShadowedEvent<unknown>) {
         const detail = (event.detail ?? {}) as { dy?: number }
+        ;(this as unknown as ScrollRuntime).__refreshing = false
         this.triggerEvent('refresherabort', { dy: Number(detail.dy ?? 0) }, { bubbles: true, composed: true })
       },
       handleTap() {

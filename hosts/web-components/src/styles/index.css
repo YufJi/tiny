@@ -88,10 +88,7 @@ body {
 .tiny-refresher-container {
   display: flex;
   height: 100%;
-  left: 0;
-  overflow: hidden;
   position: absolute;
-  top: 0;
   width: 100%;
 }
 .tiny-refresher-default-wrap {
@@ -173,4 +170,7 @@ body {
   left: 0;
   position: absolute;
   width: 100%;
+}
+.tiny-scroll-view-content {
+  will-change: transform;
 }
