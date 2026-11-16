@@ -1218,6 +1218,27 @@ describe('P0 built-in components', () => {
     }).applyOffset(40, false)
     expect(contentBackend.style.transform).toBe('translateY(40px)')
     expect(mainBackend.style.transform).toBeUndefined()
+
+    ;(refresher as unknown as { _offset: number })._offset = 0
+    ;(refresher as unknown as {
+      _main: {
+        scrollTop: number
+        clientHeight: number
+        style: Record<string, string>
+      }
+    })._main = { scrollTop: 0, clientHeight: 150, style: {} }
+    ;(refresher as unknown as {
+      handleStart: (event: unknown) => void
+    }).handleStart({ touches: [{ clientY: 100 }] })
+    for (let offset = 5; offset <= 230; offset += 5) {
+      ;(refresher as unknown as {
+        handleMove: (event: unknown) => void
+      }).handleMove({
+        cancelable: false,
+        touches: [{ clientY: 100 + offset }],
+      })
+    }
+    expect((refresher as unknown as { _offset: number })._offset).toBe(78)
   })
 
   test('scroll-view applies paging and scrollbar chrome only in enhanced mode', () => {

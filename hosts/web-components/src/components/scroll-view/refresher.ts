@@ -3,6 +3,8 @@ import { builtinDefinitionName } from '../../tags'
 
 type ScrollBackend = {
   scrollTop?: number
+  clientHeight?: number
+  getBoundingClientRect?: () => { height?: number }
   style?: {
     transition?: string
     transform?: string
@@ -27,7 +29,7 @@ type RefresherRuntime = {
   _refreshing?: boolean
   _cancelling?: boolean
   _offset?: number
-  _startY?: number
+  _lastTouchY?: number
   _startOffset?: number
   _startScrollTop?: number
   _touchCleanup?: Array<() => void>
@@ -212,7 +214,7 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
         const runtime = this as unknown as RefresherRuntime
         if (event.touches.length !== 1) return
         runtime._active = true
-        runtime._startY = event.touches[0]!.clientY
+        runtime._lastTouchY = event.touches[0]!.clientY
         runtime._startOffset = Number(runtime._offset ?? 0)
         runtime._startScrollTop = Number(runtime._main?.scrollTop ?? 0)
       },
@@ -222,8 +224,9 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
         const main = runtime._main
         if (!main) return
         const threshold = Number(this.data.threshold ?? 55)
-        const startY = Number(runtime._startY ?? 0)
-        const deltaY = event.touches[0]!.clientY - startY
+        const currentY = event.touches[0]!.clientY
+        const deltaY = currentY - Number(runtime._lastTouchY ?? currentY)
+        runtime._lastTouchY = currentY
         const atTop = Number(main.scrollTop ?? 0) <= 0 || Number(runtime._offset ?? 0) > 0
         if (!atTop) return
         if (runtime._refreshing) {
@@ -236,11 +239,18 @@ export function definePullDownRefresher(ctx: BuiltinContext): BuiltinDefinition 
         }
         if (deltaY > 0 || Number(runtime._offset ?? 0) > 0) {
           if (event.cancelable) event.preventDefault()
-          const offset = clamp(deltaY * 0.5, 0, threshold * 1.2)
-          this.applyOffset(offset, false)
+          const viewportHeight = Number(
+            main.clientHeight
+            ?? main.getBoundingClientRect?.().height
+            ?? 0,
+          ) || 1
+          const offset = Number(runtime._offset ?? 0)
+          const damping = 0.52 * (1 - Math.min(offset / viewportHeight, 1)) ** 2
+          const nextOffset = Math.max(0, offset + Math.ceil(deltaY * damping))
+          this.applyOffset(nextOffset, false)
           this.setDots('pulling')
-          this.applyDotPull(offset)
-          this.triggerEvent('pulling', { dy: offset })
+          this.applyDotPull(nextOffset)
+          this.triggerEvent('pulling', { dy: nextOffset })
         }
       },
       handleEnd(event: TouchEvent): void {
