@@ -1937,6 +1937,129 @@ describe('P0 built-in components', () => {
     expect(events.selection).toMatchObject({ selectionStart: expect.any(Number), selectionEnd: expect.any(Number) })
   })
 
+  test('input and textarea use the host keyboard capability for focus and height changes', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const requests: Array<{ method: string; payload: Record<string, unknown> }> = []
+    const listeners = new Map<string, Set<(payload: unknown) => void>>()
+    const hostEvents = {
+      subscribe(name: string, listener: (payload: unknown) => void) {
+        let scoped = listeners.get(name)
+        if (!scoped) {
+          scoped = new Set()
+          listeners.set(name, scoped)
+        }
+        scoped.add(listener)
+        return () => scoped!.delete(listener)
+      },
+    }
+    const emit = (name: string, payload: unknown) => {
+      for (const listener of listeners.get(name) ?? []) listener(payload)
+    }
+    const builtins = createBuiltinComponents(space, {
+      hostEvents,
+      hostRequest: async (method, payload) => {
+        requests.push({
+          method,
+          payload: (payload ?? {}) as Record<string, unknown>,
+        })
+        if (method === 'showKeyboard') return { status: 'ok', height: 200, duration: 50 }
+        return { status: 'ok', height: 0, duration: 0 }
+      },
+    })
+    const page = space.defineComponent({
+      is: 'page',
+      using: { input: builtins.input, textarea: builtins.textarea },
+      template: compilePage(`
+        <input id="input" value="hello" />
+        <textarea id="textarea" value="multi" />
+      `),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const input = instance.getShadowRoot()?.getElementById('input')?.asGeneralComponent()!
+    const textarea = instance.getShadowRoot()?.getElementById('textarea')?.asGeneralComponent()!
+    attach(input)
+    attach(textarea)
+    const inputTrigger = vi.spyOn(input, 'triggerEvent')
+    const textareaTrigger = vi.spyOn(textarea, 'triggerEvent')
+    const inputRuntime = input as unknown as {
+      handleFocus: (event: { detail: Record<string, unknown> }) => void
+      handleBlur: (event: { detail: Record<string, unknown> }) => void
+    }
+    const textareaRuntime = textarea as unknown as {
+      handleFocus: (event: { detail: Record<string, unknown> }) => void
+    }
+
+    inputRuntime.handleFocus({ detail: { value: 'hello' } })
+    await flush()
+    expect(requests[0]).toMatchObject({
+      method: 'showKeyboard',
+      payload: {
+        source: 'input',
+        value: 'hello',
+        confirmType: 'done',
+      },
+    })
+    expect(inputTrigger).toHaveBeenCalledWith(
+      'focus',
+      { value: 'hello', height: 200 },
+      { bubbles: true, composed: true },
+    )
+    emit('keyboardHeightChange', {
+      ownerId: requests[0]!.payload.ownerId,
+      height: 200,
+      duration: 50,
+    })
+    expect(inputTrigger).toHaveBeenCalledWith(
+      'keyboardheightchange',
+      { height: 200, duration: 50 },
+      { bubbles: true, composed: true },
+    )
+
+    emit('keyboardHeightChange', {
+      ownerId: requests[0]!.payload.ownerId,
+      height: 0,
+      duration: 0,
+      blur: false,
+    })
+    expect(inputTrigger).toHaveBeenLastCalledWith(
+      'keyboardheightchange',
+      { height: 0, duration: 0 },
+      { bubbles: true, composed: true },
+    )
+    inputRuntime.handleBlur({ detail: { value: 'hello' } })
+    await flush()
+    expect(requests.at(-1)?.method).toBe('hideKeyboard')
+
+    textareaRuntime.handleFocus({ detail: { value: 'multi' } })
+    await flush()
+    expect(requests).toContainEqual(expect.objectContaining({
+      method: 'showKeyboard',
+      payload: expect.objectContaining({
+        source: 'textarea',
+        value: 'multi',
+        confirmType: 'return',
+      }),
+    }))
+    expect(textareaTrigger).toHaveBeenCalledWith(
+      'focus',
+      { value: 'multi', height: 200 },
+      { bubbles: true, composed: true },
+    )
+    const textareaRequest = requests.find((request) => (
+      request.method === 'showKeyboard' && request.payload.source === 'textarea'
+    ))
+    emit('keyboardHeightChange', {
+      ownerId: textareaRequest?.payload.ownerId,
+      height: 200,
+      duration: 50,
+    })
+    expect(textareaTrigger).toHaveBeenCalledWith(
+      'keyboardheightchange',
+      { height: 200, duration: 50 },
+      { bubbles: true, composed: true },
+    )
+  })
+
   test('canvas reports the mirrored-canvas limitation', () => {
     const diagnostics: Array<Record<string, unknown>> = []
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)

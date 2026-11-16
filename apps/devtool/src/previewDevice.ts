@@ -69,6 +69,12 @@ export type PreviewDeviceProfile = {
 const DEVICE_FRAME_PADDING = 12
 const HOME_INDICATOR_HEIGHT = 34
 const TAB_BAR_HEIGHT = 50
+/**
+ * WeChat DevTools' simulated keyboard reports this logical height to the
+ * mini-program (`showKeyboard` success). Keep it device-independent so the
+ * focus/keyboardheightchange details match the reference simulator.
+ */
+export const PREVIEW_KEYBOARD_HEIGHT = 200
 
 function device(profile: Omit<
   PreviewDeviceProfile,
@@ -321,4 +327,10 @@ export function previewMenuButtonRect(
   deviceProfile: PreviewDeviceProfile = PREVIEW_DEVICE,
 ): PreviewRect {
   return { ...deviceProfile.menuButton }
+}
+
+export function previewKeyboardHeight(
+  _deviceProfile: PreviewDeviceProfile = PREVIEW_DEVICE,
+): number {
+  return PREVIEW_KEYBOARD_HEIGHT
 }

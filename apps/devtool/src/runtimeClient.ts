@@ -85,6 +85,15 @@ export type DevtoolRuntimeOptions = {
   initialExitState?: unknown
   /** Rust HostCore factory; the devtool loads the generated wasm module once. */
   wasmCoreFactory: WasmHostCoreFactory
+  /**
+   * App-level host capabilities requested by render built-ins. Returning
+   * `undefined` leaves the request to the debugger's own handlers.
+   */
+  onHostRequest?: (
+    method: string,
+    payload: unknown,
+    context: { pageId?: string },
+  ) => Promise<unknown> | undefined
 }
 
 export type DevtoolRuntimeListener = (state: DevtoolRuntimeState) => void
@@ -196,7 +205,9 @@ export class DevtoolRuntimeClient {
           if (state && typeof state === 'object') this.record(state as RuntimeDiagnostic)
         },
         onDiagnostic: (diagnostic) => this.record(diagnostic),
-        onHostRequest: (method, payload) => {
+        onHostRequest: (method, payload, context) => {
+          const appResult = this.options.onHostRequest?.(method, payload, context)
+          if (appResult !== undefined) return appResult
           if (method === 'showPicker') {
             return showHostPicker(payload as Parameters<typeof showHostPicker>[0], this.container)
           }
@@ -339,6 +350,11 @@ export class DevtoolRuntimeClient {
   /** Deliver a simulator host capability event to the active page. */
   sendHostEvent(name: string, payload?: unknown, pageId?: string): boolean {
     return this.wasmHost?.sendHostEvent(name, payload, pageId ?? this.activePageId) ?? false
+  }
+
+  /** Deliver a global `wx.onXXX` event into the service thread. */
+  emitGlobalEvent(name: string, payload?: unknown): void {
+    this.wasmHost?.emitGlobalEvent(name, payload)
   }
 
   /** Keep the configured system-info API and `onResize` in sync with host chrome. */

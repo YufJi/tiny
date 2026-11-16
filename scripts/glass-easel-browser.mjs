@@ -2556,6 +2556,120 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       assert.ok(phases.includes('onHide'), 'navigateTo did not record page onHide')
       assert.ok(phases.includes('onShow'), 'navigateTo did not record page onShow')
 
+      await step('dispatch keyboard height changes without fake keyboard chrome', async () => {
+        currentStep = 'dispatch keyboard height changes without fake keyboard chrome'
+        const keyboardFrame = await waitForActiveRenderFrame(primary.id, 'page-2')
+        assert.ok(keyboardFrame, 'add-todo render frame is missing')
+        const service = page.frames().find((frame) => (
+          frame.url().includes('service.html') && frame.url().includes(`app=${primary.id}`)
+        ))
+        assert.ok(service, 'service frame is missing')
+        await service.evaluate(() => {
+          globalThis.__tinyKeyboardHeights = []
+          wx.onKeyboardHeightChange((event) => {
+            globalThis.__tinyKeyboardHeights.push({
+              height: event.height,
+              duration: event.duration,
+            })
+          })
+        })
+        await page.evaluate(() => {
+          const client = window.__tinyDevtool
+          window.__tinyKeyboardHostEvents = []
+          window.__restoreKeyboardHostEventSender = client.sendHostEvent
+          client.sendHostEvent = (name, payload, pageId) => {
+            if (name === 'keyboardHeightChange') {
+              window.__tinyKeyboardHostEvents.push(payload)
+            }
+            return window.__restoreKeyboardHostEventSender.call(client, name, payload, pageId)
+          }
+        })
+
+        const keyboardInput = keyboardFrame.locator('input[placeholder="What needs to be done?"]')
+        await keyboardInput.click()
+        await page.waitForFunction(() => {
+          const keyboard = window.__tinyDevtoolApps?.getKeyboardState?.()
+          return keyboard?.visible === true && keyboard.height === 200
+        }, null, { timeout: STEP_TIMEOUT })
+        assert.equal(
+          await page.locator('.td-keyboard').count(),
+          0,
+          'devtool must not render fake software keyboard chrome',
+        )
+        assert.equal(
+          await keyboardInput.evaluate((input) => document.activeElement === input),
+          true,
+          'focusing the input did not keep native focus',
+        )
+        await service.waitForFunction(
+          () => globalThis.__tinyKeyboardHeights?.some((event) => event.height === 200),
+          null,
+          { timeout: STEP_TIMEOUT },
+        )
+
+        await keyboardInput.fill('hi')
+        await keyboardFrame.waitForFunction(
+          () => document.querySelector('input[placeholder="What needs to be done?"]')?.value === 'hi',
+          null,
+          { timeout: STEP_TIMEOUT },
+        )
+        await keyboardInput.press('Enter')
+        await page.waitForFunction(
+          () => !window.__tinyDevtoolApps?.getKeyboardState?.(),
+          null,
+          { timeout: STEP_TIMEOUT },
+        )
+        assert.equal(
+          await keyboardInput.evaluate((input) => document.activeElement === input),
+          true,
+          'confirm should hide the keyboard without blurring the input',
+        )
+        await service.waitForFunction(
+          () => globalThis.__tinyKeyboardHeights?.some((event) => event.height === 0),
+          null,
+          { timeout: STEP_TIMEOUT },
+        )
+
+        // Enter hides the keyboard but keeps the input focused. Blur it through
+        // a page tap before exercising the second show/hide pair.
+        await keyboardFrame.locator('.add-todo-show-exit-state').click()
+        await keyboardInput.click()
+        await page.waitForFunction(() => {
+          const keyboard = window.__tinyDevtoolApps?.getKeyboardState?.()
+          return keyboard?.visible === true && keyboard.height === 200
+        }, null, { timeout: STEP_TIMEOUT })
+        await keyboardFrame.locator('.add-todo-show-exit-state').click()
+        await page.waitForFunction(
+          () => !window.__tinyDevtoolApps?.getKeyboardState?.(),
+          null,
+          { timeout: STEP_TIMEOUT },
+        )
+        assert.equal(
+          await keyboardInput.evaluate((input) => document.activeElement === input),
+          false,
+          'blurring the input did not release the host keyboard state',
+        )
+        const keyboardHeights = await service.evaluate(() => globalThis.__tinyKeyboardHeights)
+        assert.deepEqual(
+          keyboardHeights.map((event) => event.height),
+          [200, 0, 200, 0],
+          'wx.onKeyboardHeightChange did not observe every show/hide transition',
+        )
+        const hostEventHeights = await page.evaluate(() => (
+          window.__tinyKeyboardHostEvents.map((event) => event.height)
+        ))
+        assert.deepEqual(
+          hostEventHeights,
+          [200, 0, 200, 0],
+          'the host did not dispatch keyboardHeightChange to the focused page',
+        )
+        await page.evaluate(() => {
+          window.__tinyDevtool.sendHostEvent = window.__restoreKeyboardHostEventSender
+          delete window.__restoreKeyboardHostEventSender
+          delete window.__tinyKeyboardHostEvents
+        })
+      })
+
       const previewBack = page.getByRole('button', { name: 'Back in preview' })
       assert.equal(await previewBack.isDisabled(), false, 'host navigation back should be enabled')
       await previewBack.click()

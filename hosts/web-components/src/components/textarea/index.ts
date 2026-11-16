@@ -1,7 +1,21 @@
 import type * as glassEasel from '@tiny/runtime/glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { valueFromEvent } from '../../events'
+import {
+  createKeyboardOwnerId,
+  hideHostKeyboard,
+  showHostKeyboard,
+  subscribeKeyboard,
+  type HostKeyboardEvent,
+} from '../../host-keyboard'
 import { builtinDefinitionName } from '../../tags'
+
+type TextareaRuntime = {
+  __keyboardOwnerId: string
+  __keyboardHeight: number
+  __keyboardRequestId: number
+  __unsubscribeKeyboard?: () => void
+}
 
 export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
@@ -49,8 +63,27 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
     },
     lifetimes: {
       attached() {
+        const instance = this as unknown as TextareaRuntime
+        instance.__keyboardOwnerId = createKeyboardOwnerId('textarea')
+        instance.__keyboardHeight = 0
+        instance.__keyboardRequestId = 0
+        instance.__unsubscribeKeyboard = subscribeKeyboard(ctx, (event) => {
+          this.handleHostKeyboard(event)
+        })
         this.scheduleAutoHeight()
         if (this.data.autoFocus) setTimeout(() => this.focusNative(), 0)
+      },
+      detached() {
+        const instance = this as unknown as TextareaRuntime
+        instance.__unsubscribeKeyboard?.()
+        instance.__unsubscribeKeyboard = undefined
+        if (instance.__keyboardHeight > 0) {
+          hideHostKeyboard(ctx, {
+            ownerId: instance.__keyboardOwnerId,
+            source: 'textarea',
+            reason: 'detach',
+          })
+        }
       },
     },
     externalClasses: ['placeholder-class'],
@@ -67,6 +100,78 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
         } | null
         element?.focus?.()
         this.applySelection()
+      },
+      isNativeFocused(): boolean {
+        const element = this.textareaElement()
+        return Boolean(element && typeof document !== 'undefined' && document.activeElement === element)
+      },
+      focusScrollIntoView() {
+        if (!this.data.adjustPosition) return
+        const element = this.textareaElement() as {
+          scrollIntoView?: (options?: ScrollIntoViewOptions) => void
+        } | null
+        element?.scrollIntoView?.({ block: 'center', inline: 'nearest' })
+      },
+      requestKeyboardShow(value: unknown) {
+        const instance = this as unknown as TextareaRuntime
+        const requestId = ++instance.__keyboardRequestId
+        const element = this.textareaElement() as {
+          selectionStart?: number
+          selectionEnd?: number
+        } | null
+        const request = {
+          ownerId: instance.__keyboardOwnerId,
+          source: 'textarea' as const,
+          value: String(value ?? this.data.value ?? ''),
+          maxlength: Number(this.data.maxlength ?? 0),
+          confirmType: String(this.data.confirmType ?? 'return'),
+          disabled: Boolean(this.data.disabled),
+          adjustPosition: Boolean(this.data.adjustPosition),
+          holdKeyboard: Boolean(this.data.holdKeyboard),
+          cursorSpacing: Number(this.data.cursorSpacing ?? 0),
+          showConfirmBar: Boolean(this.data.showConfirmBar),
+          selectionStart: Number(element?.selectionStart ?? -1),
+          selectionEnd: Number(element?.selectionEnd ?? -1),
+        }
+        void showHostKeyboard(ctx, request).then((detail) => {
+          if (requestId !== instance.__keyboardRequestId) return
+          const height = detail?.height ?? 0
+          this.triggerEvent(
+            'focus',
+            { value: this.data.value, height },
+            { bubbles: true, composed: true },
+          )
+          if (height > 0) this.focusScrollIntoView()
+        })
+      },
+      releaseKeyboard(reason: string) {
+        const instance = this as unknown as TextareaRuntime
+        instance.__keyboardRequestId += 1
+        hideHostKeyboard(ctx, {
+          ownerId: instance.__keyboardOwnerId,
+          source: 'textarea',
+          reason,
+          value: String(this.data.value ?? ''),
+        })
+      },
+      handleHostKeyboard(event: HostKeyboardEvent) {
+        const instance = this as unknown as TextareaRuntime
+        if (event.ownerId && event.ownerId !== instance.__keyboardOwnerId) return
+        if (event.height === instance.__keyboardHeight) {
+          if (event.height === 0 && event.blur && this.isNativeFocused()) this.blurKeyboard()
+          return
+        }
+        instance.__keyboardHeight = event.height
+        this.triggerEvent(
+          'keyboardheightchange',
+          { height: event.height, duration: event.duration },
+          { bubbles: true, composed: true },
+        )
+        if (event.height === 0 && event.blur && this.isNativeFocused()) this.blurKeyboard()
+      },
+      blurKeyboard() {
+        const element = this.textareaElement() as { blur?: () => void } | null
+        element?.blur?.()
       },
       applySelection() {
         const element = this.textareaElement() as {
@@ -145,16 +250,13 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
         this.scheduleAutoHeight()
       },
       handleFocus(event: glassEasel.ShadowedEvent<unknown>) {
-        this.triggerEvent(
-          'focus',
-          { value: valueFromEvent(event) ?? this.data.value, height: 0 },
-          { bubbles: true, composed: true },
-        )
+        this.requestKeyboardShow(valueFromEvent(event) ?? this.data.value)
       },
       handleBlur(event: glassEasel.ShadowedEvent<unknown>) {
         const value = valueFromEvent(event) ?? this.data.value
         this.setData({ value })
         const cursor = Number((event.detail as { cursor?: unknown } | undefined)?.cursor ?? -1)
+        this.releaseKeyboard('blur')
         this.triggerEvent('blur', { value, cursor }, { bubbles: true, composed: true })
       },
       handleConfirm(event: glassEasel.ShadowedEvent<unknown>) {

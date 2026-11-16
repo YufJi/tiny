@@ -1,7 +1,21 @@
 import type * as glassEasel from '@tiny/runtime/glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { valueFromEvent } from '../../events'
+import {
+  createKeyboardOwnerId,
+  hideHostKeyboard,
+  showHostKeyboard,
+  subscribeKeyboard,
+  type HostKeyboardEvent,
+} from '../../host-keyboard'
 import { builtinDefinitionName } from '../../tags'
+
+type InputRuntime = {
+  __keyboardOwnerId: string
+  __keyboardHeight: number
+  __keyboardRequestId: number
+  __unsubscribeKeyboard?: () => void
+}
 
 export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
   return ctx.space.defineComponent({
@@ -51,7 +65,26 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
     },
     lifetimes: {
       attached() {
+        const instance = this as unknown as InputRuntime
+        instance.__keyboardOwnerId = createKeyboardOwnerId('input')
+        instance.__keyboardHeight = 0
+        instance.__keyboardRequestId = 0
+        instance.__unsubscribeKeyboard = subscribeKeyboard(ctx, (event) => {
+          this.handleHostKeyboard(event)
+        })
         if (this.data.autoFocus || this.data.focus) setTimeout(() => this.focusNative(), 0)
+      },
+      detached() {
+        const instance = this as unknown as InputRuntime
+        instance.__unsubscribeKeyboard?.()
+        instance.__unsubscribeKeyboard = undefined
+        if (instance.__keyboardHeight > 0) {
+          hideHostKeyboard(ctx, {
+            ownerId: instance.__keyboardOwnerId,
+            source: 'input',
+            reason: 'detach',
+          })
+        }
       },
     },
     externalClasses: ['placeholder-class'],
@@ -119,6 +152,70 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
       blurNative() {
         this.nativeInput()?.blur?.()
       },
+      isNativeFocused(): boolean {
+        const element = this.nativeInput()
+        return Boolean(element && typeof document !== 'undefined' && document.activeElement === element)
+      },
+      focusScrollIntoView() {
+        if (!this.data.adjustPosition) return
+        const element = this.nativeInput() as {
+          scrollIntoView?: (options?: ScrollIntoViewOptions) => void
+        } | null
+        element?.scrollIntoView?.({ block: 'center', inline: 'nearest' })
+      },
+      requestKeyboardShow(value: unknown) {
+        const instance = this as unknown as InputRuntime
+        const requestId = ++instance.__keyboardRequestId
+        const element = this.nativeInput()
+        const request = {
+          ownerId: instance.__keyboardOwnerId,
+          source: 'input' as const,
+          value: String(value ?? this.data.value ?? ''),
+          maxlength: Number(this.data.maxlength ?? 0),
+          confirmType: String(this.data.confirmType ?? 'done'),
+          password: Boolean(this.data.password),
+          disabled: Boolean(this.data.disabled),
+          adjustPosition: Boolean(this.data.adjustPosition),
+          holdKeyboard: Boolean(this.data.holdKeyboard),
+          selectionStart: Number(element?.selectionStart ?? -1),
+          selectionEnd: Number(element?.selectionEnd ?? -1),
+        }
+        void showHostKeyboard(ctx, request).then((detail) => {
+          if (requestId !== instance.__keyboardRequestId) return
+          const height = detail?.height ?? 0
+          this.triggerEvent(
+            'focus',
+            { value: this.data.value, height },
+            { bubbles: true, composed: true },
+          )
+          if (height > 0) this.focusScrollIntoView()
+        })
+      },
+      releaseKeyboard(reason: string) {
+        const instance = this as unknown as InputRuntime
+        instance.__keyboardRequestId += 1
+        hideHostKeyboard(ctx, {
+          ownerId: instance.__keyboardOwnerId,
+          source: 'input',
+          reason,
+          value: String(this.data.value ?? ''),
+        })
+      },
+      handleHostKeyboard(event: HostKeyboardEvent) {
+        const instance = this as unknown as InputRuntime
+        if (event.ownerId && event.ownerId !== instance.__keyboardOwnerId) return
+        if (event.height === instance.__keyboardHeight) {
+          if (event.height === 0 && event.blur && this.isNativeFocused()) this.blurNative()
+          return
+        }
+        instance.__keyboardHeight = event.height
+        this.triggerEvent(
+          'keyboardheightchange',
+          { height: event.height, duration: event.duration },
+          { bubbles: true, composed: true },
+        )
+        if (event.height === 0 && event.blur && this.isNativeFocused()) this.blurNative()
+      },
       applySelection() {
         const element = this.nativeInput()
         if (!element?.setSelectionRange) return
@@ -181,14 +278,14 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
       handleFocus(event: glassEasel.ShadowedEvent<unknown>) {
         const detail = (event.detail ?? {}) as { value?: unknown; height?: unknown }
         const value = detail.value ?? this.data.value
-        const height = Number(detail.height ?? 0)
-        this.triggerEvent('focus', { value, height }, { bubbles: true, composed: true })
+        this.requestKeyboardShow(value)
       },
       handleBlur(event: glassEasel.ShadowedEvent<unknown>) {
         const detail = (event.detail ?? {}) as { value?: unknown }
         const value = detail.value ?? this.data.value
         if (value !== this.data.value) this.setData({ value })
         const cursor = Number(this.nativeInput()?.selectionEnd ?? -1)
+        this.releaseKeyboard('blur')
         this.triggerEvent('blur', { value, cursor }, { bubbles: true, composed: true })
       },
       handleCompositionStart(event: glassEasel.ShadowedEvent<unknown>) {
@@ -219,6 +316,7 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
         this.triggerEvent('keydown', { key, keyCode, value }, { bubbles: true, composed: true })
         if (key === 'Enter' || keyCode === 13) {
           this.triggerEvent('confirm', { value }, { bubbles: true, composed: true })
+          if (!this.data.confirmHold) this.releaseKeyboard('confirm')
         }
       },
     },

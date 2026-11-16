@@ -6,6 +6,7 @@ import {
   resolvePreviewDevice,
   previewContentHeight,
   previewContentInsets,
+  previewKeyboardHeight,
   previewMenuButtonRect,
   previewSystemInfo,
 } from '../src/previewDevice'
@@ -61,6 +62,11 @@ describe('preview device geometry', () => {
       left: 278,
     })
     expect(PREVIEW_DEVICE.screenWidth - PREVIEW_DEVICE.menuButton.right).toBe(10)
+  })
+
+  test('matches the WeChat DevTools simulated keyboard height', () => {
+    expect(previewKeyboardHeight()).toBe(200)
+    expect(previewKeyboardHeight(resolvePreviewDevice('iphone-14-pro-max', 'landscape'))).toBe(200)
   })
 
   test('exposes selectable device profiles and falls back to the default', () => {

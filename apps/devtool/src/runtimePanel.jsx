@@ -14,6 +14,7 @@ import {
   PREVIEW_DEVICES,
   resolvePreviewDevice,
   previewContentHeight,
+  previewKeyboardHeight,
   previewMenuButtonRect,
   previewSystemInfo,
 } from './previewDevice';
@@ -183,6 +184,7 @@ class RuntimePanel extends PureComponent {
       maxPageStack: MAX_PAGE_STACK,
       deviceId: this.deviceProfile.id,
       orientation: this.orientation,
+      keyboard: null,
     };
   }
 
@@ -271,6 +273,7 @@ class RuntimePanel extends PureComponent {
       getOrientation: () => this.orientation,
       rotateDevice: () => this.rotateDevice(),
       tapStatusBar: () => this.tapStatusBar(),
+      getKeyboardState: () => this.state.keyboard,
       openApp: (appId, options) => this.openApp(appId, options),
       background: () => this.backgroundToLauncher(),
       closeApp: (appId) => this.closeApp(appId),
@@ -473,6 +476,9 @@ class RuntimePanel extends PureComponent {
         systemInfo: previewSystemInfo(contentHeight, this.deviceProfile),
         menuButton: previewMenuButtonRect(this.deviceProfile),
         maxPageStack: this.maxPageStack,
+        onHostRequest: (method, payload, context) => (
+          this.handleHostRequest(app.id, method, payload, context)
+        ),
         ...(savedStack[0]
           ? { initialExitState: launchExitState(savedStack[0]) }
           : {}),
@@ -547,6 +553,7 @@ class RuntimePanel extends PureComponent {
 
   async backgroundActive({ toLauncher = true } = {}) {
     const session = this.activeSession;
+    this.clearKeyboard();
     this.activeAppId = '';
     if (!session) {
       if (toLauncher) this.clearUrl();
@@ -614,6 +621,7 @@ class RuntimePanel extends PureComponent {
 
   async closeSession(session, { preserveSavedStack = false } = {}) {
     if (!this.sessions.has(session.appId)) return;
+    if (this.state.keyboard?.appId === session.appId) this.clearKeyboard();
     if (!preserveSavedStack) clearSavedStack(session.appId);
     this.sessions.delete(session.appId);
     session.unsubscribe?.();
@@ -759,6 +767,98 @@ class RuntimePanel extends PureComponent {
     const session = this.activeSession;
     if (!session || this.props.runtime.status !== 'running') return false;
     return session.client.sendHostEvent('statusBarTap');
+  }
+
+  handleHostRequest(appId, method, payload, context) {
+    if (method === 'showKeyboard') return this.showKeyboard(appId, payload, context);
+    if (method === 'hideKeyboard') return this.hideKeyboardRequest(appId, payload);
+    return undefined;
+  }
+
+  showKeyboard(appId, payload, context) {
+    const session = this.sessions.get(appId);
+    const request = (payload ?? {});
+    const ownerId = typeof request.ownerId === 'string' ? request.ownerId : '';
+    const pageId = context?.pageId ?? session?.client.getState().pageStack.at(-1);
+    const activePageId = session?.client.getState().pageStack.at(-1);
+    const active = session && pageId === activePageId && (!this.activeAppId || this.activeAppId === appId);
+    if (!session || !ownerId || !active) {
+      return Promise.resolve({ status: 'ok', height: 0, duration: 0 });
+    }
+    const current = this.state.keyboard;
+    if (current?.visible
+      && current.appId === appId
+      && current.ownerId === ownerId
+      && current.pageId === pageId) {
+      return Promise.resolve({ status: 'ok', height: current.height, duration: 0 });
+    }
+    const height = previewKeyboardHeight(this.deviceProfile);
+    this.setState({
+      keyboard: {
+        visible: true,
+        appId,
+        pageId,
+        ownerId,
+        height,
+        source: request.source === 'textarea' ? 'textarea' : 'input',
+        confirmType: String(request.confirmType ?? 'done'),
+        confirmHold: Boolean(request.confirmHold),
+      },
+    });
+    session.client.sendHostEvent(
+      'keyboardHeightChange',
+      { height, duration: 0, ownerId },
+      pageId,
+    );
+    session.client.emitGlobalEvent('keyboardHeightChange', { height, duration: 0 });
+    return Promise.resolve({ status: 'ok', height, duration: 0 });
+  }
+
+  hideKeyboardRequest(appId, payload) {
+    const keyboard = this.state.keyboard;
+    const request = (payload ?? {});
+    if (!keyboard?.visible || keyboard.appId !== appId) {
+      return Promise.resolve({ status: 'ok', height: 0, duration: 0 });
+    }
+    if (typeof request.ownerId === 'string'
+      && keyboard.ownerId
+      && request.ownerId !== keyboard.ownerId) {
+      return Promise.resolve({ status: 'ok', height: 0, duration: 0 });
+    }
+    const session = this.sessions.get(appId);
+    session?.client.sendHostEvent(
+      'keyboardHeightChange',
+      {
+        height: 0,
+        duration: 0,
+        ownerId: keyboard.ownerId,
+        reason: String(request.reason ?? 'blur'),
+        blur: false,
+      },
+      keyboard.pageId,
+    );
+    this.setState({ keyboard: null });
+    session?.client.emitGlobalEvent('keyboardHeightChange', { height: 0, duration: 0 });
+    return Promise.resolve({ status: 'ok', height: 0, duration: 0 });
+  }
+
+  clearKeyboard() {
+    const keyboard = this.state.keyboard;
+    if (!keyboard?.visible) return;
+    const session = this.sessions.get(keyboard.appId);
+    session?.client.sendHostEvent(
+      'keyboardHeightChange',
+      {
+        height: 0,
+        duration: 0,
+        ownerId: keyboard.ownerId,
+        reason: 'background',
+        blur: false,
+      },
+      keyboard.pageId,
+    );
+    session?.client.emitGlobalEvent('keyboardHeightChange', { height: 0, duration: 0 });
+    this.setState({ keyboard: null });
   }
 
   updateUrl(session) {
