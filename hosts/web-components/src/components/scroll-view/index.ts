@@ -343,8 +343,19 @@ export function defineScrollView(ctx: BuiltinContext): BuiltinDefinition {
       },
       handleRefresherRefresh(event: glassEasel.ShadowedEvent<unknown>) {
         const detail = (event.detail ?? {}) as { dy?: number }
-        if (!this.data.refresherTriggered) this.setData({ refresherTriggered: true })
+        const listeners = (this as unknown as {
+          getListeners?: () => Record<string, unknown[]>
+        }).getListeners?.()
+        const hasRefreshListener = Boolean(listeners?.refresherrefresh?.length)
+        if (hasRefreshListener && !this.data.refresherTriggered) {
+          this.setData({ refresherTriggered: true })
+        }
         this.triggerEvent('refresherrefresh', { dy: Number(detail.dy ?? 0) }, { bubbles: true, composed: true })
+        if (!hasRefreshListener) {
+          (this.getShadowRoot?.()?.getElementById?.('refresher')?.asGeneralComponent() as unknown as {
+            cancelRefresh?: () => void
+          } | null)?.cancelRefresh?.()
+        }
       },
       handleRefresherRestore(event: glassEasel.ShadowedEvent<unknown>) {
         const detail = (event.detail ?? {}) as { dy?: number }
