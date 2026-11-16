@@ -8,6 +8,13 @@ import {
   subscribeKeyboard,
   type HostKeyboardEvent,
 } from '../../host-keyboard'
+import {
+  cancelHostFrame,
+  isHostPageActive,
+  requestHostFrame,
+  subscribeHostPageVisibility,
+  type HostFrame,
+} from '../../host-page'
 import { builtinDefinitionName } from '../../tags'
 
 type TextareaRuntime = {
@@ -15,6 +22,11 @@ type TextareaRuntime = {
   __keyboardHeight: number
   __keyboardRequestId: number
   __unsubscribeKeyboard?: () => void
+  __unsubscribePage?: () => void
+  __pageActive: boolean
+  __autoFocused: boolean
+  __focusScheduled: boolean
+  __focusFrame?: HostFrame
 }
 
 export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
@@ -30,7 +42,7 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
       maxlength: { type: Number, value: 140, observer: 'maxlengthChanged' },
       adjustKeyboardTo: { type: String, value: 'cursor' },
       autoFocus: { type: Boolean, value: false },
-      focus: { type: Number, value: 0 },
+      focus: { type: Boolean, value: false },
       autoHeight: { type: Boolean, value: false },
       fixed: { type: Boolean, value: false },
       cursorSpacing: { type: Number, value: 0 },
@@ -51,11 +63,17 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
       autoHeight() {
         this.scheduleAutoHeight()
       },
-      focus(value: number) {
-        if (Number(value) > 0) this.focusNative()
+      focus(value: boolean) {
+        if (value) {
+          this.scheduleInputFocus()
+        } else {
+          this.cancelScheduledFocus()
+          this.blurKeyboard()
+        }
       },
       autoFocus(value: boolean) {
-        if (value) setTimeout(() => this.focusNative(), 0)
+        if (value) this.scheduleInputFocus()
+        else this.cancelScheduledFocus()
       },
       'cursor, selectionStart, selectionEnd'() {
         this.applySelection()
@@ -67,16 +85,31 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
         instance.__keyboardOwnerId = createKeyboardOwnerId('textarea')
         instance.__keyboardHeight = 0
         instance.__keyboardRequestId = 0
+        instance.__pageActive = isHostPageActive(ctx)
+        instance.__autoFocused = false
+        instance.__focusScheduled = false
         instance.__unsubscribeKeyboard = subscribeKeyboard(ctx, (event) => {
           this.handleHostKeyboard(event)
         })
+        instance.__unsubscribePage = subscribeHostPageVisibility(ctx, (visibility) => {
+          instance.__pageActive = visibility.active
+          if (visibility.active) {
+            this.scheduleInputFocus()
+          } else {
+            this.cancelScheduledFocus()
+            if (this.isNativeFocused()) this.blurKeyboard()
+          }
+        })
         this.scheduleAutoHeight()
-        if (this.data.autoFocus) setTimeout(() => this.focusNative(), 0)
+        this.scheduleInputFocus()
       },
       detached() {
         const instance = this as unknown as TextareaRuntime
         instance.__unsubscribeKeyboard?.()
         instance.__unsubscribeKeyboard = undefined
+        instance.__unsubscribePage?.()
+        instance.__unsubscribePage = undefined
+        this.cancelScheduledFocus()
         if (instance.__keyboardHeight > 0) {
           hideHostKeyboard(ctx, {
             ownerId: instance.__keyboardOwnerId,
@@ -94,12 +127,49 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
           getElementById?: (id: string) => { getBackendElement?: () => { style?: { height?: string }; scrollHeight?: number } | null } | null
         } | null)?.getElementById?.('native-textarea')?.getBackendElement?.() ?? null
       },
-      focusNative() {
+      shouldFocus(): boolean {
+        const instance = this as unknown as TextareaRuntime
+        return Boolean(this.data.focus || (this.data.autoFocus && !instance.__autoFocused))
+      },
+      isNativeFocusable(): boolean {
+        const element = this.textareaElement() as unknown as HTMLElement | null
+        if (!element || element.isConnected === false || this.data.disabled) return false
+        const style = typeof window !== 'undefined'
+          ? window.getComputedStyle(element)
+          : null
+        if (style?.display === 'none' || style?.visibility === 'hidden') return false
+        return element.offsetWidth > 0 || element.offsetHeight > 0
+      },
+      cancelScheduledFocus() {
+        const instance = this as unknown as TextareaRuntime
+        cancelHostFrame(instance.__focusFrame)
+        instance.__focusFrame = undefined
+        instance.__focusScheduled = false
+      },
+      scheduleInputFocus() {
+        const instance = this as unknown as TextareaRuntime
+        if (!instance.__pageActive || instance.__focusScheduled || !this.shouldFocus()) return
+        instance.__focusScheduled = true
+        instance.__focusFrame = requestHostFrame(() => {
+          instance.__focusScheduled = false
+          instance.__focusFrame = undefined
+          if (!instance.__pageActive || !this.shouldFocus()) return
+          if (!this.isNativeFocusable() || !this.focusNative()) return
+          if (this.data.autoFocus) instance.__autoFocused = true
+        })
+      },
+      focusNative(): boolean {
         const element = this.textareaElement() as {
-          focus?: () => void
+          focus?: (options?: FocusOptions) => void
         } | null
-        element?.focus?.()
+        if (!element?.focus) return false
+        try {
+          element.focus({ preventScroll: true })
+        } catch {
+          element.focus()
+        }
         this.applySelection()
+        return this.isNativeFocused()
       },
       isNativeFocused(): boolean {
         const element = this.textareaElement()
@@ -256,6 +326,7 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
         const value = valueFromEvent(event) ?? this.data.value
         this.setData({ value })
         const cursor = Number((event.detail as { cursor?: unknown } | undefined)?.cursor ?? -1)
+        this.cancelScheduledFocus()
         this.releaseKeyboard('blur')
         this.triggerEvent('blur', { value, cursor }, { bubbles: true, composed: true })
       },

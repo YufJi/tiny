@@ -8,6 +8,13 @@ import {
   subscribeKeyboard,
   type HostKeyboardEvent,
 } from '../../host-keyboard'
+import {
+  cancelHostFrame,
+  isHostPageActive,
+  requestHostFrame,
+  subscribeHostPageVisibility,
+  type HostFrame,
+} from '../../host-page'
 import { builtinDefinitionName } from '../../tags'
 
 type InputRuntime = {
@@ -15,6 +22,11 @@ type InputRuntime = {
   __keyboardHeight: number
   __keyboardRequestId: number
   __unsubscribeKeyboard?: () => void
+  __unsubscribePage?: () => void
+  __pageActive: boolean
+  __autoFocused: boolean
+  __focusScheduled: boolean
+  __focusFrame?: HostFrame
 }
 
 export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
@@ -49,11 +61,16 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
     },
     observers: {
       focus(value: boolean) {
-        if (value) this.focusNative()
-        else this.blurNative()
+        if (value) {
+          this.scheduleInputFocus()
+        } else {
+          this.cancelScheduledFocus()
+          this.blurNative()
+        }
       },
       autoFocus(value: boolean) {
-        if (value) setTimeout(() => this.focusNative(), 0)
+        if (value) this.scheduleInputFocus()
+        else this.cancelScheduledFocus()
       },
       'cursor, selectionStart, selectionEnd'() {
         this.applySelection()
@@ -69,15 +86,30 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
         instance.__keyboardOwnerId = createKeyboardOwnerId('input')
         instance.__keyboardHeight = 0
         instance.__keyboardRequestId = 0
+        instance.__pageActive = isHostPageActive(ctx)
+        instance.__autoFocused = false
+        instance.__focusScheduled = false
         instance.__unsubscribeKeyboard = subscribeKeyboard(ctx, (event) => {
           this.handleHostKeyboard(event)
         })
-        if (this.data.autoFocus || this.data.focus) setTimeout(() => this.focusNative(), 0)
+        instance.__unsubscribePage = subscribeHostPageVisibility(ctx, (visibility) => {
+          instance.__pageActive = visibility.active
+          if (visibility.active) {
+            this.scheduleInputFocus()
+          } else {
+            this.cancelScheduledFocus()
+            if (this.isNativeFocused()) this.blurNative()
+          }
+        })
+        this.scheduleInputFocus()
       },
       detached() {
         const instance = this as unknown as InputRuntime
         instance.__unsubscribeKeyboard?.()
         instance.__unsubscribeKeyboard = undefined
+        instance.__unsubscribePage?.()
+        instance.__unsubscribePage = undefined
+        this.cancelScheduledFocus()
         if (instance.__keyboardHeight > 0) {
           hideHostKeyboard(ctx, {
             ownerId: instance.__keyboardOwnerId,
@@ -91,7 +123,7 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
     options: ctx.hostOptions('input'),
     methods: {
       nativeInput(): {
-        focus?: () => void
+        focus?: (options?: FocusOptions) => void
         blur?: () => void
         setSelectionRange?: (start: number, end: number) => void
         selectionStart?: number
@@ -102,7 +134,7 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
           getElementById?: (id: string) => { getBackendElement?: () => unknown } | null
         } | null)?.getElementById?.('native-input')?.getBackendElement?.()
         return (element as {
-          focus?: () => void
+          focus?: (options?: FocusOptions) => void
           blur?: () => void
           setSelectionRange?: (start: number, end: number) => void
           selectionStart?: number
@@ -143,11 +175,47 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
           element.setSelectionRange(clamp(selection.start), clamp(selection.end))
         }, 0)
       },
-      focusNative() {
+      shouldFocus(): boolean {
+        const instance = this as unknown as InputRuntime
+        return Boolean(this.data.focus || (this.data.autoFocus && !instance.__autoFocused))
+      },
+      isNativeFocusable(): boolean {
+        const element = this.nativeInput() as HTMLElement | null
+        if (!element || element.isConnected === false || this.data.disabled) return false
+        const style = typeof window !== 'undefined'
+          ? window.getComputedStyle(element)
+          : null
+        if (style?.display === 'none' || style?.visibility === 'hidden') return false
+        return element.offsetWidth > 0 || element.offsetHeight > 0
+      },
+      cancelScheduledFocus() {
+        const instance = this as unknown as InputRuntime
+        cancelHostFrame(instance.__focusFrame)
+        instance.__focusFrame = undefined
+        instance.__focusScheduled = false
+      },
+      scheduleInputFocus() {
+        const instance = this as unknown as InputRuntime
+        if (!instance.__pageActive || instance.__focusScheduled || !this.shouldFocus()) return
+        instance.__focusScheduled = true
+        instance.__focusFrame = requestHostFrame(() => {
+          instance.__focusScheduled = false
+          instance.__focusFrame = undefined
+          if (!instance.__pageActive || !this.shouldFocus()) return
+          if (!this.isNativeFocusable() || !this.focusNative()) return
+          if (this.data.autoFocus) instance.__autoFocused = true
+        })
+      },
+      focusNative(): boolean {
         const element = this.nativeInput()
-        if (!element?.focus) return
-        element.focus()
+        if (!element?.focus) return false
+        try {
+          element.focus({ preventScroll: true })
+        } catch {
+          element.focus()
+        }
         this.applySelection()
+        return this.isNativeFocused()
       },
       blurNative() {
         this.nativeInput()?.blur?.()
@@ -285,6 +353,7 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
         const value = detail.value ?? this.data.value
         if (value !== this.data.value) this.setData({ value })
         const cursor = Number(this.nativeInput()?.selectionEnd ?? -1)
+        this.cancelScheduledFocus()
         this.releaseKeyboard('blur')
         this.triggerEvent('blur', { value, cursor }, { bubbles: true, composed: true })
       },

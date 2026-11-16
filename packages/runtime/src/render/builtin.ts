@@ -3,6 +3,8 @@ import type { RenderHostAction } from '../tree-protocol/protocol'
 /** Host-owned events exposed to built-in components without naming a platform. */
 export type BuiltinHostEventSource = {
   subscribe: (name: string, listener: (payload: unknown) => void) => () => void
+  /** Latest value for host state events such as page visibility. */
+  last?: (name: string) => unknown
 }
 
 /** Context the runtime passes to a host-provided built-in component factory. */

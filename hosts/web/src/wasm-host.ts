@@ -593,6 +593,7 @@ export class WasmBrowserHost {
       page.iframe.dataset.state = visible ? 'active' : 'hidden'
       if (visible) page.iframe.removeAttribute('aria-hidden')
       else page.iframe.setAttribute('aria-hidden', 'true')
+      this.sendHostEvent('pageVisibility', { pageId, active: visible }, pageId)
     }
   }
 

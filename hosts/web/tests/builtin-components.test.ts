@@ -2060,6 +2060,90 @@ describe('P0 built-in components', () => {
     )
   })
 
+  test('autoFocus waits for an active page and runs once', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const listeners = new Map<string, Set<(payload: unknown) => void>>()
+    let pageVisibility = { active: false }
+    const hostEvents = {
+      subscribe(name: string, listener: (payload: unknown) => void) {
+        let scoped = listeners.get(name)
+        if (!scoped) {
+          scoped = new Set()
+          listeners.set(name, scoped)
+        }
+        scoped.add(listener)
+        return () => scoped!.delete(listener)
+      },
+      last(name: string) {
+        return name === 'pageVisibility' ? pageVisibility : undefined
+      },
+    }
+    const emitPageVisibility = (active: boolean) => {
+      pageVisibility = { active }
+      for (const listener of listeners.get('pageVisibility') ?? []) {
+        listener(pageVisibility)
+      }
+    }
+    const builtins = createBuiltinComponents(space, { hostEvents })
+    const page = space.defineComponent({
+      is: 'page',
+      using: { input: builtins.input, textarea: builtins.textarea },
+      template: compilePage(`
+        <input id="auto-input" auto-focus />
+        <textarea id="auto-textarea" auto-focus />
+        <input id="controlled-input" />
+      `),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const autoInput = instance.getShadowRoot()?.getElementById('auto-input')?.asGeneralComponent()!
+    const autoTextarea = instance.getShadowRoot()?.getElementById('auto-textarea')?.asGeneralComponent()!
+    const controlledInput = instance.getShadowRoot()?.getElementById('controlled-input')?.asGeneralComponent()!
+    const focusCalls: string[] = []
+    const blurCalls: string[] = []
+    const overrideMethod = (component: unknown, name: string, value: unknown) => {
+      Object.defineProperty(component, name, { configurable: true, value })
+    }
+    for (const [name, component] of [
+      ['input', autoInput],
+      ['textarea', autoTextarea],
+    ] as const) {
+      overrideMethod(component, 'isNativeFocusable', () => true)
+      overrideMethod(component, 'focusNative', () => {
+        focusCalls.push(name)
+        return true
+      })
+    }
+    overrideMethod(controlledInput, 'isNativeFocusable', () => true)
+    overrideMethod(controlledInput, 'focusNative', () => {
+      focusCalls.push('controlled')
+      return true
+    })
+    overrideMethod(controlledInput, 'blurNative', () => {
+      blurCalls.push('controlled')
+    })
+
+    attach(autoInput)
+    attach(autoTextarea)
+    attach(controlledInput)
+    await flush()
+    expect(focusCalls).toEqual([])
+
+    emitPageVisibility(true)
+    await flush()
+    expect(focusCalls).toEqual(['input', 'textarea'])
+
+    emitPageVisibility(false)
+    emitPageVisibility(true)
+    await flush()
+    expect(focusCalls).toEqual(['input', 'textarea'])
+
+    controlledInput.setData({ focus: true })
+    await flush()
+    expect(focusCalls).toEqual(['input', 'textarea', 'controlled'])
+    controlledInput.setData({ focus: false })
+    expect(blurCalls).toEqual(['controlled'])
+  })
+
   test('canvas reports the mirrored-canvas limitation', () => {
     const diagnostics: Array<Record<string, unknown>> = []
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)

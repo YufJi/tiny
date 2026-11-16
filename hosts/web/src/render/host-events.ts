@@ -15,6 +15,7 @@ export type RenderHostEventBus = {
  */
 export function createRenderHostEventBus(): RenderHostEventBus {
   const listeners = new Map<string, Set<HostEventListener>>()
+  const latest = new Map<string, unknown>()
   return {
     source: {
       subscribe(name, listener) {
@@ -29,8 +30,12 @@ export function createRenderHostEventBus(): RenderHostEventBus {
           if (scoped.size === 0) listeners.delete(name)
         }
       },
+      last(name) {
+        return latest.get(name)
+      },
     },
     emit(name, payload) {
+      latest.set(name, payload)
       for (const listener of listeners.get(name) ?? []) {
         try {
           listener(payload)

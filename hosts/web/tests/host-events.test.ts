@@ -26,11 +26,13 @@ describe('render host events', () => {
     bus.emit('statusBarTap', { source: 'simulator' })
     expect(first).toEqual([{ source: 'simulator' }])
     expect(second).toEqual([{ source: 'simulator' }])
+    expect(bus.source.last?.('statusBarTap')).toEqual({ source: 'simulator' })
 
     removeFirst()
     bus.emit('statusBarTap')
     expect(first).toHaveLength(1)
     expect(second).toHaveLength(2)
+    expect(bus.source.last?.('statusBarTap')).toBeUndefined()
   })
 
   test('accepts host-event messages only from the parent document', () => {

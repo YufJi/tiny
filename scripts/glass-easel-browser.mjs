@@ -1950,6 +1950,18 @@ export async function runTaroAcceptance({ baseUrl, app = 'todo', browser }) {
       assert.ok(body.includes('What needs to be done?') || (await render.locator('input').count()) > 0, 'Taro input did not render')
     })
 
+    await step('auto-focus the Taro input after the page becomes active', async () => {
+      currentStep = 'auto-focus the Taro input after the page becomes active'
+      await render.waitForFunction(
+        () => (
+          document.activeElement?.tagName === 'INPUT'
+          && document.activeElement?.getAttribute('placeholder') === 'What needs to be done?'
+        ),
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+    })
+
     await step('add a todo through the Taro input', async () => {
       currentStep = 'add a todo through the Taro input'
       const input = render.locator('input[placeholder="What needs to be done?"]')
