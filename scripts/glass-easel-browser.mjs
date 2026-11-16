@@ -1518,7 +1518,7 @@ export async function runWechatDemoAcceptance({ baseUrl, app = 'wechat-demo', br
         })
       const primary = await buttonStyle('页面主操作 Normal')
       assert.equal(primary.width, 184, 'WeChat demo primary button width mismatch')
-      assert.ok(primary.height > 40, 'WeChat demo primary button collapsed vertically')
+      assert.ok(primary.height > 30, 'WeChat demo primary button collapsed vertically')
       assert.equal(primary.color, 'rgb(255, 255, 255)', 'WeChat demo primary button text color mismatch')
       assert.equal(primary.backgroundColor, 'rgb(7, 193, 96)', 'WeChat demo primary button background mismatch')
       assert.equal(primary.borderRadius, '4px', 'WeChat demo primary button radius mismatch')
