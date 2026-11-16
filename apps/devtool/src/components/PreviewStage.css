@@ -110,29 +110,25 @@
     inset 0 0 30px rgba(0, 0, 0, 0.85);
 }
 
-.td-device::before {
+.td-screen::before {
   position: absolute;
-  top: 6px;
+  top: var(--td-cutout-top);
   left: 50%;
-  width: 46px;
-  height: 4px;
-  background: #030509;
-  border-radius: 999px;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+  z-index: 7;
+  width: var(--td-cutout-width);
+  height: var(--td-cutout-height);
+  background: #000;
   content: "";
   transform: translateX(-50%);
+  pointer-events: none;
 }
 
-.td-device::after {
-  position: absolute;
-  top: 4px;
-  left: calc(50% + 36px);
-  width: 7px;
-  height: 7px;
-  background: radial-gradient(circle at 35% 30%, #334c72, #04060a 68%);
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
-  content: "";
+.td-device--notch .td-screen::before {
+  border-radius: 0 0 18px 18px;
+}
+
+.td-device--island .td-screen::before {
+  border-radius: 999px;
 }
 
 .td-device-side {
@@ -256,6 +252,19 @@
   background: linear-gradient(125deg, rgba(255, 255, 255, 0.07), transparent 20%, transparent 72%, rgba(163, 194, 207, 0.03));
   border-radius: inherit;
   pointer-events: none;
+}
+
+.td-home-indicator {
+  position: absolute;
+  left: 50%;
+  z-index: 7;
+  height: 5px;
+  background: #fff;
+  border-radius: 999px;
+  mix-blend-mode: difference;
+  opacity: 0.9;
+  pointer-events: none;
+  transform: translateX(-50%);
 }
 
 .td-screen-overlay {

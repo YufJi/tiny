@@ -6,11 +6,13 @@ import { createWasmHostCoreFactory } from './wasmHostCore';
 import './runtimePanel.css';
 import {
   APPS_REGISTRY_URL,
-  DEVICE_SCREEN_WIDTH,
   MAX_LIVE_APPS,
   MAX_PAGE_STACK,
 } from './config';
 import {
+  DEFAULT_PREVIEW_DEVICE_ID,
+  PREVIEW_DEVICES,
+  getPreviewDevice,
   previewContentHeight,
   previewMenuButtonRect,
   previewSystemInfo,
@@ -39,6 +41,7 @@ const EMPTY_RUNTIME_STATE = {
 };
 
 const STACK_KEY_PREFIX = 'tiny.devtool.stack.'
+const DEVICE_KEY = 'tiny.devtool.device'
 
 function readSavedStack(appId) {
   try {
@@ -89,6 +92,26 @@ function clearSavedStack(appId) {
   }
 }
 
+function readDeviceId(search) {
+  const requested = new URLSearchParams(search).get('device')
+  if (requested && PREVIEW_DEVICES.some((device) => device.id === requested)) return requested
+  try {
+    const stored = window.localStorage.getItem(DEVICE_KEY)
+    if (stored && PREVIEW_DEVICES.some((device) => device.id === stored)) return stored
+  } catch {
+    // Storage is optional.
+  }
+  return DEFAULT_PREVIEW_DEVICE_ID
+}
+
+function writeDeviceId(deviceId) {
+  try {
+    window.localStorage.setItem(DEVICE_KEY, deviceId)
+  } catch {
+    // Storage is optional.
+  }
+}
+
 function applyNavigationOverride(navigation, override) {
   if (!override) return navigation;
   return {
@@ -113,8 +136,10 @@ class RuntimePanel extends PureComponent {
     this.appRegistry = [];
     this.activeAppId = '';
     this.opening = false;
+    this.switchingDevice = false;
     this.maxPageStack = MAX_PAGE_STACK;
     this.maxLiveApps = MAX_LIVE_APPS;
+    this.deviceProfile = getPreviewDevice(readDeviceId(window.location.search));
     this.state = {
       apps: [],
       loading: true,
@@ -131,6 +156,7 @@ class RuntimePanel extends PureComponent {
       manifestPath: '',
       maxLiveApps: MAX_LIVE_APPS,
       maxPageStack: MAX_PAGE_STACK,
+      deviceId: this.deviceProfile.id,
     };
   }
 
@@ -214,6 +240,8 @@ class RuntimePanel extends PureComponent {
       getSessions: () => this.sessionSummaries(),
       getMaxLiveApps: () => this.state.maxLiveApps,
       getMaxPageStack: () => this.state.maxPageStack,
+      getDeviceId: () => this.deviceProfile.id,
+      selectDevice: (deviceId) => this.selectDevice(deviceId),
       openApp: (appId, options) => this.openApp(appId, options),
       background: () => this.backgroundToLauncher(),
       closeApp: (appId) => this.closeApp(appId),
@@ -321,10 +349,10 @@ class RuntimePanel extends PureComponent {
       customNavigation: navigation.custom,
       tabBarVisible: Boolean(state.tabBar?.visible),
       tabBarPosition: state.tabBar?.position,
-    });
+    }, this.deviceProfile);
     if (force || height !== session.lastContentHeight) {
       session.lastContentHeight = height;
-      this.run(() => session.client.resize(DEVICE_SCREEN_WIDTH, height));
+      this.run(() => session.client.resize(this.deviceProfile.screenWidth, height));
     }
   }
 
@@ -341,7 +369,7 @@ class RuntimePanel extends PureComponent {
     return previewContentHeight({
       customNavigation: navigation.custom,
       tabBarVisible: resolveTabBarPage(manifest, initialPath),
-    });
+    }, this.deviceProfile);
   }
 
   createSurface(appId) {
@@ -398,7 +426,7 @@ class RuntimePanel extends PureComponent {
         : firstPage;
       const contentHeight = this.initialContentHeight(app, manifest, initialPath);
       const threadUrl = (page) => new URL(
-        `./${page}?app=${encodeURIComponent(app.id)}`,
+        `./${page}?app=${encodeURIComponent(app.id)}&device=${encodeURIComponent(this.deviceProfile.id)}`,
         window.location.href,
       ).href;
       const surface = this.createSurface(app.id);
@@ -411,8 +439,8 @@ class RuntimePanel extends PureComponent {
         renderUrl: threadUrl('render.html'),
         initialPath,
         container: surface,
-        systemInfo: previewSystemInfo(contentHeight),
-        menuButton: previewMenuButtonRect(),
+        systemInfo: previewSystemInfo(contentHeight, this.deviceProfile),
+        menuButton: previewMenuButtonRect(this.deviceProfile),
         maxPageStack: this.maxPageStack,
         ...(savedStack[0]
           ? { initialExitState: launchExitState(savedStack[0]) }
@@ -553,9 +581,9 @@ class RuntimePanel extends PureComponent {
     if (restored.length > 0) writeSavedStack(session.appId, restored);
   }
 
-  async closeSession(session) {
+  async closeSession(session, { preserveSavedStack = false } = {}) {
     if (!this.sessions.has(session.appId)) return;
-    clearSavedStack(session.appId);
+    if (!preserveSavedStack) clearSavedStack(session.appId);
     this.sessions.delete(session.appId);
     session.unsubscribe?.();
     if (this.activeAppId === session.appId) {
@@ -589,6 +617,44 @@ class RuntimePanel extends PureComponent {
   async closeActiveApp() {
     const session = this.activeSession;
     if (session) await this.closeSession(session);
+  }
+
+  async selectDevice(deviceId) {
+    const nextDevice = getPreviewDevice(deviceId);
+    if (this.switchingDevice || nextDevice.id === this.deviceProfile.id) return;
+    this.switchingDevice = true;
+    const active = this.activeSession;
+    const appId = active?.appId ?? '';
+    const initialPath = active?.initialPath;
+    let snapshot = [];
+    try {
+      if (active) {
+        snapshot = await active.client.snapshotPageState();
+        const routeStack = snapshot.map(({ path, query }) => ({ path, query }));
+        if (routeStack.length > 0) writeSavedStack(active.appId, routeStack);
+      }
+    } catch {
+      // Device switching should still work when the runtime is unhealthy.
+    }
+    this.deviceProfile = nextDevice;
+    writeDeviceId(nextDevice.id);
+    const url = new URL(window.location.href);
+    url.searchParams.set('device', nextDevice.id);
+    window.history.replaceState(null, '', url);
+    this.setState({ deviceId: nextDevice.id, actionError: '' });
+    try {
+      for (const session of [...this.sessions.values()]) {
+        await this.closeSession(session, { preserveSavedStack: true });
+      }
+      if (active) {
+        await this.openApp(appId, {
+          initialPath: snapshot[0]?.path ?? initialPath,
+          restore: snapshot.length > 1,
+        });
+      }
+    } finally {
+      this.switchingDevice = false;
+    }
   }
 
   reloadActiveApp() {
@@ -642,6 +708,7 @@ class RuntimePanel extends PureComponent {
     const url = new URL(window.location.href);
     url.searchParams.set('app', session.appId);
     url.searchParams.set('restore', '1');
+    url.searchParams.set('device', this.deviceProfile.id);
     const firstPage = session.manifest.pages[0]?.path;
     if (session.initialPath && session.initialPath !== firstPage) {
       url.searchParams.set('path', session.initialPath);
@@ -688,6 +755,7 @@ class RuntimePanel extends PureComponent {
       manifestPath,
       maxLiveApps,
       maxPageStack,
+      deviceId,
     } = this.state;
     const session = this.activeSession;
     const selectedApp = session?.app ?? null;
@@ -711,6 +779,7 @@ class RuntimePanel extends PureComponent {
     const running = status === 'running';
     const ready = Boolean(session);
     const alert = registryError || actionError || runtimeError || launcherError;
+    const device = getPreviewDevice(deviceId);
 
     return (
       <div className="tiny-devtool">
@@ -744,6 +813,7 @@ class RuntimePanel extends PureComponent {
           onShareSelect={this.shareActivePage}
           onCloseShare={this.closeShareSheet}
           refreshing={Boolean(refreshing)}
+          device={device}
         />
 
         <aside className="td-side">
@@ -769,6 +839,9 @@ class RuntimePanel extends PureComponent {
             onInspect={() => this.inspectActive()}
             onBack={() => this.backActive()}
             onCloseApp={() => this.run(() => this.closeActiveApp())}
+            devices={PREVIEW_DEVICES}
+            deviceId={deviceId}
+            onDeviceChange={(nextDeviceId) => this.run(() => this.selectDevice(nextDeviceId))}
           />
           <DebugPanel
             activeTab={activeTab}

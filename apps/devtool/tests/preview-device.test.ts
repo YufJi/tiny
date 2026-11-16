@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'vitest'
 import {
   PREVIEW_DEVICE,
+  PREVIEW_DEVICES,
+  getPreviewDevice,
   previewContentHeight,
   previewContentInsets,
   previewMenuButtonRect,
@@ -58,5 +60,53 @@ describe('preview device geometry', () => {
       left: 278,
     })
     expect(PREVIEW_DEVICE.screenWidth - PREVIEW_DEVICE.menuButton.right).toBe(10)
+  })
+
+  test('exposes selectable device profiles and falls back to the default', () => {
+    expect(PREVIEW_DEVICES.map((device) => device.id)).toEqual([
+      'iphone-x',
+      'iphone-13',
+      'iphone-14-pro-max',
+    ])
+    expect(getPreviewDevice('iphone-14-pro-max')).toMatchObject({
+      label: 'iPhone 14 Pro Max',
+      screenWidth: 430,
+      screenHeight: 932,
+      frameWidth: 454,
+      frameHeight: 956,
+      statusBarHeight: 59,
+      hostChromeHeight: 103,
+      pixelRatio: 3,
+      cutout: 'island',
+    })
+    expect(getPreviewDevice('missing-device')).toBe(PREVIEW_DEVICE)
+  })
+
+  test('derives content and system geometry from the selected profile', () => {
+    const device = getPreviewDevice('iphone-14-pro-max')
+    expect(previewContentHeight({ customNavigation: false }, device)).toBe(829)
+    expect(previewContentHeight({
+      customNavigation: false,
+      tabBarVisible: true,
+    }, device)).toBe(779)
+    expect(previewSystemInfo(829, device)).toMatchObject({
+      model: 'iPhone 14 Pro Max',
+      windowWidth: 430,
+      windowHeight: 829,
+      screenWidth: 430,
+      screenHeight: 932,
+      pixelRatio: 3,
+      statusBarHeight: 59,
+      safeArea: {
+        top: 59,
+        bottom: 898,
+        left: 0,
+        right: 430,
+        width: 430,
+        height: 839,
+      },
+    })
+    expect(previewMenuButtonRect(device)).toEqual(device.menuButton)
+    expect(device.screenWidth - device.menuButton.right).toBe(7)
   })
 })

@@ -1,5 +1,4 @@
 import React from 'react';
-import { PREVIEW_DEVICE } from '../previewDevice';
 import './HostNavigationBar.css';
 
 function StatusBarIcons() {
@@ -25,14 +24,14 @@ function StatusBarIcons() {
 
 // The iOS status bar stays above custom navigation pages. It is transparent
 // there so the page can paint a full-bleed header underneath it.
-export function HostStatusBar({ navigation, overlay = false }) {
+export function HostStatusBar({ navigation, overlay = false, device }) {
   const textColor = navigation.textStyle === 'white' ? '#ffffff' : '#111827';
   const scheme = navigation.textStyle === 'white' ? 'dark' : 'light';
   return (
     <div
       className={`td-statusbar td-host-statusbar td-host-chrome--${scheme}${overlay ? ' td-host-statusbar--overlay' : ''}`}
       style={{
-        height: PREVIEW_DEVICE.statusBarHeight,
+        height: device.statusBarHeight,
         backgroundColor: overlay ? 'transparent' : navigation.backgroundColor,
         color: textColor,
       }}
@@ -52,6 +51,7 @@ function HostNavigationBar({
   enabled,
   canGoBack,
   onBack,
+  device,
 }) {
   const textColor = navigation.textStyle === 'white' ? '#ffffff' : '#111827';
   const scheme = navigation.textStyle === 'white' ? 'dark' : 'light';
@@ -60,8 +60,8 @@ function HostNavigationBar({
     <div
       className={`td-navbar td-host-navbar td-host-chrome--${scheme}`}
       style={{
-        top: PREVIEW_DEVICE.statusBarHeight,
-        height: PREVIEW_DEVICE.navigationBarHeight,
+        top: device.statusBarHeight,
+        height: device.navigationBarHeight,
         backgroundColor: navigation.backgroundColor,
         color: textColor,
       }}

@@ -150,6 +150,18 @@
   font-size: 9px;
 }
 
+.td-simulator-control {
+  margin-top: 16px;
+}
+
+.td-simulator-note {
+  display: block;
+  margin-top: 6px;
+  color: var(--td-dim);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
 .td-page-card {
   margin-top: 16px;
   padding: 12px 13px;

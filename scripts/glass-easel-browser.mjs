@@ -2382,6 +2382,51 @@ export async function runDevtoolAcceptance({ baseUrl, browser }) {
       )
     })
 
+    await step('switch simulator devices and rebuild the runtime geometry', async () => {
+      currentStep = 'switch simulator devices and rebuild the runtime geometry'
+      const primarySurface = surfaceSelector(primary.id)
+      await page.selectOption('#td-device-select', 'iphone-14-pro-max')
+      await page.waitForFunction(
+        () => window.__tinyDevtoolApps?.getDeviceId?.() === 'iphone-14-pro-max'
+          && window.__tinyDevtoolApps?.getSessions?.()[0]?.status === 'running',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      const large = await page.evaluate(() => {
+        const screen = document.querySelector('.td-screen')
+        const frame = document.querySelector('.td-device')
+        const iframe = document.querySelector('.td-screen-surface iframe[data-state="active"]')
+        return {
+          screenWidth: screen?.offsetWidth,
+          screenHeight: screen?.offsetHeight,
+          cutout: frame?.className,
+          src: iframe?.src ?? '',
+          url: window.location.href,
+        }
+      })
+      assert.equal(large.screenWidth, 430)
+      assert.equal(large.screenHeight, 932)
+      assert.ok(large.cutout?.includes('td-device--island'))
+      assert.ok(large.src.includes('device=iphone-14-pro-max'))
+      assert.ok(large.url.includes('device=iphone-14-pro-max'))
+      const largeFrame = await waitForActiveRenderFrame(primary.id, (await state()).pageStack.at(-1))
+      assert.ok(largeFrame, 'switching device did not recreate the render frame')
+      assert.ok(
+        (await largeFrame.locator('#app').innerText()).includes('Learning Javascript'),
+        'switching device did not rerender the active page',
+      )
+
+      await page.selectOption('#td-device-select', 'iphone-x')
+      await page.waitForFunction(
+        () => window.__tinyDevtoolApps?.getDeviceId?.() === 'iphone-x'
+          && window.__tinyDevtoolApps?.getSessions?.()[0]?.status === 'running',
+        null,
+        { timeout: STEP_TIMEOUT },
+      )
+      assert.equal(await page.locator('.td-screen').evaluate((node) => node.offsetWidth), 375)
+      assert.equal(await page.locator(`${primarySurface} iframe[data-page-id]`).count(), 1)
+    })
+
     await step('navigate and go back from the debugger', async () => {
       currentStep = 'navigate and go back from the debugger'
       const primarySurface = surfaceSelector(primary.id)

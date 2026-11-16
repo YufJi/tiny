@@ -27,88 +27,238 @@ export type PreviewContentInsets = {
   bottom: number
 }
 
-export const PREVIEW_DEVICE = {
-  screenWidth: 375,
-  screenHeight: 812,
-  statusBarHeight: 44,
-  navigationBarHeight: 44,
-  hostChromeHeight: 88,
-  tabBarHeight: 50,
-  homeIndicatorHeight: 34,
-  pixelRatio: 2,
-  model: 'iPhone X',
-  system: 'iOS 16.0',
-  brand: 'devtools',
-  platform: 'devtools',
-  SDKVersion: '3.0.0',
+export type PreviewCutout = 'island' | 'notch' | 'none'
+
+export type PreviewDeviceProfile = {
+  id: string
+  label: string
+  model: string
+  system: string
+  screenWidth: number
+  screenHeight: number
+  frameWidth: number
+  frameHeight: number
+  frameRadius: number
+  screenRadius: number
+  framePadding: number
+  pixelRatio: number
+  statusBarHeight: number
+  navigationBarHeight: number
+  hostChromeHeight: number
+  tabBarHeight: number
+  homeIndicatorHeight: number
+  homeIndicatorWidth: number
+  homeIndicatorBottom: number
+  cutout: PreviewCutout
+  cutoutWidth: number
+  cutoutHeight: number
+  cutoutTop: number
+  safeArea: PreviewSafeArea
+  safeAreaInset: {
+    top: number
+    right: number
+    bottom: number
+    left: number
+  }
+  menuButton: PreviewRect
+}
+
+const DEVICE_FRAME_PADDING = 12
+const HOME_INDICATOR_HEIGHT = 34
+const TAB_BAR_HEIGHT = 50
+
+function device(profile: Omit<
+  PreviewDeviceProfile,
+  | 'frameWidth'
+  | 'frameHeight'
+  | 'hostChromeHeight'
+  | 'homeIndicatorHeight'
+  | 'framePadding'
+  | 'safeArea'
+  | 'safeAreaInset'
+>): PreviewDeviceProfile {
+  const safeTop = profile.statusBarHeight
+  const safeBottom = profile.screenHeight - HOME_INDICATOR_HEIGHT
+  return {
+    ...profile,
+    framePadding: DEVICE_FRAME_PADDING,
+    frameWidth: profile.screenWidth + DEVICE_FRAME_PADDING * 2,
+    frameHeight: profile.screenHeight + DEVICE_FRAME_PADDING * 2,
+    hostChromeHeight: profile.statusBarHeight + profile.navigationBarHeight,
+    homeIndicatorHeight: HOME_INDICATOR_HEIGHT,
+    safeArea: {
+      top: safeTop,
+      bottom: safeBottom,
+      left: 0,
+      right: profile.screenWidth,
+      width: profile.screenWidth,
+      height: safeBottom - safeTop,
+    },
+    safeAreaInset: {
+      top: safeTop,
+      right: 0,
+      bottom: HOME_INDICATOR_HEIGHT,
+      left: 0,
+    },
+  }
+}
+
+export const PREVIEW_DEVICES: readonly PreviewDeviceProfile[] = [
+  device({
+    id: 'iphone-x',
+    label: 'iPhone X',
+    model: 'iPhone X',
+    system: 'iOS 16.0',
+    screenWidth: 375,
+    screenHeight: 812,
+    frameRadius: 54,
+    screenRadius: 42,
+    pixelRatio: 2,
+    statusBarHeight: 44,
+    navigationBarHeight: 44,
+    tabBarHeight: TAB_BAR_HEIGHT,
+    homeIndicatorWidth: 134,
+    homeIndicatorBottom: 8,
+    cutout: 'notch',
+    cutoutWidth: 156,
+    cutoutHeight: 30,
+    cutoutTop: 0,
+    menuButton: {
+      width: 87,
+      height: 32,
+      top: 48,
+      right: 365,
+      bottom: 80,
+      left: 278,
+    },
+  }),
+  device({
+    id: 'iphone-13',
+    label: 'iPhone 13',
+    model: 'iPhone 13',
+    system: 'iOS 16.0',
+    screenWidth: 390,
+    screenHeight: 844,
+    frameRadius: 58,
+    screenRadius: 47,
+    pixelRatio: 3,
+    statusBarHeight: 47,
+    navigationBarHeight: 44,
+    tabBarHeight: TAB_BAR_HEIGHT,
+    homeIndicatorWidth: 134,
+    homeIndicatorBottom: 8,
+    cutout: 'notch',
+    cutoutWidth: 162,
+    cutoutHeight: 30,
+    cutoutTop: 0,
+    menuButton: {
+      width: 87,
+      height: 32,
+      top: 50,
+      right: 380,
+      bottom: 82,
+      left: 293,
+    },
+  }),
+  device({
+    id: 'iphone-14-pro-max',
+    label: 'iPhone 14 Pro Max',
+    model: 'iPhone 14 Pro Max',
+    system: 'iOS 16.0',
+    screenWidth: 430,
+    screenHeight: 932,
+    frameRadius: 64,
+    screenRadius: 55,
+    pixelRatio: 3,
+    statusBarHeight: 59,
+    navigationBarHeight: 44,
+    tabBarHeight: TAB_BAR_HEIGHT,
+    homeIndicatorWidth: 148,
+    homeIndicatorBottom: 8,
+    cutout: 'island',
+    cutoutWidth: 126,
+    cutoutHeight: 37,
+    cutoutTop: 10,
+    menuButton: {
+      width: 87,
+      height: 32,
+      top: 62,
+      right: 423,
+      bottom: 94,
+      left: 336,
+    },
+  }),
+]
+
+export const DEFAULT_PREVIEW_DEVICE_ID = PREVIEW_DEVICES[0]!.id
+export const PREVIEW_DEVICE = PREVIEW_DEVICES[0]!
+
+export function getPreviewDevice(id?: string | null): PreviewDeviceProfile {
+  return PREVIEW_DEVICES.find((deviceProfile) => deviceProfile.id === id) ?? PREVIEW_DEVICE
+}
+
+export const PREVIEW_DEVICE_META = {
   language: 'zh_CN',
   version: '8.0.0',
   theme: 'light',
+  brand: 'devtools',
+  platform: 'devtools',
+  SDKVersion: '3.0.0',
   host: 'WeChat',
-  safeArea: {
-    top: 44,
-    bottom: 778,
-    left: 0,
-    right: 375,
-    width: 375,
-    height: 734,
-  } satisfies PreviewSafeArea,
-  safeAreaInset: {
-    top: 44,
-    right: 0,
-    bottom: 34,
-    left: 0,
-  },
-  menuButton: {
-    width: 87,
-    height: 32,
-    top: 48,
-    right: 365,
-    bottom: 80,
-    left: 278,
-  } satisfies PreviewRect,
-}
+  enableDebug: false,
+} as const
 
-export function previewContentInsets({
-  customNavigation = false,
-  tabBarVisible = false,
-  tabBarPosition = 'bottom',
-}: PreviewContentOptions = {}): PreviewContentInsets {
+export function previewContentInsets(
+  {
+    customNavigation = false,
+    tabBarVisible = false,
+    tabBarPosition = 'bottom',
+  }: PreviewContentOptions = {},
+  deviceProfile: PreviewDeviceProfile = PREVIEW_DEVICE,
+): PreviewContentInsets {
   const tabBarAtTop = tabBarVisible && tabBarPosition === 'top'
   return {
-    top: (customNavigation ? 0 : PREVIEW_DEVICE.hostChromeHeight)
-      + (tabBarAtTop ? PREVIEW_DEVICE.tabBarHeight : 0),
-    bottom: tabBarVisible && !tabBarAtTop ? PREVIEW_DEVICE.tabBarHeight : 0,
+    top: (customNavigation ? 0 : deviceProfile.hostChromeHeight)
+      + (tabBarAtTop ? deviceProfile.tabBarHeight : 0),
+    bottom: tabBarVisible && !tabBarAtTop ? deviceProfile.tabBarHeight : 0,
   }
 }
 
-export function previewContentHeight(options: PreviewContentOptions = {}): number {
-  const insets = previewContentInsets(options)
-  return PREVIEW_DEVICE.screenHeight - insets.top - insets.bottom
+export function previewContentHeight(
+  options: PreviewContentOptions = {},
+  deviceProfile: PreviewDeviceProfile = PREVIEW_DEVICE,
+): number {
+  const insets = previewContentInsets(options, deviceProfile)
+  return deviceProfile.screenHeight - insets.top - insets.bottom
 }
 
-export function previewSystemInfo(windowHeight: number) {
+export function previewSystemInfo(
+  windowHeight: number,
+  deviceProfile: PreviewDeviceProfile = PREVIEW_DEVICE,
+) {
   return {
-    SDKVersion: PREVIEW_DEVICE.SDKVersion,
-    brand: PREVIEW_DEVICE.brand,
-    model: PREVIEW_DEVICE.model,
-    system: PREVIEW_DEVICE.system,
-    platform: PREVIEW_DEVICE.platform,
-    pixelRatio: PREVIEW_DEVICE.pixelRatio,
-    screenWidth: PREVIEW_DEVICE.screenWidth,
-    screenHeight: PREVIEW_DEVICE.screenHeight,
-    windowWidth: PREVIEW_DEVICE.screenWidth,
+    SDKVersion: PREVIEW_DEVICE_META.SDKVersion,
+    brand: PREVIEW_DEVICE_META.brand,
+    model: deviceProfile.model,
+    system: deviceProfile.system,
+    platform: PREVIEW_DEVICE_META.platform,
+    pixelRatio: deviceProfile.pixelRatio,
+    screenWidth: deviceProfile.screenWidth,
+    screenHeight: deviceProfile.screenHeight,
+    windowWidth: deviceProfile.screenWidth,
     windowHeight,
-    statusBarHeight: PREVIEW_DEVICE.statusBarHeight,
-    language: PREVIEW_DEVICE.language,
-    version: PREVIEW_DEVICE.version,
-    theme: PREVIEW_DEVICE.theme,
-    host: PREVIEW_DEVICE.host,
-    enableDebug: false,
-    safeArea: { ...PREVIEW_DEVICE.safeArea },
+    statusBarHeight: deviceProfile.statusBarHeight,
+    language: PREVIEW_DEVICE_META.language,
+    version: PREVIEW_DEVICE_META.version,
+    theme: PREVIEW_DEVICE_META.theme,
+    host: PREVIEW_DEVICE_META.host,
+    enableDebug: PREVIEW_DEVICE_META.enableDebug,
+    safeArea: { ...deviceProfile.safeArea },
   }
 }
 
-export function previewMenuButtonRect(): PreviewRect {
-  return { ...PREVIEW_DEVICE.menuButton }
+export function previewMenuButtonRect(
+  deviceProfile: PreviewDeviceProfile = PREVIEW_DEVICE,
+): PreviewRect {
+  return { ...deviceProfile.menuButton }
 }

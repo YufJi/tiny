@@ -1,10 +1,12 @@
 import { bootServiceEntry } from '@tiny/host-web';
 import { createApiHost } from '@tiny/api';
 import { generatedBaseFor } from './appRegistry';
+import { getPreviewDevice } from './previewDevice';
 import { resolvePreviewSafeArea } from './previewStyles';
 
 const search = new URLSearchParams(window.location.search);
 const appId = search.get('app') || 'demo';
+const device = getPreviewDevice(search.get('device'));
 const generatedBase = generatedBaseFor(appId);
 const resolveAssetUrl = (assetPath) => (
   `${generatedBase}/${assetPath.split('/').map(encodeURIComponent).join('/')}`
@@ -89,7 +91,7 @@ manifestPromise.then(async (manifest) => {
   const styles = Object.fromEntries(await Promise.all(
     stylePaths.map(async (stylePath) => {
       const response = await fetch(`${generatedBase}/${stylePath}`);
-      return [stylePath, resolvePreviewSafeArea(await response.text())];
+      return [stylePath, resolvePreviewSafeArea(await response.text(), device)];
     }),
   ));
   bootServiceEntry({

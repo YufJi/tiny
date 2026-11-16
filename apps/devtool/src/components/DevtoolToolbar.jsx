@@ -24,6 +24,9 @@ function DevtoolToolbar({
   onInspect,
   onBack,
   onCloseApp,
+  devices = [],
+  deviceId,
+  onDeviceChange,
 }) {
   return (
     <div className="td-toolbar td-scroll">
@@ -64,6 +67,23 @@ function DevtoolToolbar({
           <span>No app open — choose one from the list</span>
         )}
         {manifestPath ? <code>{manifestPath}</code> : null}
+      </div>
+
+      <div className="td-simulator-control">
+        <label className="td-field-label" htmlFor="td-device-select">Simulator</label>
+        <select
+          id="td-device-select"
+          className="td-select"
+          value={deviceId}
+          onChange={(event) => onDeviceChange?.(event.target.value)}
+        >
+          {devices.map((device) => (
+            <option key={device.id} value={device.id}>{device.label}</option>
+          ))}
+        </select>
+        <span className="td-simulator-note">
+          Switching reloads live apps with the selected device geometry.
+        </span>
       </div>
 
       <div className="td-page-card">

@@ -1,13 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  DEVICE_FRAME_HEIGHT,
-  DEVICE_FRAME_WIDTH,
-  DEVICE_SCREEN_HEIGHT,
-  DEVICE_SCREEN_WIDTH,
-  HOST_CHROME_HEIGHT,
-} from '../config';
-import {
-  PREVIEW_DEVICE,
   previewContentInsets,
 } from '../previewDevice';
 import AppLauncher from './AppLauncher';
@@ -48,6 +40,7 @@ function PreviewStage({
   onShareSelect,
   onCloseShare,
   refreshing,
+  device,
 }) {
   const stageBodyRef = useRef(null);
   const [scale, setScale] = useState(1);
@@ -59,7 +52,7 @@ function PreviewStage({
       const rect = body.getBoundingClientRect();
       const width = Math.max(0, rect.width - 48);
       const height = Math.max(0, rect.height - 64);
-      const next = Math.min(1, width / DEVICE_FRAME_WIDTH, height / DEVICE_FRAME_HEIGHT);
+      const next = Math.min(1, width / device.frameWidth, height / device.frameHeight);
       setScale(Math.max(0.4, Number.isFinite(next) && next > 0 ? next : 1));
     };
     update();
@@ -67,16 +60,19 @@ function PreviewStage({
     const observer = new ResizeObserver(update);
     observer.observe(body);
     return () => observer.disconnect();
-  }, []);
+  }, [device.frameHeight, device.frameWidth]);
 
   let overlay = null;
-  const hostChromeTop = hostNavigation ? HOST_CHROME_HEIGHT : 0;
+  const hostChromeTop = hostNavigation ? device.hostChromeHeight : 0;
   const tabBarVisible = !launcher && status === 'running' && Boolean(tabBar?.visible);
-  const contentInsets = previewContentInsets({
-    customNavigation: !launcher && navigation.custom,
-    tabBarVisible,
-    tabBarPosition: tabBar?.position,
-  });
+  const contentInsets = previewContentInsets(
+    {
+      customNavigation: !launcher && navigation.custom,
+      tabBarVisible,
+      tabBarPosition: tabBar?.position,
+    },
+    device,
+  );
   const chromeScheme = navigation.textStyle === 'white' ? 'dark' : 'light';
   const chromeColor = navigation.textStyle === 'white' ? '#ffffff' : '#111827';
   if (error) {
@@ -115,19 +111,47 @@ function PreviewStage({
         <div
           className="td-device-scale"
           style={{
-            width: DEVICE_FRAME_WIDTH * scale,
-            height: DEVICE_FRAME_HEIGHT * scale,
+            width: device.frameWidth * scale,
+            height: device.frameHeight * scale,
           }}
         >
           <div className="td-device-shell" style={{ transform: `scale(${scale})` }}>
-            <div className="td-device">
-              <span className="td-device-side td-device-side--volume-up" />
-              <span className="td-device-side td-device-side--volume-down" />
-              <span className="td-device-side td-device-side--power" />
-              <div className="td-screen">
+            <div
+              className={`td-device td-device--${device.cutout}`}
+              style={{
+                width: device.frameWidth,
+                height: device.frameHeight,
+                padding: device.framePadding,
+                borderRadius: device.frameRadius,
+              }}
+            >
+              <span
+                className="td-device-side td-device-side--volume-up"
+                style={{ top: device.frameHeight * 0.215, height: device.frameHeight * 0.065 }}
+              />
+              <span
+                className="td-device-side td-device-side--volume-down"
+                style={{ top: device.frameHeight * 0.295, height: device.frameHeight * 0.065 }}
+              />
+              <span
+                className="td-device-side td-device-side--power"
+                style={{ top: device.frameHeight * 0.25, height: device.frameHeight * 0.11 }}
+              />
+              <div
+                className="td-screen"
+                style={{
+                  width: device.screenWidth,
+                  height: device.screenHeight,
+                  borderRadius: device.screenRadius,
+                  '--td-cutout-width': `${device.cutoutWidth}px`,
+                  '--td-cutout-height': `${device.cutoutHeight}px`,
+                  '--td-cutout-top': `${device.cutoutTop}px`,
+                }}
+              >
                 <HostStatusBar
                   navigation={navigation}
                   overlay={!launcher && navigation.custom}
+                  device={device}
                 />
                 {hostNavigation ? (
                   <HostNavigationBar
@@ -136,16 +160,17 @@ function PreviewStage({
                     enabled={status === 'running'}
                     canGoBack={canGoBack}
                     onBack={onBack}
+                    device={device}
                   />
                 ) : null}
                 {!launcher ? (
                   <div
                     className={`td-host-capsule td-host-chrome--${chromeScheme}`}
                     style={{
-                      top: PREVIEW_DEVICE.menuButton.top,
-                      right: PREVIEW_DEVICE.screenWidth - PREVIEW_DEVICE.menuButton.right,
-                      width: PREVIEW_DEVICE.menuButton.width,
-                      height: PREVIEW_DEVICE.menuButton.height,
+                      top: device.menuButton.top,
+                      right: device.screenWidth - device.menuButton.right,
+                      width: device.menuButton.width,
+                      height: device.menuButton.height,
                       color: chromeColor,
                     }}
                   >
@@ -187,12 +212,20 @@ function PreviewStage({
                   topOffset={hostChromeTop}
                   enabled={!launcher && status === 'running'}
                   onTap={onTabBarTap}
+                  device={device}
                 />
                 <HostShareSheet
                   open={Boolean(shareSheetOpen && !launcher && status === 'running')}
                   result={shareResult}
                   onSelect={onShareSelect}
                   onClose={onCloseShare}
+                />
+                <div
+                  className="td-home-indicator"
+                  style={{
+                    bottom: device.homeIndicatorBottom,
+                    width: device.homeIndicatorWidth,
+                  }}
                 />
                 <div className="td-screen-glare" />
                 {overlay ? (
@@ -207,8 +240,8 @@ function PreviewStage({
           </div>
         </div>
         <div className="td-device-caption">
-          <span className="td-device-name">iPhone X</span>
-          <span className="td-device-size">{DEVICE_SCREEN_WIDTH} × {DEVICE_SCREEN_HEIGHT}</span>
+          <span className="td-device-name">{device.label}</span>
+          <span className="td-device-size">{device.screenWidth} × {device.screenHeight}</span>
           {scale < 0.995 ? <span className="td-device-zoom">{Math.round(scale * 100)}%</span> : null}
         </div>
       </div>
