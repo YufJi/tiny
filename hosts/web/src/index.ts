@@ -33,3 +33,8 @@ export {
   type GlassRenderTree,
   type GlassRenderTreeOptions,
 } from './render/tree'
+export {
+  createRenderHostEventBus,
+  listenForRenderHostEvents,
+  type RenderHostEventBus,
+} from './render/host-events'

@@ -271,6 +271,9 @@ Launcher 持有一个最多 3 个 `MiniProgramSession` 的 LRU 池（含当前�
 - **Canvas 2D**：legacy `createCanvasContext` 与 selector-query canvas node 都通过 service 侧录制、
   render `<canvas>` 回放；`measureText` 走 JSCore → CoreText 同步桥；mini ECharts 柱状图已跑通；
 - 无 DOM 的 service 线程（`pnpm check:runtime-purity` 仍通过）。
+- WKWebView host event bridge：render 侧 `pageVisibility`、原生键盘高度
+  `keyboardheightchange` / `wx.onKeyboardHeightChange`，以及 input/textarea 的
+  active-page AutoFocus。
 
 明确不支持（第一版）：
 
@@ -281,6 +284,7 @@ Launcher 持有一个最多 3 个 `MiniProgramSession` 的 LRU 池（含当前�
 - **子包按需加载 / 热更新 / 远程下载**：当前全部产物构建时打进 app bundle。要接 dev server，可在
   `loadMeta` / `loadArtifacts` 前改成 fetch + 缓存，并处理离线/校验。
 - **原生网络/登录/媒体 API**：HostCore `platformCall` 目前只完整实现 storage；toast/network/媒体等仍返回占位结果，需要继续补原生 handler。
+- **状态栏点击 host event**：真实 iOS 的状态栏点击是系统级 scroll-to-top，不提供可转发的应用事件；目前不伪造 `statusBarTap`。
 - **自定义 tabBar / 顶部 tabBar 的完整视觉**：顶部位置有布局分支，但内置 fixture 未覆盖自定义 tabBar。
 - **真机签名**：`CODE_SIGNING_ALLOWED=NO` 只用于模拟器；`pnpm ios:device` 使用 Xcode 自动签名，Team 可用 `TINY_IOS_DEVELOPMENT_TEAM` 覆盖。
 

@@ -7,6 +7,8 @@ iOS 宿主的 native adapter。Web render tree 和 render entry 复用
   以及读取实时宿主事实的 `getSystemInfoSync` / `getWindowInfo` / `getDeviceInfo` /
   `getAppBaseInfo` / `getMenuButtonBoundingClientRect` 扩展）
 - 每页 WKWebView 的 native transport 与 Canvas 回放（`src/web`）
+- WKWebView render host events：页面可见性与原生键盘高度转发；
+  `NativeRenderSurface` 会在 WebView ready 前缓存事件，ready 后按顺序投递
 - 原生注入编译后的 render templates，并在 renderer/WXS 初始化后求值，避免
   `tinyapp://` 自定义 scheme 的 `fetch()` 在真机上不可用
 

@@ -40,6 +40,10 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private var nativePicker: NativePickerController?
   private var pickerSessionId: String?
   private var pickerColumns: [[String: Any]] = []
+  private var appVisible = true
+  private var keyboardHeight: CGFloat = 0
+  private var lastKeyboardHeight: CGFloat = 0
+  private var pendingKeyboardRequests: [(requestId: String, pageId: String)] = []
 
   var onReady: ((String) -> Void)?
   var onUIState: ((HostUIState) -> Void)?
@@ -72,6 +76,41 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     )
     gesture.edges = .left
     container.addGestureRecognizer(gesture)
+    installKeyboardObservers()
+  }
+
+  private func installKeyboardObservers() {
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(keyboardWillChangeFrame(_:)),
+      name: UIResponder.keyboardWillChangeFrameNotification,
+      object: nil
+    )
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(keyboardWillHide(_:)),
+      name: UIResponder.keyboardWillHideNotification,
+      object: nil
+    )
+  }
+
+  @objc private func keyboardWillChangeFrame(_ notification: Notification) {
+    guard
+      let info = notification.userInfo,
+      let endFrame = info[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
+    else { return }
+    let converted = container.convert(endFrame, from: nil)
+    let referenceBottom = container.window?.bounds.maxY ?? container.bounds.maxY
+    let height = max(0, referenceBottom - converted.minY)
+    let duration = (info[UIResponder.keyboardAnimationDurationUserInfoKey] as? NSNumber)?
+      .doubleValue ?? 0
+    deliverKeyboardHeight(height, duration: duration)
+  }
+
+  @objc private func keyboardWillHide(_ notification: Notification) {
+    let duration = (notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? NSNumber)?
+      .doubleValue ?? 0
+    deliverKeyboardHeight(0, duration: duration)
   }
 
   private static func loadStorage(prefix: String) -> [String: Any] {
@@ -173,6 +212,66 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     ])
   }
 
+  private func deliverKeyboardHeight(_ height: CGFloat, duration: TimeInterval) {
+    let normalizedHeight = max(0, height.rounded())
+    let durationMs = max(0, Int((duration * 1000).rounded()))
+    let changed = abs(normalizedHeight - lastKeyboardHeight) > 0.5
+    keyboardHeight = normalizedHeight
+    lastKeyboardHeight = normalizedHeight
+    resolvePendingKeyboardRequests(height: normalizedHeight, duration: durationMs)
+    guard changed else { return }
+    let payload: [String: Any] = [
+      "height": Double(normalizedHeight),
+      "duration": durationMs,
+    ]
+    if let activePageId {
+      surfaces[activePageId]?.sendHostEvent(
+        name: "keyboardHeightChange",
+        payload: payload
+      )
+    }
+    try? core?.command([
+      "type": "emitEvent",
+      "name": "keyboardHeightChange",
+      "payload": payload,
+    ])
+  }
+
+  private func resolvePendingKeyboardRequests(
+    height: CGFloat,
+    duration: Int,
+    onlyRequestId: String? = nil
+  ) {
+    var remaining: [(requestId: String, pageId: String)] = []
+    for request in pendingKeyboardRequests {
+      if let onlyRequestId, request.requestId != onlyRequestId {
+        remaining.append(request)
+        continue
+      }
+      try? core?.renderHostResult(
+        requestId: request.requestId,
+        result: [
+          "status": "ok",
+          "height": Double(height),
+          "duration": duration,
+        ]
+      )
+    }
+    pendingKeyboardRequests = remaining
+  }
+
+  private func broadcastPageVisibility() {
+    for (pageId, surface) in surfaces {
+      surface.sendHostEvent(
+        name: "pageVisibility",
+        payload: [
+          "pageId": pageId,
+          "active": appVisible && pageId == activePageId,
+        ]
+      )
+    }
+  }
+
   var systemSnapshot: [String: Any] {
     systemInfo
   }
@@ -192,15 +291,21 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   }
 
   func setVisible(_ visible: Bool) {
+    appVisible = visible
+    if !visible, let activePageId {
+      surfaces[activePageId]?.webView.endEditing(true)
+    }
     try? core?.command([
       "type": "emitEvent",
       "name": visible ? "appShow" : "appHide",
       "payload": [:],
     ])
     try? core?.command(["type": "setPageVisible", "visible": visible])
+    broadcastPageVisibility()
   }
 
   func close() {
+    NotificationCenter.default.removeObserver(self)
     nativePicker?.dismiss(animated: false)
     nativePicker = nil
     for surface in surfaces.values {
@@ -208,6 +313,9 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     }
     surfaces.removeAll()
     deferredDestroyIds.removeAll()
+    pendingKeyboardRequests.removeAll()
+    keyboardHeight = 0
+    lastKeyboardHeight = 0
     networkMonitor?.cancel()
     networkMonitor = nil
     core = nil
@@ -272,6 +380,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       guard let self, let core = self.core else { return }
       do {
         try core.pageReady(pageId: pageId)
+        self.broadcastPageVisibility()
       } catch {
         self.fail("HostCore pageReady failed: \(error)")
       }
@@ -283,6 +392,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     surfaces[pageId] = surface
     container.addSubview(surface.webView)
     surface.setVisible(false)
+    broadcastPageVisibility()
     _ = path
   }
 
@@ -290,6 +400,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     let previousId = activePageId
     guard let newSurface = surfaces[pageId] else {
       activePageId = pageId
+      broadcastPageVisibility()
       return
     }
     let newStack = core?.pageStack() ?? []
@@ -299,6 +410,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       activePageId = pageId
       displayedStack = newStack
       newSurface.setVisible(true)
+      broadcastPageVisibility()
       if !finished {
         finished = true
         let result: [String: Any] = [
@@ -318,6 +430,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
 
     if previousId == pageId {
       newSurface.setVisible(true)
+      broadcastPageVisibility()
       return
     }
 
@@ -330,6 +443,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     )
     activePageId = pageId
     displayedStack = newStack
+    broadcastPageVisibility()
     animatePageTransition(
       from: oldSurface,
       to: newSurface,
@@ -595,7 +709,9 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   }
 
   func setAppVisible(_ visible: Bool) {
+    appVisible = visible
     container.isHidden = !visible
+    broadcastPageVisibility()
   }
 
   func updateUIState(_ state: [String: Any]) {
@@ -653,6 +769,39 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     method: String,
     payload: [String: Any]
   ) {
+    if method == "showKeyboard" {
+      if keyboardHeight > 0.5 {
+        try? core?.renderHostResult(
+          requestId: requestId,
+          result: [
+            "status": "ok",
+            "height": Double(keyboardHeight),
+            "duration": 0,
+          ]
+        )
+      } else {
+        pendingKeyboardRequests.append((requestId: requestId, pageId: pageId))
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+          self?.resolvePendingKeyboardRequests(
+            height: 0,
+            duration: 0,
+            onlyRequestId: requestId
+          )
+        }
+      }
+      return
+    }
+    if method == "hideKeyboard" {
+      let targetPageId: String? = pageId.isEmpty ? activePageId : pageId
+      if let targetPageId {
+        surfaces[targetPageId]?.webView.endEditing(true)
+      }
+      try? core?.renderHostResult(
+        requestId: requestId,
+        result: ["status": "ok", "height": 0, "duration": 0]
+      )
+      return
+    }
     if method == "pollPicker" {
       let sessionId = payload["sessionId"] as? String ?? ""
       let events = sessionId == pickerSessionId ? pickerColumns : []

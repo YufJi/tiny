@@ -19,6 +19,7 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
   var onError: ((String) -> Void)?
   private var ready = false
   private var pendingFrames: [String] = []
+  private var pendingHostEvents: [[String: Any]] = []
 
   init(
     pageId: String,
@@ -125,6 +126,16 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
     }
   }
 
+  /// Deliver a host-owned event into the page render WebView.
+  func sendHostEvent(name: String, payload: [String: Any] = [:]) {
+    let event: [String: Any] = ["name": name, "payload": payload]
+    guard ready else {
+      pendingHostEvents.append(event)
+      return
+    }
+    deliverHostEvent(event)
+  }
+
   func setVisible(_ visible: Bool) {
     webView.isHidden = !visible
     webView.alpha = visible ? 1 : 0
@@ -138,6 +149,7 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
     onFrame = nil
     ready = false
     pendingFrames.removeAll()
+    pendingHostEvents.removeAll()
   }
 
   func userContentController(
@@ -149,6 +161,7 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
     case "ready":
       ready = true
       flushPendingFrames()
+      flushPendingHostEvents()
       onReady?()
     case "frame":
       if let frame = body["frame"] as? String {
@@ -180,6 +193,27 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
     pendingFrames.removeAll()
     for frame in frames {
       receive(frame: frame)
+    }
+  }
+
+  private func flushPendingHostEvents() {
+    let events = pendingHostEvents
+    pendingHostEvents.removeAll()
+    for event in events {
+      deliverHostEvent(event)
+    }
+  }
+
+  private func deliverHostEvent(_ event: [String: Any]) {
+    webView.callAsyncJavaScript(
+      "window.__tinyRenderHostEvent?.(event)",
+      arguments: ["event": event],
+      in: nil,
+      in: .page
+    ) { result in
+      if case .failure(let error) = result {
+        print("[tiny native render] host event delivery failed: \(error.localizedDescription)")
+      }
     }
   }
 
