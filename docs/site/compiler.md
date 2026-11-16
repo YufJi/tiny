@@ -405,6 +405,7 @@ TypeScript 转译和 PostCSS 都会输出 source map，并写入 `sourcesContent
 | `NPM_PACKAGE_NOT_FOUND` | warning | package.json 依赖在 node_modules 中缺失 | 跳过该包 |
 | `NPM_PREBUILT_SOURCE` | info | 源码已有 miniprogram_npm | 不再从 node_modules 重建 |
 | `PAGE_NOT_FOUND` | error | 声明的页面没有脚本或模板 | 跳过这个入口 |
+| `PAGE_RENDERER_UNSUPPORTED` | warning | 页面/组件配置声明 WebView 以外的 renderer | 保留配置，仍按 WebView/glass-easel 渲染 |
 | `COMPONENT_NOT_FOUND` | error | usingComponents 指向不存在的入口 | 记录诊断 |
 | `SCRIPT_TRANSPILE_ERROR` | error | TypeScript 语法或转译失败 | 保留输出并继续 |
 | `SCRIPT_TYPE_ERROR` | error | 可选语义检查发现类型错误 | 仍生成产物，诊断随 manifest 输出 |

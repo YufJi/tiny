@@ -178,7 +178,7 @@ WebView renderer 和 glass-easel component framework 为准。
 
 > 事件覆盖按“事件名已绑定并能触发基础 detail”统计；button open-type 事件和部分 scroll-view refresher 事件目前是失败/模拟回调，不是微信平台 API 的真实成功语义。
 
-**外观保真度**：P0 视觉重写已完成，P1 组件也补齐了 wrapper/结构（input/textarea/button/form/swiper）；剩余差异主要是原生键盘属性、native/open-type、picker region 和 scroll-view 的 native 滚动，不再有 P0 级默认外观错位。
+**外观保真度**：P0 视觉重写已完成，P1 组件也补齐了 wrapper/结构（input/textarea/button/form/swiper）；`button` 已按基础库 3.17.5 的 WebView/WeUI 默认值重建固定宽度、padding、字体、类型色、plain/disabled/mini/loading/hover。剩余差异主要是原生键盘属性、native/open-type、picker region 和 scroll-view 的 native 滚动。
 
 > 不支持的标签会降级为普通 DOM 元素，只发 `UNSUPPORTED_COMPONENT` warning，不抛错。页面能开，但组件没有行为。
 
@@ -273,7 +273,7 @@ WebView renderer 和 glass-easel component framework 为准。
 | `tabBar` | ✅ 内置 tabBar 配置、颜色/位置/徽标/红点/显隐、`switchTab`；`custom: true` 发现 `custom-tab-bar/index`，由 service 挂载为独立页级 `tabFrame` pageframe root，支持 `getTabBar()` / `getTabBar(callback)` |
 | `themeLocation` / `darkmode` | ✅ 编译期读取 `theme.json`、校验 light/dark、解析配置里的 `@变量`（light 写入 `effective`，dark 写入 `darkEffective`），并把变量注入 WXSS `:root`（暗色用 `prefers-color-scheme`）；devtool 导航栏按系统主题读取 `darkEffective` |
 | `style` / `lazyCodeLoading` / `permission` / `sitemapLocation` / `workers` / `plugins` | ❌（`lazyCodeLoading` 仅校验） |
-| `renderer` / `rendererOptions` / `resizable` / `requiredPrivateInfos` | ❌ |
+| `renderer` / `rendererOptions` / `resizable` / `requiredPrivateInfos` | ⚠️ 只实现 WebView；页面/组件声明其他 renderer 时保留配置并输出 `PAGE_RENDERER_UNSUPPORTED` warning，不模拟 Skyline |
 
 `project.config.json` 读取 `miniprogramRoot`、`compileType` 和 `packOptions.ignore`。编译器既接受微信工具生成的预构建 `miniprogram_npm/`，也会从 `package.json#dependencies` 构建它（不做 `npm install`）：`usingComponents: "@vant/weapp/button/index"` 会解析到 `miniprogram_npm/@vant/weapp/button/index`。
 
