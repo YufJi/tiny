@@ -24,7 +24,7 @@
 		A1000000000000000000003C /* NativeHostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003B /* NativeHostView.swift */; };
 		A1000000000000000000003E /* NativePickerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003D /* NativePickerController.swift */; };
 		A10000000000000000000040 /* NativeKeyboardHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003F /* NativeKeyboardHost.swift */; };
-		A10000000000000000000042 /* NativeViewLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000041 /* NativeViewLayer.swift */; };
+		A10000000000000000000042 /* NativeSameLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000041 /* NativeSameLayer.swift */; };
 		A1000000000000000000002B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002A /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -48,7 +48,7 @@
 		A1000000000000000000003B /* NativeHostView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeHostView.swift; sourceTree = "<group>"; };
 		A1000000000000000000003D /* NativePickerController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativePickerController.swift; sourceTree = "<group>"; };
 		A1000000000000000000003F /* NativeKeyboardHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeKeyboardHost.swift; sourceTree = "<group>"; };
-		A10000000000000000000041 /* NativeViewLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeViewLayer.swift; sourceTree = "<group>"; };
+		A10000000000000000000041 /* NativeSameLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSameLayer.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,7 +98,7 @@
 				A1000000000000000000003B /* NativeHostView.swift */,
 				A1000000000000000000003D /* NativePickerController.swift */,
 				A1000000000000000000003F /* NativeKeyboardHost.swift */,
-				A10000000000000000000041 /* NativeViewLayer.swift */,
+				A10000000000000000000041 /* NativeSameLayer.swift */,
 				A1000000000000000000002A /* Assets.xcassets */,
 			);
 			path = TinyHost;
@@ -198,7 +198,7 @@
 				A1000000000000000000003C /* NativeHostView.swift in Sources */,
 				A1000000000000000000003E /* NativePickerController.swift in Sources */,
 				A10000000000000000000040 /* NativeKeyboardHost.swift in Sources */,
-				A10000000000000000000042 /* NativeViewLayer.swift in Sources */,
+				A10000000000000000000042 /* NativeSameLayer.swift in Sources */,
 				A10000000000000000000031 /* tiny_host_core_ffi.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

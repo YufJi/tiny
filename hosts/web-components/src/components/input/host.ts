@@ -20,8 +20,6 @@ export type InputHostRuntime = {
   __hostSelectionStart: number
   __hostSelectionEnd: number
   __nativeViewActive: boolean
-  __nativeViewTracking?: () => void
-  __nativeViewFrame?: HostFrame
   __unsubscribeOutsideTouch?: () => void
   __unsubscribeActivation?: () => void
   __unregisterReturnTarget?: () => void
@@ -67,8 +65,6 @@ export type InputHostMethods = {
   syncKeyboardValue(this: InputHostComponent, cursorOverride?: number): void
   nativeViewSpec(this: InputHostComponent): NativeViewSpec | null
   syncNativeViewGeometry(this: InputHostComponent, attach?: boolean): void
-  syncNativeViewGeometrySoon(this: InputHostComponent, duration?: number): void
-  bindNativeViewTracking(this: InputHostComponent): void
   detachNativeViewLayer(this: InputHostComponent): void
   handleInput(this: InputHostComponent, event: glassEasel.ShadowedEvent<unknown>): void
   handleChange(this: InputHostComponent, event: glassEasel.ShadowedEvent<unknown>): void

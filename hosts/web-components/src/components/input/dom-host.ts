@@ -106,7 +106,6 @@ export function createDomInputHost(ctx: BuiltinContext): InputHostMethods {
     focusScrollIntoView(this: InputHostComponent): void {
       if (!this.data.adjustPosition) return
       this.nativeInput()?.scrollIntoView?.({ block: 'center', inline: 'nearest' })
-      this.syncNativeViewGeometrySoon()
     },
 
     requestKeyboardShow(this: InputHostComponent, value: unknown): void {
@@ -206,14 +205,6 @@ export function createDomInputHost(ctx: BuiltinContext): InputHostMethods {
     },
 
     syncNativeViewGeometry(this: InputHostComponent, _attach = false): void {
-      // Native same-layer views do not exist in the DOM host.
-    },
-
-    syncNativeViewGeometrySoon(this: InputHostComponent, _duration = 120): void {
-      // Native same-layer views do not exist in the DOM host.
-    },
-
-    bindNativeViewTracking(this: InputHostComponent): void {
       // Native same-layer views do not exist in the DOM host.
     },
 

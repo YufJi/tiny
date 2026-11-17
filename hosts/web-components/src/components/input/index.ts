@@ -22,6 +22,7 @@ import {
   requestHostFrame,
   subscribeHostPageVisibility,
 } from '../../host-page'
+import { nativeViewMarkerClass } from '../../host-native-view'
 import { builtinDefinitionName } from '../../tags'
 import type { InputHostComponent, InputHostRuntime } from './host'
 import { inputRuntime } from './host'
@@ -38,6 +39,7 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
     data: {
       nativeKeyboard: false,
       nativeViewActive: false,
+      nativeViewClass: '',
     },
     behaviors: [
       ctx.behaviors.base,
@@ -120,7 +122,10 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
         instance.__hostSelectionStart = -1
         instance.__hostSelectionEnd = -1
         instance.__nativeViewActive = false
-        this.setData({ nativeKeyboard: instance.__nativeKeyboard })
+        this.setData({
+          nativeKeyboard: instance.__nativeKeyboard,
+          nativeViewClass: nativeViewMarkerClass(instance.__keyboardOwnerId),
+        })
         const unsubscribers = [
           subscribeKeyboard(ctx, (event) => {
             this.handleHostKeyboard(event)

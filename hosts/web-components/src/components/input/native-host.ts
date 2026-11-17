@@ -8,15 +8,12 @@ import {
 import {
   attachNativeView,
   detachNativeView,
-  nativeViewClipOf,
   nativeViewContentFrameOf,
-  nativeViewMaskOf,
-  nativeViewScrollAncestors,
+  nativeViewMarkerClass,
   nativeViewStyleOf,
   updateNativeView,
   type NativeViewSpec,
 } from '../../host-native-view'
-import { cancelHostFrame, requestHostFrame } from '../../host-page'
 import type { InputHostComponent, InputHostElement, InputHostMethods } from './host'
 import { inputRuntime } from './host'
 
@@ -48,20 +45,11 @@ export function createNativeInputHost(ctx: BuiltinContext): InputHostMethods {
       const element = this.activationElement()
       const frame = nativeViewContentFrameOf(element)
       if (!frame) return null
-      const computed = element && typeof window !== 'undefined'
-        ? window.getComputedStyle(element)
-        : null
-      const zIndex = Number.parseInt(computed?.zIndex ?? '', 10)
-      const clip = nativeViewClipOf(element)
-      const mask = nativeViewMaskOf(element)
       return {
         id: instance.__keyboardOwnerId,
         kind: 'input',
+        markerClass: nativeViewMarkerClass(instance.__keyboardOwnerId),
         frame,
-        clip,
-        mask,
-        ...(Number.isFinite(zIndex) ? { zIndex } : {}),
-        visible: mask.length > 0,
         style: nativeViewStyleOf(element ?? this.nativeInput()),
         props: {
           value: String(this.data.value ?? ''),
@@ -147,7 +135,6 @@ export function createNativeInputHost(ctx: BuiltinContext): InputHostMethods {
     focusScrollIntoView(this: InputHostComponent): void {
       if (!this.data.adjustPosition) return
       this.activationElement()?.scrollIntoView?.({ block: 'center', inline: 'nearest' })
-      this.syncNativeViewGeometrySoon()
     },
 
     requestKeyboardShow(this: InputHostComponent, value: unknown): void {
@@ -207,7 +194,6 @@ export function createNativeInputHost(ctx: BuiltinContext): InputHostMethods {
         }
         if (requestId !== instance.__keyboardRequestId) return
         if (instance.__nativeKeyboardVisible) {
-          this.bindNativeViewTracking()
           this.syncNativeViewGeometry(true)
         } else {
           this.detachNativeViewLayer()
@@ -274,86 +260,18 @@ export function createNativeInputHost(ctx: BuiltinContext): InputHostMethods {
       const instance = inputRuntime(this)
       if (!instance.__nativeKeyboardVisible) return
       const spec = this.nativeViewSpec()
-      if (!spec) return
+      if (!spec) {
+        this.detachNativeViewLayer()
+        return
+      }
       if (attach) void attachNativeView(ctx, spec)
       else void updateNativeView(ctx, spec)
-      if (instance.__nativeViewActive !== spec.visible) {
-        instance.__nativeViewActive = spec.visible
-        this.setData({ nativeViewActive: spec.visible })
-      }
-    },
-
-    syncNativeViewGeometrySoon(this: InputHostComponent, duration = 120): void {
-      const started = Date.now()
-      const tick = () => {
-        this.syncNativeViewGeometry()
-        if (Date.now() - started < duration) requestHostFrame(tick)
-      }
-      requestHostFrame(tick)
-    },
-
-    bindNativeViewTracking(this: InputHostComponent): void {
-      const instance = inputRuntime(this)
-      if (instance.__nativeViewTracking) return
-      if (typeof window === 'undefined' || typeof document === 'undefined') return
-      const schedule = () => {
-        if (!instance.__nativeKeyboardVisible || instance.__nativeViewFrame !== undefined) return
-        instance.__nativeViewFrame = requestHostFrame(() => {
-          instance.__nativeViewFrame = undefined
-          this.syncNativeViewGeometry()
-        })
-      }
-      window.addEventListener('scroll', schedule, true)
-      window.addEventListener('resize', schedule)
-      document.addEventListener('scroll', schedule, true)
-      const scrollAncestors = nativeViewScrollAncestors(this.activationElement())
-      for (const node of scrollAncestors) {
-        node.addEventListener('scroll', schedule, { passive: true })
-      }
-      const visualViewport = (window as unknown as { visualViewport?: EventTarget }).visualViewport
-      visualViewport?.addEventListener('resize', schedule)
-      visualViewport?.addEventListener('scroll', schedule)
-      const resizeObserver = typeof ResizeObserver === 'undefined'
-        ? undefined
-        : new ResizeObserver(schedule)
-      const element = this.activationElement()
-      if (resizeObserver && element) resizeObserver.observe(element)
-      const mutationObserver = typeof MutationObserver === 'undefined'
-        ? undefined
-        : new MutationObserver(schedule)
-      const observeRoot = document.body ?? document.documentElement
-      if (mutationObserver && observeRoot) {
-        mutationObserver.observe(observeRoot, {
-          subtree: true,
-          childList: true,
-          attributes: true,
-          attributeFilter: ['class', 'style', 'hidden', 'aria-hidden'],
-        })
-      }
-      document.addEventListener('transitionend', schedule, true)
-      document.addEventListener('animationend', schedule, true)
-      instance.__nativeViewTracking = () => {
-        window.removeEventListener('scroll', schedule, true)
-        window.removeEventListener('resize', schedule)
-        document.removeEventListener('scroll', schedule, true)
-        for (const node of scrollAncestors) {
-          node.removeEventListener('scroll', schedule)
-        }
-        visualViewport?.removeEventListener('resize', schedule)
-        visualViewport?.removeEventListener('scroll', schedule)
-        resizeObserver?.disconnect()
-        mutationObserver?.disconnect()
-        document.removeEventListener('transitionend', schedule, true)
-        document.removeEventListener('animationend', schedule, true)
-        cancelHostFrame(instance.__nativeViewFrame)
-        instance.__nativeViewFrame = undefined
-      }
+      instance.__nativeViewActive = true
+      this.setData({ nativeViewActive: true })
     },
 
     detachNativeViewLayer(this: InputHostComponent): void {
       const instance = inputRuntime(this)
-      instance.__nativeViewTracking?.()
-      instance.__nativeViewTracking = undefined
       void detachNativeView(ctx, instance.__keyboardOwnerId)
       if (instance.__nativeViewActive) {
         instance.__nativeViewActive = false

@@ -20,8 +20,6 @@ export type TextareaHostRuntime = {
   __hostSelectionStart: number
   __hostSelectionEnd: number
   __nativeViewActive: boolean
-  __nativeViewTracking?: () => void
-  __nativeViewFrame?: HostFrame
   __unsubscribeOutsideTouch?: () => void
   __unsubscribeActivation?: () => void
   __unregisterReturnTarget?: () => void
@@ -60,8 +58,6 @@ export type TextareaHostMethods = {
   syncKeyboardValue(this: TextareaHostComponent, cursorOverride?: number): void
   nativeViewSpec(this: TextareaHostComponent): NativeViewSpec | null
   syncNativeViewGeometry(this: TextareaHostComponent, attach?: boolean): void
-  syncNativeViewGeometrySoon(this: TextareaHostComponent, duration?: number): void
-  bindNativeViewTracking(this: TextareaHostComponent): void
   detachNativeViewLayer(this: TextareaHostComponent): void
   handleInput(this: TextareaHostComponent, event: glassEasel.ShadowedEvent<unknown>): void
   handleFocus(this: TextareaHostComponent, event: glassEasel.ShadowedEvent<unknown>): void

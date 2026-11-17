@@ -1908,10 +1908,14 @@ describe('P0 built-in components', () => {
 
     const inputHtml = glassEasel.dumpElementToString(component('input'), true)
     expect(inputHtml).toContain('tiny-input-native-content')
+    expect(inputHtml).toContain('tiny-native-scroll-container')
+    expect(inputHtml).toContain('tiny-native-view-input-')
     expect(inputHtml).toContain('visibility: hidden')
 
     const textareaHtml = glassEasel.dumpElementToString(component('textarea'), true)
     expect(textareaHtml).toContain('tiny-textarea-native-content')
+    expect(textareaHtml).toContain('tiny-native-scroll-container')
+    expect(textareaHtml).toContain('tiny-native-view-textarea-')
     expect(textareaHtml).not.toContain('<textarea id="native-input"')
     expect(textareaHtml).not.toContain('tiny-textarea-compute')
 

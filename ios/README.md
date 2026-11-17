@@ -45,11 +45,18 @@ hosts/ios/                         iOS 的前端标准包（pnpm workspace）
 - 逻辑层真正跑在 `JSContext`：App/Page/Component、glass-easel 逻辑树、逻辑模板实例化、WXS 表达式、observer/relations/页面栈全部在 JSCore；最终页面/组件 WXML 求值在 render WKWebView 的 pageframe。
 - 渲染层跑在 WKWebView：每页一个独立 `NativeRenderSurface`，复用 `createGlassRenderEntry` / `createGlassRenderTree`；
   与 browser/devtool 一样由 render pageframe 执行页面/组件 WXML。隐藏页保留 DOM、滚动位置、定时器和页级 WXSS。
-- 每页有独立的 `NativeViewLayer`：input/textarea 聚焦时通过 `nativeView.*` 上报 frame/clip/style，
-  原生输入视图挂在页面级 slot 中，随页面转场、滚动和裁剪移动；失焦后回到 DOM 文本。
+- 每页有独立的 `NativeSameLayerHost`：input/textarea 聚焦时通过 `nativeView.*` 上报
+  content frame/style，宿主按 marker 和 frame 找到 WebKit 为 `overflow: scroll` 占位层
+  生成的 `WKCompositingView` 内的 `WKChildScrollView`，把原生输入控件直接挂进该滚动子树。
+  页面级 overlay 回退已移除；找不到内部视图时重试若干帧，仍失败则让 `showKeyboard` 明确失败。
+  该路径依赖 WebKit 内部类，需按 iOS 版本回归。
 - 内置 input/textarea 的 DOM 与 iOS 实现分开：共享组件只保留小程序属性、表单和事件语义，
   `dom-host.ts`/`native-host.ts` 各自负责焦点、选区和键盘；iOS 原生模板按微信同层结构组织，
-  textarea 的 `native-textarea` 仅用于自动高度测量和原生视图挂载前的透明回退。
+  textarea 的 `native-textarea` 仅用于自动高度测量和原生控件接管前的透明内容层。
+- 内置 input/textarea 的 native 模板使用 `overflow: scroll` 占位层触发生成
+  `WKCompositingView`；原生侧按 marker/frame 找到 `WKChildScrollView` 后插入
+  `UITextField`/`UITextView`。滚动、裁剪、页面转场和滚动位置都由 WebKit 的滚动子树负责，
+  不存在第二条 overlay 渲染路径。
 - 页面间只走现有 Bridge 协议；service 帧和 render 帧由 Swift `HostCoreSession` 通过原生消息处理器转发。
 - 原生存储：启动时把该 app 的 UserDefaults 快照交给 runtime，运行期 `wx.setStorage*` 经宿主 API 落盘。
 - 原生系统信息/安全区/菜单按钮几何注入；`getSystemInfoSync`、`getWindowInfo`、

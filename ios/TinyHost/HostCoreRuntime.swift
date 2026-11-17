@@ -46,6 +46,8 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private var pendingKeyboardRequests: [(requestId: String, pageId: String)] = []
   private var nativeKeyboard: NativeKeyboardHost?
   private var nativeKeyboardPageId: String?
+  private var nativeKeyboardShowToken = 0
+  private var pendingNativeKeyboardShow: (requestId: String, token: Int, ownerId: String)?
 
   var onReady: ((String) -> Void)?
   var onUIState: ((HostUIState) -> Void)?
@@ -289,30 +291,112 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       return
     }
     let ownerId = payload["ownerId"] as? String ?? ""
+    guard !ownerId.isEmpty else {
+      try? core?.renderHostResult(
+        requestId: requestId,
+        result: ["status": "error", "errMsg": "showKeyboard:fail missing owner"]
+      )
+      return
+    }
     let frame = nativeViewFrame(payload["style"]) ?? container.bounds
-    surface.nativeViewLayer.update(
-      id: ownerId,
+    nativeKeyboardShowToken += 1
+    let token = nativeKeyboardShowToken
+    if let previous = pendingNativeKeyboardShow {
+      pendingNativeKeyboardShow = nil
+      try? core?.renderHostResult(
+        requestId: previous.requestId,
+        result: ["status": "error", "errMsg": "showKeyboard:fail superseded"]
+      )
+    }
+    pendingNativeKeyboardShow = (requestId: requestId, token: token, ownerId: ownerId)
+    attemptNativeKeyboardShow(
+      requestId: requestId,
+      pageId: targetPageId,
+      surface: surface,
+      ownerId: ownerId,
       frame: frame,
-      clip: nativeViewFrame(payload["clip"]),
-      mask: nativeViewMask(payload["mask"]),
-      zIndex: 1000,
-      visible: true
+      payload: payload,
+      token: token,
+      attempt: 0
     )
-    if let existing = nativeKeyboard {
-      if existing.ownerId == ownerId, existing.isActive {
-        resolveKeyboardShow(requestId: requestId, pageId: targetPageId)
+  }
+
+  private func attemptNativeKeyboardShow(
+    requestId: String,
+    pageId: String,
+    surface: NativeRenderSurface,
+    ownerId: String,
+    frame: CGRect,
+    payload: [String: Any],
+    token: Int,
+    attempt: Int
+  ) {
+    guard token == nativeKeyboardShowToken,
+          pendingNativeKeyboardShow?.token == token,
+          surfaces[pageId] === surface
+    else { return }
+    guard let target = sameLayerContainer(for: surface, ownerId: ownerId, frame: frame) else {
+      guard attempt < 30 else {
+        failNativeKeyboardShow(
+          requestId: requestId,
+          token: token,
+          reason: "native same-layer view unavailable"
+        )
         return
       }
-      if nativeKeyboardPageId == targetPageId,
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self, weak surface] in
+        guard let self, let surface else { return }
+        self.attemptNativeKeyboardShow(
+          requestId: requestId,
+          pageId: pageId,
+          surface: surface,
+          ownerId: ownerId,
+          frame: frame,
+          payload: payload,
+          token: token,
+          attempt: attempt + 1
+        )
+      }
+      return
+    }
+    presentNativeKeyboard(
+      requestId: requestId,
+      pageId: pageId,
+      surface: surface,
+      ownerId: ownerId,
+      target: target,
+      payload: payload,
+      token: token
+    )
+  }
+
+  private func presentNativeKeyboard(
+    requestId: String,
+    pageId: String,
+    surface: NativeRenderSurface,
+    ownerId: String,
+    target: UIView,
+    payload: [String: Any],
+    token: Int
+  ) {
+    guard pendingNativeKeyboardShow?.token == token else { return }
+    pendingNativeKeyboardShow = nil
+    if let existing = nativeKeyboard {
+      if existing.ownerId == ownerId, existing.isActive {
+        existing.move(to: target)
+        resolveKeyboardShow(requestId: requestId, pageId: pageId)
+        return
+      }
+      if nativeKeyboardPageId == pageId,
          existing.isActive,
          existing.canReuse(config: payload) {
         let previousOwnerId = existing.ownerId
         let previous = existing.snapshot()
+        existing.move(to: target)
         if previousOwnerId != ownerId {
-          surface.nativeViewLayer.detach(id: previousOwnerId)
+          surface.sameLayerHost.detach(marker: sameLayerMarker(previousOwnerId))
         }
-        existing.move(to: surface.nativeViewLayer.slot(for: ownerId).container)
-        configureNativeKeyboard(existing, pageId: targetPageId, ownerId: ownerId)
+        configureNativeKeyboard(existing, pageId: pageId, ownerId: ownerId)
         _ = existing.retarget(
           ownerId: ownerId,
           config: payload,
@@ -321,7 +405,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
           selectionStart: intPayload(payload["selectionStart"], fallback: -1),
           selectionEnd: intPayload(payload["selectionEnd"], fallback: -1)
         )
-        surfaces[targetPageId]?.sendHostEvent(
+        surface.sendHostEvent(
           name: "keyboardBlur",
           payload: [
             "ownerId": previousOwnerId,
@@ -329,21 +413,21 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
             "cursor": previous.cursor,
           ]
         )
-        resolveKeyboardShow(requestId: requestId, pageId: targetPageId)
+        resolveKeyboardShow(requestId: requestId, pageId: pageId)
         return
       }
       existing.dismiss()
       nativeKeyboard = nil
       nativeKeyboardPageId = nil
     }
-    let slot = surface.nativeViewLayer.slot(for: ownerId)
     let keyboard = NativeKeyboardHost(
-      container: slot.container,
+      container: target,
       ownerId: ownerId
     )
-    configureNativeKeyboard(keyboard, pageId: targetPageId, ownerId: ownerId)
+    configureNativeKeyboard(keyboard, pageId: pageId, ownerId: ownerId)
     guard keyboard.begin(config: payload) else {
       keyboard.dismiss(suppressBlur: true)
+      surface.sameLayerHost.detach(marker: sameLayerMarker(ownerId))
       try? core?.renderHostResult(
         requestId: requestId,
         result: ["status": "error", "errMsg": "showKeyboard:fail native input unavailable"]
@@ -351,8 +435,31 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       return
     }
     nativeKeyboard = keyboard
-    nativeKeyboardPageId = targetPageId
-    resolveKeyboardShow(requestId: requestId, pageId: targetPageId)
+    nativeKeyboardPageId = pageId
+    resolveKeyboardShow(requestId: requestId, pageId: pageId)
+  }
+
+  private func failNativeKeyboardShow(
+    requestId: String,
+    token: Int,
+    reason: String
+  ) {
+    guard pendingNativeKeyboardShow?.token == token else { return }
+    pendingNativeKeyboardShow = nil
+    try? core?.renderHostResult(
+      requestId: requestId,
+      result: ["status": "error", "errMsg": "showKeyboard:fail \(reason)"]
+    )
+  }
+
+  private func cancelPendingNativeKeyboardShow(reason: String) {
+    nativeKeyboardShowToken += 1
+    guard let pending = pendingNativeKeyboardShow else { return }
+    pendingNativeKeyboardShow = nil
+    try? core?.renderHostResult(
+      requestId: pending.requestId,
+      result: ["status": "error", "errMsg": "showKeyboard:fail \(reason)"]
+    )
   }
 
   private func nativeViewFrame(_ raw: Any?) -> CGRect? {
@@ -364,9 +471,21 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     return CGRect(x: left, y: top, width: width, height: height)
   }
 
-  private func nativeViewMask(_ raw: Any?) -> [CGRect]? {
-    guard let values = raw as? [Any] else { return nil }
-    return values.compactMap { nativeViewFrame($0) }
+  private func sameLayerMarker(_ ownerId: String) -> String {
+    "tiny-native-view-\(ownerId)"
+  }
+
+  private func sameLayerContainer(
+    for surface: NativeRenderSurface,
+    ownerId: String,
+    frame: CGRect?
+  ) -> UIView? {
+    guard !ownerId.isEmpty else { return nil }
+    return surface.sameLayerHost.container(
+      for: sameLayerMarker(ownerId),
+      in: surface.webView,
+      targetFrame: frame
+    )
   }
 
   private func doubleValue(_ value: Any?, fallback: Double) -> Double {
@@ -465,6 +584,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   func setVisible(_ visible: Bool) {
     appVisible = visible
     if !visible, let activePageId {
+      cancelPendingNativeKeyboardShow(reason: "app is hidden")
       surfaces[activePageId]?.webView.endEditing(true)
       nativeKeyboard?.endEditing()
     }
@@ -479,6 +599,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
 
   func close() {
     NotificationCenter.default.removeObserver(self)
+    cancelPendingNativeKeyboardShow(reason: "host closed")
     nativeKeyboard?.dismiss(suppressBlur: true)
     nativeKeyboard = nil
     nativeKeyboardPageId = nil
@@ -576,11 +697,12 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   func activatePage(pageId: String) {
     let previousId = activePageId
     if previousId != pageId {
+      cancelPendingNativeKeyboardShow(reason: "page changed")
       nativeKeyboard?.dismiss()
       nativeKeyboard = nil
       nativeKeyboardPageId = nil
       if let previousId {
-        surfaces[previousId]?.nativeViewLayer.hideAll()
+        surfaces[previousId]?.sameLayerHost.detachAll()
       }
     }
     guard let newSurface = surfaces[pageId] else {
@@ -982,14 +1104,21 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     }
     if method == "hideKeyboard" {
       let targetPageId: String? = pageId.isEmpty ? activePageId : pageId
+      let requestedOwnerId = payload["ownerId"] as? String
+      if let pending = pendingNativeKeyboardShow,
+         requestedOwnerId == nil || pending.ownerId == requestedOwnerId {
+        cancelPendingNativeKeyboardShow(reason: "keyboard hidden")
+      }
       if let targetPageId {
         surfaces[targetPageId]?.webView.endEditing(true)
       }
       if let keyboard = nativeKeyboard,
-         payload["ownerId"] == nil || keyboard.ownerId == (payload["ownerId"] as? String ?? "") {
+         requestedOwnerId == nil || keyboard.ownerId == requestedOwnerId {
         keyboard.endEditing()
         if let targetPageId {
-          surfaces[targetPageId]?.nativeViewLayer.detach(id: keyboard.ownerId)
+          surfaces[targetPageId]?.sameLayerHost.detach(
+            marker: sameLayerMarker(keyboard.ownerId)
+          )
         }
         nativeKeyboard = nil
         nativeKeyboardPageId = nil
@@ -1080,7 +1209,10 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       return
     }
     if method == "nativeView.detach" {
-      surface.nativeViewLayer.detach(id: id)
+      surface.sameLayerHost.detach(marker: sameLayerMarker(id))
+      if pendingNativeKeyboardShow?.ownerId == id {
+        cancelPendingNativeKeyboardShow(reason: "native view detached")
+      }
       if nativeKeyboard?.ownerId == id {
         nativeKeyboard?.dismiss(suppressBlur: true)
         nativeKeyboard = nil
@@ -1090,35 +1222,26 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       return
     }
     let frame = nativeViewFrame(payload["frame"]) ?? .zero
-    let clip = nativeViewFrame(payload["clip"])
-    let mask = nativeViewMask(payload["mask"])
-    let visible = payload["visible"] as? Bool ?? true
-    let zIndex = intPayload(payload["zIndex"], fallback: 0)
+    guard let container = sameLayerContainer(for: surface, ownerId: id, frame: frame) else {
+      if ProcessInfo.processInfo.environment["TINY_DEBUG_NATIVE_VIEW"] == "1" {
+        HostDebug.log("nativeView \(method) page=\(targetPageId) id=\(id) missing same-layer view")
+      }
+      try? core?.renderHostResult(
+        requestId: requestId,
+        result: ["status": "error", "errMsg": "native same-layer view unavailable"]
+      )
+      return
+    }
     if ProcessInfo.processInfo.environment["TINY_DEBUG_NATIVE_VIEW"] == "1" {
       HostDebug.log(
         "nativeView \(method) page=\(targetPageId) id=\(id) frame=\(frame) "
-          + "clip=\(String(describing: clip)) mask=\(mask?.count ?? -1) visible=\(visible)"
-      )
-    }
-    surface.nativeViewLayer.update(
-      id: id,
-      frame: frame,
-      clip: clip,
-      mask: mask,
-      zIndex: zIndex,
-      visible: visible
-    )
-    if ProcessInfo.processInfo.environment["TINY_DEBUG_NATIVE_VIEW"] == "1" {
-      let slotView = surface.nativeViewLayer.slot(for: id).view
-      HostDebug.log(
-        "nativeView slot id=\(id) window=\(slotView.convert(slotView.bounds, to: nil)) "
           + "container=\(container.convert(container.bounds, to: nil))"
       )
     }
     if nativeKeyboard?.ownerId == id {
+      nativeKeyboard?.move(to: container)
       nativeKeyboard?.updateGeometry(
-        style: payload["style"] as? [String: Any],
-        visible: visible
+        style: payload["style"] as? [String: Any]
       )
     }
     try? core?.renderHostResult(requestId: requestId, result: ["status": "ok"])

@@ -8,15 +8,12 @@ import {
 import {
   attachNativeView,
   detachNativeView,
-  nativeViewClipOf,
   nativeViewContentFrameOf,
-  nativeViewMaskOf,
-  nativeViewScrollAncestors,
+  nativeViewMarkerClass,
   nativeViewStyleOf,
   updateNativeView,
   type NativeViewSpec,
 } from '../../host-native-view'
-import { cancelHostFrame, requestHostFrame } from '../../host-page'
 import type {
   TextareaHostComponent,
   TextareaHostElement,
@@ -26,7 +23,7 @@ import { textareaRuntime } from './host'
 
 /**
  * iOS/WeChat-native host: a native text view owns the keyboard, selection and
- * caret; the template only exposes the clipped slot and aria fallback.
+ * caret; the template exposes the WebKit scroll placeholder owned by the host.
  */
 export function createNativeTextareaHost(ctx: BuiltinContext): TextareaHostMethods {
   return {
@@ -51,20 +48,11 @@ export function createNativeTextareaHost(ctx: BuiltinContext): TextareaHostMetho
       const styleElement = element ?? this.textareaElement()
       const frame = nativeViewContentFrameOf(element)
       if (!frame) return null
-      const computed = styleElement && typeof window !== 'undefined'
-        ? window.getComputedStyle(styleElement)
-        : null
-      const zIndex = Number.parseInt(computed?.zIndex ?? '', 10)
-      const clip = nativeViewClipOf(element)
-      const mask = nativeViewMaskOf(element)
       return {
         id: instance.__keyboardOwnerId,
         kind: 'textarea',
+        markerClass: nativeViewMarkerClass(instance.__keyboardOwnerId),
         frame,
-        clip,
-        mask,
-        ...(Number.isFinite(zIndex) ? { zIndex } : {}),
-        visible: mask.length > 0,
         style: nativeViewStyleOf(styleElement),
         props: {
           value: String(this.data.value ?? ''),
@@ -138,7 +126,6 @@ export function createNativeTextareaHost(ctx: BuiltinContext): TextareaHostMetho
     focusScrollIntoView(this: TextareaHostComponent): void {
       if (!this.data.adjustPosition) return
       this.activationElement()?.scrollIntoView?.({ block: 'center', inline: 'nearest' })
-      this.syncNativeViewGeometrySoon()
     },
 
     requestKeyboardShow(this: TextareaHostComponent, value: unknown): void {
@@ -198,7 +185,6 @@ export function createNativeTextareaHost(ctx: BuiltinContext): TextareaHostMetho
         }
         if (requestId !== instance.__keyboardRequestId) return
         if (instance.__nativeKeyboardVisible) {
-          this.bindNativeViewTracking()
           this.syncNativeViewGeometry(true)
         } else {
           this.detachNativeViewLayer()
@@ -265,86 +251,18 @@ export function createNativeTextareaHost(ctx: BuiltinContext): TextareaHostMetho
       const instance = textareaRuntime(this)
       if (!instance.__nativeKeyboardVisible) return
       const spec = this.nativeViewSpec()
-      if (!spec) return
+      if (!spec) {
+        this.detachNativeViewLayer()
+        return
+      }
       if (attach) void attachNativeView(ctx, spec)
       else void updateNativeView(ctx, spec)
-      if (instance.__nativeViewActive !== spec.visible) {
-        instance.__nativeViewActive = spec.visible
-        this.setData({ nativeViewActive: spec.visible })
-      }
-    },
-
-    syncNativeViewGeometrySoon(this: TextareaHostComponent, duration = 120): void {
-      const started = Date.now()
-      const tick = () => {
-        this.syncNativeViewGeometry()
-        if (Date.now() - started < duration) requestHostFrame(tick)
-      }
-      requestHostFrame(tick)
-    },
-
-    bindNativeViewTracking(this: TextareaHostComponent): void {
-      const instance = textareaRuntime(this)
-      if (instance.__nativeViewTracking) return
-      if (typeof window === 'undefined' || typeof document === 'undefined') return
-      const schedule = () => {
-        if (!instance.__nativeKeyboardVisible || instance.__nativeViewFrame !== undefined) return
-        instance.__nativeViewFrame = requestHostFrame(() => {
-          instance.__nativeViewFrame = undefined
-          this.syncNativeViewGeometry()
-        })
-      }
-      window.addEventListener('scroll', schedule, true)
-      window.addEventListener('resize', schedule)
-      document.addEventListener('scroll', schedule, true)
-      const scrollAncestors = nativeViewScrollAncestors(this.activationElement())
-      for (const node of scrollAncestors) {
-        node.addEventListener('scroll', schedule, { passive: true })
-      }
-      const visualViewport = (window as unknown as { visualViewport?: EventTarget }).visualViewport
-      visualViewport?.addEventListener('resize', schedule)
-      visualViewport?.addEventListener('scroll', schedule)
-      const resizeObserver = typeof ResizeObserver === 'undefined'
-        ? undefined
-        : new ResizeObserver(schedule)
-      const element = this.activationElement()
-      if (resizeObserver && element) resizeObserver.observe(element)
-      const mutationObserver = typeof MutationObserver === 'undefined'
-        ? undefined
-        : new MutationObserver(schedule)
-      const observeRoot = document.body ?? document.documentElement
-      if (mutationObserver && observeRoot) {
-        mutationObserver.observe(observeRoot, {
-          subtree: true,
-          childList: true,
-          attributes: true,
-          attributeFilter: ['class', 'style', 'hidden', 'aria-hidden'],
-        })
-      }
-      document.addEventListener('transitionend', schedule, true)
-      document.addEventListener('animationend', schedule, true)
-      instance.__nativeViewTracking = () => {
-        window.removeEventListener('scroll', schedule, true)
-        window.removeEventListener('resize', schedule)
-        document.removeEventListener('scroll', schedule, true)
-        for (const node of scrollAncestors) {
-          node.removeEventListener('scroll', schedule)
-        }
-        visualViewport?.removeEventListener('resize', schedule)
-        visualViewport?.removeEventListener('scroll', schedule)
-        resizeObserver?.disconnect()
-        mutationObserver?.disconnect()
-        document.removeEventListener('transitionend', schedule, true)
-        document.removeEventListener('animationend', schedule, true)
-        cancelHostFrame(instance.__nativeViewFrame)
-        instance.__nativeViewFrame = undefined
-      }
+      instance.__nativeViewActive = true
+      this.setData({ nativeViewActive: true })
     },
 
     detachNativeViewLayer(this: TextareaHostComponent): void {
       const instance = textareaRuntime(this)
-      instance.__nativeViewTracking?.()
-      instance.__nativeViewTracking = undefined
       void detachNativeView(ctx, instance.__keyboardOwnerId)
       if (instance.__nativeViewActive) {
         instance.__nativeViewActive = false

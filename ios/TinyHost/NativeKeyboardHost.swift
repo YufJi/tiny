@@ -51,6 +51,8 @@ final class NativeKeyboardHost: NSObject, UITextFieldDelegate, UITextViewDelegat
       updateGeometry()
       return
     }
+    let fieldWasFirstResponder = textField?.isFirstResponder == true
+    let viewWasFirstResponder = textView?.isFirstResponder == true
     textField?.removeFromSuperview()
     textView?.removeFromSuperview()
     container = nextContainer
@@ -62,6 +64,17 @@ final class NativeKeyboardHost: NSObject, UITextFieldDelegate, UITextViewDelegat
     }
     nextContainer.isUserInteractionEnabled = true
     updateGeometry()
+    if fieldWasFirstResponder || viewWasFirstResponder {
+      DispatchQueue.main.async { [weak self] in
+        guard let self else { return }
+        if fieldWasFirstResponder {
+          self.textField?.becomeFirstResponder()
+        }
+        if viewWasFirstResponder {
+          self.textView?.becomeFirstResponder()
+        }
+      }
+    }
   }
 
   func snapshot() -> (value: String, cursor: Int) {
@@ -287,7 +300,7 @@ final class NativeKeyboardHost: NSObject, UITextFieldDelegate, UITextViewDelegat
   }
 
   @discardableResult
-  func updateGeometry(style: [String: Any]? = nil, visible: Bool = true) -> Bool {
+  func updateGeometry(style: [String: Any]? = nil) -> Bool {
     if let style {
       config["style"] = style
     }
@@ -295,8 +308,8 @@ final class NativeKeyboardHost: NSObject, UITextFieldDelegate, UITextViewDelegat
     textField?.frame = frame
     textView?.frame = frame
     applyStyle()
-    textField?.isHidden = !visible
-    textView?.isHidden = !visible
+    textField?.isHidden = false
+    textView?.isHidden = false
     return true
   }
 

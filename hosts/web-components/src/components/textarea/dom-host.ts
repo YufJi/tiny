@@ -72,7 +72,6 @@ export function createDomTextareaHost(ctx: BuiltinContext): TextareaHostMethods 
     focusScrollIntoView(this: TextareaHostComponent): void {
       if (!this.data.adjustPosition) return
       this.textareaElement()?.scrollIntoView?.({ block: 'center', inline: 'nearest' })
-      this.syncNativeViewGeometrySoon()
     },
 
     requestKeyboardShow(this: TextareaHostComponent, value: unknown): void {
@@ -172,14 +171,6 @@ export function createDomTextareaHost(ctx: BuiltinContext): TextareaHostMethods 
     },
 
     syncNativeViewGeometry(this: TextareaHostComponent, _attach = false): void {
-      // Native same-layer views do not exist in the DOM host.
-    },
-
-    syncNativeViewGeometrySoon(this: TextareaHostComponent, _duration = 120): void {
-      // Native same-layer views do not exist in the DOM host.
-    },
-
-    bindNativeViewTracking(this: TextareaHostComponent): void {
       // Native same-layer views do not exist in the DOM host.
     },
 

@@ -13,7 +13,7 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
   let generatedRoot: URL
   let templatesSource: String?
   let view = UIView()
-  let nativeViewLayer = NativeViewLayer()
+  let sameLayerHost = NativeSameLayerHost()
   private(set) var webView: WKWebView!
 
   var onReady: (() -> Void)?
@@ -72,7 +72,7 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
         forMainFrameOnly: true
       ))
     }
-    let webView = WKWebView(frame: .zero, configuration: configuration)
+    let webView = NativeSameLayerWebView(frame: .zero, configuration: configuration)
     // Host chrome may follow a dark navigation style, but the mini-program
     // WebView itself is currently a light-theme page.
     webView.overrideUserInterfaceStyle = .light
@@ -87,10 +87,7 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
     view.clipsToBounds = true
     webView.frame = view.bounds
     webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-    nativeViewLayer.view.frame = view.bounds
-    nativeViewLayer.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     view.addSubview(webView)
-    view.addSubview(nativeViewLayer.view)
 
     var components = URLComponents()
     components.scheme = "tinyapp"
@@ -150,12 +147,12 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
     view.isHidden = !visible
     view.alpha = visible ? 1 : 0
     if !visible {
-      nativeViewLayer.hideAll()
+      sameLayerHost.detachAll()
     }
   }
 
   func destroy() {
-    nativeViewLayer.detachAll()
+    sameLayerHost.detachAll()
     webView.configuration.userContentController.removeScriptMessageHandler(forName: "tinyRender")
     webView.stopLoading()
     webView.removeFromSuperview()
