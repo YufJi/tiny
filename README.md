@@ -202,6 +202,7 @@ pnpm test                    # 全部包的单元测试（一个 Vitest 进程�
 pnpm compile:glass-easel     # tests/apps/demo -> tests/host/generated/apps/demo
 pnpm compile:devtool:all     # 全部 tests/apps -> devtool 静态目录
 pnpm compile:wechat-demo     # 微信官方组件/API 示例 -> tests/host/generated/apps/wechat-demo
+pnpm check:fixture-platform  # 校验所有测试小程序都是 webview + glass-easel + libVersion 3.17.5
 pnpm check:runtime-purity    # 校验 runtime 内核无宿主全局依赖
 pnpm check:runtime-layers    # 校验 runtime 的 shared/tree-protocol/component/service/render 分层边界
 pnpm dev:wechat-demo         # 微信示例宿主：http://127.0.0.1:5174/?path=page/component/index

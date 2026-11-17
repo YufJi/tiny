@@ -24,5 +24,7 @@
   "usingComponents": {
     "demo-block": "./components/demo-block/index"
   },
-  "sitemapLocation": "sitemap.json"
+  "sitemapLocation": "sitemap.json",
+  "componentFramework": "glass-easel",
+  "renderer": "webview"
 }

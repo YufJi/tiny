@@ -15,5 +15,7 @@
       { "pagePath": "pages/home/home", "text": "首页" },
       { "pagePath": "pages/settings/settings", "text": "设置" }
     ]
-  }
+  },
+  "componentFramework": "glass-easel",
+  "renderer": "webview"
 }

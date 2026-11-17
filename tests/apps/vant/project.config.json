@@ -42,7 +42,8 @@
     "condition": false
   },
   "compileType": "miniprogram",
-  "libVersion": "2.27.3",
+  "componentFramework": "glass-easel",
+  "libVersion": "3.17.5",
   "appid": "wx1c01b35002d3ba14",
   "projectname": "Vant 组件库展示",
   "editorSetting": {

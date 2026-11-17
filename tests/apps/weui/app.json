@@ -73,5 +73,7 @@
     "downloadFile": 10000
   },
   "style": "v2",
-  "debug": true
+  "debug": true,
+  "componentFramework": "glass-easel",
+  "renderer": "webview"
 }

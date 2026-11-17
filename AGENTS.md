@@ -89,6 +89,7 @@ pnpm parity:probe            # compile tests/apps/wechat-demo and probe every pa
 pnpm dev:wechat-demo         # WeChat demo host on :5174
 pnpm check:runtime-purity    # assert the core runtime has no host globals
 pnpm check:runtime-layers    # assert the service/render/tree layer boundaries
+pnpm check:fixture-platform  # assert every test fixture is WebView + glass-easel on 3.17.5
 pnpm ios:assets              # build @tiny/host-ios + compile fixtures + assemble ios/Generated
 pnpm ios:sim                 # build and smoke-test TinyHost on an iOS Simulator
 pnpm ios:device              # build, sign, install and launch on a connected iPhone
@@ -154,6 +155,11 @@ Reuse a running host with
   and gitignored.
 - `tests/apps/*` are complete mini-program fixtures; `tests/apps/todo` is the Taro 3
   compatibility target. `tests/apps/echarts` is historical reference only.
+- Every `tests/apps/*` fixture must declare `renderer: "webview"` and
+  `componentFramework: "glass-easel"` in `app.json`, must not override the renderer
+  to Skyline in page/component configs, and must use `libVersion: "3.17.5"` in
+  `project.config.json`. Run `pnpm check:fixture-platform`; the acceptance gate runs
+  it before building.
 - Site page content lives in `docs/site/*.md` (contract:
   `docs/site/CONTEXT.md`). The filename is the route, `name`/`order` drive the
   navigation, and the build fails on syntax outside the contract; do not add

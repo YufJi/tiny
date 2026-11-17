@@ -23,5 +23,7 @@
     "nested-style-parent": "./components/nested-style-parent/nested-style-parent",
     "wxs-probe": "./components/wxs-probe/wxs-probe",
     "router-probe": "./components/router-probe/router-probe"
-  }
+  },
+  "componentFramework": "glass-easel",
+  "renderer": "webview"
 }

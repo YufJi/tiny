@@ -11,5 +11,7 @@
   },
   "usingComponents": {
     "probe": "/components/probe/probe"
-  }
+  },
+  "componentFramework": "glass-easel",
+  "renderer": "webview"
 }

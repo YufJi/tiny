@@ -30,5 +30,7 @@
     "navigationBarTitleText": "ECharts 图表示例",
     "navigationBarTextStyle": "black"
   },
-  "sitemapLocation": "sitemap.json"
+  "sitemapLocation": "sitemap.json",
+  "componentFramework": "glass-easel",
+  "renderer": "webview"
 }
