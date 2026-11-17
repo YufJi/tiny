@@ -1,5 +1,4 @@
 import type * as glassEasel from '@tiny/runtime/glass-easel'
-import type { BuiltinComponents } from '@tiny/runtime'
 import { BUILTIN_COMPONENT_TAGS, BUILTIN_HOST_TAG_PREFIX, type BuiltinComponentTag } from './tags'
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import { builtinTemplate, internalTemplate } from './templates'
@@ -9,6 +8,7 @@ import {
   BUILTIN_COMPONENT_STYLES,
   BUILTIN_HOST_STYLES,
 } from './styles'
+import type { BuiltinComponentDefinitions } from './contract'
 import type { BuiltinContext, BuiltinComponentFactoryOptions } from './types'
 import { defineView } from './components/view'
 import { defineGridView } from './components/grid-view'
@@ -60,11 +60,12 @@ export {
 export { BUILTIN_BASE_STYLES, BUILTIN_COMPONENT_STYLES, BUILTIN_HOST_STYLES }
 export type { BuiltinComponentTag }
 export type { BuiltinComponentFactoryOptions, BuiltinContext } from './types'
-
-export type BuiltinComponentDefinitions = Record<
-  BuiltinComponentTag,
-  glassEasel.GeneralComponentDefinition
->
+export type {
+  BuiltinComponentDefinitions,
+  BuiltinComponentFactory,
+  BuiltinComponentFactoryContext,
+  BuiltinHostEventSource,
+} from './contract'
 
 type DefinitionFactory = (ctx: BuiltinContext) => glassEasel.GeneralComponentDefinition
 
@@ -145,24 +146,4 @@ export function createBuiltinComponents(
     definitions[tag] = DEFINITION_FACTORIES[tag](context)
   }
   return definitions
-}
-
-/**
- * Descriptor for hosts that consume the runtime `BuiltinComponents` seam.
- *
- * The DOM render tree in `@tiny/host-web` calls `createBuiltinComponents`
- * directly; this descriptor remains for hosts that inject their own render
- * backend. The runtime core never imports this package, so non-DOM hosts can
- * supply their own tags (or none) without pulling in web-specific behavior or
- * CSS.
- */
-export const webBuiltinComponents: BuiltinComponents = {
-  create: createBuiltinComponents,
-  styles: [
-    {
-      path: 'tiny-builtin-host.css',
-      content: BUILTIN_HOST_STYLES,
-    },
-    ...BUILTIN_COMPONENT_STYLES.map(({ path, content, scope }) => ({ path, content, scope })),
-  ],
 }

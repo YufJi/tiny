@@ -207,7 +207,7 @@ service 和 render 都不读取 URL，也不读取全局 manifest；所有输入
 | `onPageRelease` | 页面销毁后由宿主回收资源（canvas 节点等） | 否 |
 | `maxPageStack` | 页面栈上限，默认 10 | 否 |
 
-render 线程需要拿到编译模板，因为组件 shadow tree 在 render 侧求值；`builtinComponents` 由渲染树工厂（Web 侧 `createGlassRenderTree`）内部创建，不需要线程参数。
+render 线程需要拿到编译模板，因为组件 shadow tree 在 render 侧求值；内置组件由渲染树工厂（Web 侧 `createGlassRenderTree`）直接调用 `@tiny/host-web-components` 创建，不需要线程参数。
 
 | `TreeThreadOptions` / `RenderEntryOptions` | 用途 | 是否必需 |
 | --- | --- | --- |

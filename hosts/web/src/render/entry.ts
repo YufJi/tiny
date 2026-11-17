@@ -1,5 +1,4 @@
 import type {
-  BuiltinHostEventSource,
   TemplateRegistry,
   TreeRenderer,
 } from '@tiny/runtime'
@@ -7,6 +6,7 @@ import {
   BUILTIN_BASE_STYLES,
   BUILTIN_COMPONENT_STYLES,
   BUILTIN_HOST_STYLES,
+  type BuiltinHostEventSource,
 } from '@tiny/host-web-components'
 import { createGlassRenderTree } from './tree'
 

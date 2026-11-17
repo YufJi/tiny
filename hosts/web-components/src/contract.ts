@@ -1,4 +1,6 @@
-import type { RenderHostAction } from '../tree-protocol/protocol'
+import type * as glassEasel from '@tiny/runtime/glass-easel'
+import type { RenderHostAction } from '@tiny/runtime'
+import type { BuiltinComponentTag } from './tags'
 
 /** Host-owned events exposed to built-in components without naming a platform. */
 export type BuiltinHostEventSource = {
@@ -7,7 +9,7 @@ export type BuiltinHostEventSource = {
   last?: (name: string) => unknown
 }
 
-/** Context the runtime passes to a host-provided built-in component factory. */
+/** Context the web host passes to the built-in component factory. */
 export type BuiltinComponentFactoryContext = {
   /** Register or reuse a render style scope shared with stylesheet registration. */
   registerStyleScope?: (name: string) => number
@@ -34,7 +36,7 @@ export type BuiltinComponentFactoryContext = {
   hostAction?: (action: RenderHostAction) => void
   /**
    * Ask the host for a request/response capability. Component-specific payloads
-   * stay in the host package; the runtime only owns the generic channel.
+   * stay in the host package; the contract only owns the generic channel.
    */
   hostRequest?: (method: string, payload: unknown) => Promise<unknown>
   /**
@@ -49,33 +51,12 @@ export type BuiltinComponentFactoryContext = {
   textInputHost?: 'dom' | 'native'
 }
 
-export type BuiltinComponentFactory = (
-  space: import('glass-easel').ComponentSpace,
-  context: BuiltinComponentFactoryContext,
-) => BuiltinComponentDefinitions
-
-export type BuiltinComponentDefinitions = Record<
-  string,
-  import('glass-easel').GeneralComponentDefinition
+export type BuiltinComponentDefinitions<T extends string = BuiltinComponentTag> = Record<
+  T,
+  glassEasel.GeneralComponentDefinition
 >
 
-/**
- * Host-provided implementations of the mini-program built-in tags.
- *
- * The runtime core does not own UI: a host supplies the tags its backend can
- * render. `@tiny/host-web-components` is the DOM/browser implementation used by
- * `tests/host` and `apps/devtool`; a native host can provide its own factory or
- * omit this option entirely.
- */
-export type BuiltinStyleSheet = {
-  path: string
-  content: string
-  /** Internal style scope. Omit for globally applicable host/base styles. */
-  scope?: string
-}
-
-export type BuiltinComponents = {
-  create: BuiltinComponentFactory
-  /** Stylesheets registered before app/page/component styles. */
-  styles?: BuiltinStyleSheet[]
-}
+export type BuiltinComponentFactory<T extends string = BuiltinComponentTag> = (
+  space: glassEasel.ComponentSpace,
+  context: BuiltinComponentFactoryContext,
+) => BuiltinComponentDefinitions<T>

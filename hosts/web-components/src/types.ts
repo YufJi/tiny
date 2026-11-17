@@ -1,11 +1,11 @@
 import type * as glassEasel from '@tiny/runtime/glass-easel'
-import type { BuiltinComponentFactoryContext } from '@tiny/runtime'
+import type { BuiltinComponentFactoryContext } from './contract'
 import type { BuiltinComponentTag } from './tags'
 import type { BuiltinBehaviors } from './behaviors'
 
 /**
- * Options are defined by the runtime's injection seam so the web host package
- * and `bootRenderThread({ builtinComponents })` cannot drift apart.
+ * Options are shared with the built-in component factory in this package so
+ * the definitions and their host wiring cannot drift apart.
  */
 export type BuiltinComponentFactoryOptions = BuiltinComponentFactoryContext
 

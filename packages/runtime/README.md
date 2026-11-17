@@ -72,12 +72,15 @@ Internal modules import their owner directly; only the root barrel and
 | Service iframe | `bootServiceThread` | `ServiceThreadOptions`, `ServiceThreadRuntime` |
 | Render iframe (web) | `bootTreeThread` | `TreeThreadOptions`, `TreeRenderer`, `TreeEventPayload` |
 | Both threads | `tree-protocol/protocol` | `RenderNode`, `RenderPatch`, `ComponentFlow`, `TREE_PROTOCOL`, `RUNTIME_CONTROL` |
-| Host components | `BuiltinComponents` | `BuiltinComponentFactoryContext`, `BuiltinStyleSheet` |
 | Utilities | `resolveAssetReference`, `TINY_ENGINE_NAMING`, `DIAGNOSTIC_CODES` | `RuntimeDiagnostic`, `InspectNode`, manifest/runtime types |
 
 Internal modules (the logic-tree adapter/backend, glass-easel bridge, service
 page registry/instances, component definitions) are intentionally not
 re-exported. Hosts run the runtime through the thread entries above.
+
+The built-in component factory and its host context belong to
+`@tiny/host-web-components`, not to this package. A host that supplies its own
+render views does not need a runtime-level built-in component contract.
 
 ## Testing
 

@@ -1,4 +1,4 @@
-import type { BuiltinHostEventSource } from '@tiny/runtime'
+import type { BuiltinHostEventSource } from '@tiny/host-web-components'
 import { BROWSER_RUNTIME_NAMES } from '../naming'
 
 type HostEventListener = (payload: unknown) => void

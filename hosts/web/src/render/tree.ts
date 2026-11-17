@@ -12,7 +12,6 @@ import {
 } from '@tiny/runtime'
 import type {
   ComponentDefinitionPayload,
-  BuiltinHostEventSource,
   CustomEventMessage,
   RenderAnimationRequest,
   RenderClearAnimationRequest,
@@ -40,6 +39,7 @@ import {
   createBuiltinComponents,
   getPublicBuiltinBehaviors,
   type BuiltinComponentTag,
+  type BuiltinHostEventSource,
 } from '@tiny/host-web-components'
 import { attachEventCompositor } from './event-compositor'
 

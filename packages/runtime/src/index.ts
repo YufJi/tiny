@@ -17,15 +17,6 @@ export { resolveAssetReference } from './shared/assets'
 // render-side registry from this list so it cannot drift from the kernel.
 export { BUILTIN_BEHAVIOR_NAMES, type BuiltinBehaviorName } from './component/behaviors'
 
-export type {
-  BuiltinComponentDefinitions,
-  BuiltinComponentFactory,
-  BuiltinComponentFactoryContext,
-  BuiltinComponents,
-  BuiltinHostEventSource,
-  BuiltinStyleSheet,
-} from './render/builtin'
-
 export type { InspectNode } from './service/logic-tree/inspect'
 export type { QueryNodeSnapshot } from './service/logic-tree/query'
 export type { RuntimeManifest } from './shared/manifest'

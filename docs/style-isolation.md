@@ -175,7 +175,7 @@ style.textContent = [BUILTIN_BASE_STYLES, BUILTIN_HOST_STYLES,
   ...BUILTIN_COMPONENT_STYLES.map(s => s.content)].join('\n')
 ```
 
-`webBuiltinComponents.styles`（[hosts/web-components/src/index.ts:127](../hosts/web-components/src/index.ts#L127)）声明了同样内容的注册接口，但当前浏览器宿主实际走的是 `createGlassRenderEntry().prepare()` 这条路径；service 侧的 `role: 'builtin'` 会被显式过滤，不随页面下发。
+内置样式由 `@tiny/host-web-components` 的 `BUILTIN_*_STYLES` 导出（[hosts/web-components/src/index.ts:60](../hosts/web-components/src/index.ts#L60)），浏览器宿主在 `createGlassRenderEntry().prepare()` 中一次性安装（[hosts/web/src/render/entry.ts:69](../hosts/web/src/render/entry.ts#L69)）；service 侧的 `role: 'builtin'` 会被显式过滤，不随页面下发。
 
 ### 4.5 受控穿透
 

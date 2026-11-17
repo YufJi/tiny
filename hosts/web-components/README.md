@@ -11,6 +11,11 @@ DOM backend (`tiny-*` host nodes, attribute reflection, `classList`,
 in `@tiny/host-web` and calls `createBuiltinComponents` from this package; this
 package does not boot a thread, install page styles or own a `TreeRenderer`.
 
+The built-in component factory contract (`BuiltinComponentFactory`,
+`BuiltinComponentFactoryContext`, `BuiltinComponentDefinitions`,
+`BuiltinHostEventSource`) also lives here in `src/contract.ts`. The runtime only
+owns the protocol-level `RenderHostAction` and `TreeRenderer` contracts.
+
 A native host can ignore this package entirely and provide its own views.
 
 Glass-easel primitives are imported through `@tiny/runtime/glass-easel`; this
@@ -21,7 +26,8 @@ version.
 
 ```
 src/
-├── index.ts              # public factory, definition registry, web provider
+├── index.ts              # public factory, definition registry, contract exports
+├── contract.ts           # factory/context and host event types
 ├── tags.ts               # supported tag list (re-exported from @tiny/manifest)
 ├── types.ts              # contexts and option types
 ├── events.ts             # normalized event value helpers

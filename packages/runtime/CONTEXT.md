@@ -25,7 +25,7 @@ service/boot ──► service/app + service/page + service/render-bridge
 | Service logic tree | `service/logic-tree/` | glass-easel `ComponentSpace`, recording backend, logic selector query, event dispatch | `service/page/`, `service/render-bridge/`, `service/boot.ts`, `render/` |
 | Service render bridge | `service/render-bridge/` | logic-tree lifecycle, component schemas/definition payloads, flow/patch projection, update scheduling, WXS, inbound events and render RPCs | `service/page/`, `service/app/`, `service/api/`, `service/boot.ts`, `render/` |
 | Service boot | `service/boot.ts` | assembly only: registry, page stack, render bridge, globals and controls | `render/` |
-| Render thread | `render/` | render-thread entry, built-in host contract and pageframe `TreeRenderer` contract | `service/`, `component/` |
+| Render thread | `render/` | render-thread entry and pageframe `TreeRenderer` contract | `service/`, `component/` |
 
 `ServicePageStack` talks to the render side only through `ServiceRenderPort`
 from `service/render-bridge/port.ts` (implemented by `ServiceRenderBridge`).
@@ -174,7 +174,9 @@ property installation.
 - **Built-in components**: host-owned render components for mini-program tags
   such as `view`, `text`, `image`, `button`, and `input`. The service logic tree
   emits only semantic tags; the web host supplies `tiny-*` implementations and
-  CSS, and a native host supplies its own `TreeRenderer` views.
+  CSS, and a native host supplies its own `TreeRenderer` views. The factory and
+  its host context live with the implementation in `@tiny/host-web-components`;
+  the runtime does not re-export a built-in component contract.
 - **Runtime compatibility**: manifest-provided API namespace/aliases,
   registration globals, behavior scheme, and legacy opaque globals. These affect
   the mini-program input contract, not Tiny's fixed internal naming.
