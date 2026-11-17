@@ -6,6 +6,7 @@ export const TREE_PROTOCOL = Object.freeze({
   patch: 'patch',
   ack: 'ack',
   event: 'event',
+  eventReturn: 'eventReturn',
   ready: 'ready',
   inspectTree: 'inspectTree',
   measure: 'measure',
@@ -43,6 +44,13 @@ export type CustomEventMessage = {
   name: string
   detail?: unknown
   options?: { bubbles?: boolean; composed?: boolean }
+}
+
+/** Listener return correlated with the render-side event token. */
+export type EventReturnMessage = {
+  pageId?: string
+  eventToken: string
+  result: unknown
 }
 
 /**

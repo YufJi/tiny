@@ -17,6 +17,7 @@ export function createTestHostApiHandlers(
   getSystemInfo: () => SystemInfo,
 ): HostApiHandlers {
   return {
+    'keyboard.hide': () => ({ errMsg: 'hideKeyboard:ok' }),
     'system.info': () => getSystemInfo(),
     'network.request': (params) => request(params),
     'network.type': () => ({ networkType: networkType(), errMsg: 'getNetworkType:ok' }),

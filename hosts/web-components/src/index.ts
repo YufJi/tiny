@@ -52,6 +52,11 @@ import { defineWebView } from './components/web-view'
 
 export { BUILTIN_COMPONENT_TAGS }
 export { getPublicBuiltinBehaviors }
+export {
+  EVENT_RETURN_TOKEN_FIELD,
+  applyKeyboardListenerReturn,
+  registerKeyboardListenerTarget,
+} from './host-keyboard'
 export { BUILTIN_BASE_STYLES, BUILTIN_COMPONENT_STYLES, BUILTIN_HOST_STYLES }
 export type { BuiltinComponentTag }
 export type { BuiltinComponentFactoryOptions, BuiltinContext } from './types'

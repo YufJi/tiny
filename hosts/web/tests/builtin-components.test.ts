@@ -6,6 +6,7 @@ import {
   BUILTIN_COMPONENT_STYLES,
   BUILTIN_COMPONENT_TAGS,
   BUILTIN_HOST_STYLES,
+  EVENT_RETURN_TOKEN_FIELD,
   createBuiltinComponents,
 } from '@tiny/host-web-components'
 import precompiledTemplates from '../../web-components/src/generated/templates'
@@ -41,7 +42,8 @@ function flush(): Promise<void> {
 
 describe('P0 built-in components', () => {
   test('ships a precompiled template for every tag', () => {
-    const templateKeys = Object.keys(precompiledTemplates).filter((key) => key !== 'pull-down-refresher')
+    const templateKeys = Object.keys(precompiledTemplates)
+      .filter((key) => key !== 'pull-down-refresher' && !key.includes('@'))
     expect(templateKeys.sort()).toEqual([...BUILTIN_COMPONENT_TAGS].sort())
     expect(Object.keys(precompiledTemplates)).toContain('pull-down-refresher')
   })
@@ -1888,6 +1890,37 @@ describe('P0 built-in components', () => {
     expect(html).toContain('color: #123456')
   })
 
+  test('native text input variants follow the same-layer structure', () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const builtins = createBuiltinComponents(space, { textInputHost: 'native' })
+    const page = space.defineComponent({
+      is: 'page',
+      using: { input: builtins.input, textarea: builtins.textarea },
+      template: compilePage(`
+        <input id="input" value="hello" />
+        <textarea id="textarea" value="hello" auto-height />
+      `),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const component = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
+    attach(component('input'))
+    attach(component('textarea'))
+
+    const inputHtml = glassEasel.dumpElementToString(component('input'), true)
+    expect(inputHtml).toContain('tiny-input-native-content')
+    expect(inputHtml).toContain('visibility: hidden')
+
+    const textareaHtml = glassEasel.dumpElementToString(component('textarea'), true)
+    expect(textareaHtml).toContain('tiny-textarea-native-content')
+    expect(textareaHtml).not.toContain('<textarea id="native-input"')
+    expect(textareaHtml).not.toContain('tiny-textarea-compute')
+
+    component('textarea').setData({ nativeViewActive: true, value: 'line one\nline two' })
+    const activeTextareaHtml = glassEasel.dumpElementToString(component('textarea'), true)
+    expect(activeTextareaHtml).toContain('line one')
+    expect(activeTextareaHtml).toContain('line two')
+  })
+
   test('canvas and input emit their native event surface', () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const builtins = createBuiltinComponents(space)
@@ -2060,6 +2093,175 @@ describe('P0 built-in components', () => {
     )
   })
 
+  test('native keyboard mode mirrors host input, selection, confirm and blur events', async () => {
+    const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
+    const requests: Array<{ method: string; payload: Record<string, unknown> }> = []
+    const listeners = new Map<string, Set<(payload: unknown) => void>>()
+    const hostEvents = {
+      subscribe(name: string, listener: (payload: unknown) => void) {
+        let scoped = listeners.get(name)
+        if (!scoped) {
+          scoped = new Set()
+          listeners.set(name, scoped)
+        }
+        scoped.add(listener)
+        return () => scoped!.delete(listener)
+      },
+      last(name: string) {
+        return name === 'keyboardMode' ? { native: true } : undefined
+      },
+    }
+    const emit = (name: string, payload: unknown) => {
+      for (const listener of listeners.get(name) ?? []) listener(payload)
+    }
+    const builtins = createBuiltinComponents(space, {
+      hostEvents,
+      hostRequest: async (method, payload) => {
+        const detail = (payload ?? {}) as Record<string, unknown>
+        requests.push({ method, payload: detail })
+        if (method === 'showKeyboard') {
+          return { status: 'ok', height: 320, duration: 250, native: true }
+        }
+        return { status: 'ok' }
+      },
+    })
+    const page = space.defineComponent({
+      is: 'page',
+      using: { input: builtins.input, textarea: builtins.textarea },
+      data: { holdKeyboard: false },
+      template: compilePage(`
+        <input id="input" value="hello" confirm-hold="{{holdKeyboard}}" />
+        <textarea id="textarea" value="multi" />
+      `),
+    })
+    const instance = space.createComponentByUrl('root', 'page', null, new glassEasel.EmptyBackendContext())
+    const input = instance.getShadowRoot()?.getElementById('input')?.asGeneralComponent()!
+    const textarea = instance.getShadowRoot()?.getElementById('textarea')?.asGeneralComponent()!
+    attach(input)
+    attach(textarea)
+    const inputTrigger = vi.spyOn(input, 'triggerEvent')
+    const textareaTrigger = vi.spyOn(textarea, 'triggerEvent')
+    const inputRuntime = input as unknown as {
+      __nativeKeyboardVisible: boolean
+      handleWrapperTap: () => void
+      applyKeyboardListenerReturn: (result: unknown) => void
+    }
+    const textareaRuntime = textarea as unknown as {
+      __nativeKeyboardVisible: boolean
+      handleWrapperTap: () => void
+    }
+
+    expect(input.data.nativeKeyboard).toBe(true)
+    expect(textarea.data.nativeKeyboard).toBe(true)
+    expect(input.hasBehavior(`${TINY_ENGINE_NAMING.behaviorPrefix}native`)).toBe(true)
+    expect(textarea.hasBehavior(`${TINY_ENGINE_NAMING.behaviorPrefix}native`)).toBe(true)
+    expect(input.hasBehavior(`${TINY_ENGINE_NAMING.behaviorPrefix}keyboard-accessory-host`)).toBe(true)
+    expect(textarea.hasBehavior(`${TINY_ENGINE_NAMING.behaviorPrefix}keyboard-accessory-host`)).toBe(true)
+
+    inputRuntime.handleWrapperTap()
+    await flush()
+    const inputRequest = requests.find((request) => (
+      request.method === 'showKeyboard' && request.payload.source === 'input'
+    ))
+    expect(inputRequest?.payload).toMatchObject({
+      value: 'hello',
+      type: 'text',
+      confirmType: 'done',
+      keyboardAppearance: 'default',
+      cursorSpacing: 0,
+    })
+    expect(inputRuntime.__nativeKeyboardVisible).toBe(true)
+
+    const inputOwnerId = inputRequest?.payload.ownerId
+    emit('keyboardInput', { ownerId: inputOwnerId, value: 'hello!', cursor: 6 })
+    expect(input.data.value).toBe('hello!')
+    expect(inputTrigger).toHaveBeenCalledWith(
+      'input',
+      { value: 'hello!', cursor: 6, keyCode: 0 },
+      expect.objectContaining({
+        bubbles: true,
+        composed: true,
+        extraFields: expect.objectContaining({
+          [EVENT_RETURN_TOKEN_FIELD]: expect.any(String),
+        }),
+      }),
+    )
+    // Host-driven values must not echo an updateKeyboard request back to the
+    // native first responder and reset its selection.
+    expect(requests.filter((request) => request.method === 'updateKeyboard')).toHaveLength(0)
+
+    emit('keyboardSelection', { ownerId: inputOwnerId, selectionStart: 1, selectionEnd: 4 })
+    expect(inputTrigger).toHaveBeenCalledWith(
+      'selectionchange',
+      { selectionStart: 1, selectionEnd: 4 },
+      { bubbles: true, composed: true },
+    )
+
+    inputRuntime.applyKeyboardListenerReturn({ value: '2', cursor: 1 })
+    expect(input.data.value).toBe('2')
+    expect(requests.at(-1)).toMatchObject({
+      method: 'updateKeyboard',
+      payload: { value: '2', cursor: 1 },
+    })
+
+    emit('keyboardConfirm', { ownerId: inputOwnerId, value: 'confirmed', cursor: 9 })
+    expect(input.data.value).toBe('confirmed')
+    expect(inputTrigger).toHaveBeenCalledWith(
+      'confirm',
+      { value: 'confirmed' },
+      { bubbles: true, composed: true },
+    )
+    expect(requests.at(-1)?.method).toBe('hideKeyboard')
+
+    emit('keyboardBlur', { ownerId: inputOwnerId, value: 'confirmed', cursor: 9 })
+    expect(inputTrigger).toHaveBeenCalledWith(
+      'change',
+      { value: 'confirmed' },
+      { bubbles: true, composed: true },
+    )
+    expect(inputTrigger).toHaveBeenCalledWith(
+      'blur',
+      { value: 'confirmed', cursor: 9 },
+      { bubbles: true, composed: true },
+    )
+    expect(inputRuntime.__nativeKeyboardVisible).toBe(false)
+
+    textareaRuntime.handleWrapperTap()
+    await flush()
+    const textareaRequest = requests.find((request) => (
+      request.method === 'showKeyboard' && request.payload.source === 'textarea'
+    ))
+    expect(textareaRequest?.payload).toMatchObject({
+      value: 'multi',
+      confirmType: 'return',
+      showConfirmBar: true,
+      adjustKeyboardTo: 'cursor',
+    })
+    expect(textareaRuntime.__nativeKeyboardVisible).toBe(true)
+
+    const textareaOwnerId = textareaRequest?.payload.ownerId
+    emit('keyboardInput', {
+      ownerId: textareaOwnerId,
+      value: 'line one\nline two',
+      cursor: 18,
+    })
+    expect(textarea.data.value).toBe('line one\nline two')
+    expect(textareaTrigger).toHaveBeenCalledWith(
+      'input',
+      { value: 'line one\nline two', cursor: 18, keyCode: 0 },
+      expect.objectContaining({
+        bubbles: true,
+        composed: true,
+        extraFields: expect.objectContaining({
+          [EVENT_RETURN_TOKEN_FIELD]: expect.any(String),
+        }),
+      }),
+    )
+
+    emit('keyboardInput', { ownerId: 'other-input', value: 'wrong', cursor: 0 })
+    expect(textarea.data.value).toBe('line one\nline two')
+  })
+
   test('autoFocus waits for an active page and runs once', async () => {
     const space = new glassEasel.ComponentSpace(undefined, undefined, undefined, true)
     const listeners = new Map<string, Set<(payload: unknown) => void>>()
@@ -2188,7 +2390,7 @@ describe('P0 built-in components', () => {
     const host = (id: string) => instance.getShadowRoot()?.getElementById(id)?.asGeneralComponent()!
     const nativeTextarea = host('textarea').getShadowRoot()?.getElementById('native-textarea')!
     nativeTextarea.triggerEvent('input', { value: 'next' })
-    expect(events.textarea).toEqual({ value: 'next' })
+    expect(events.textarea).toEqual({ value: 'next', cursor: -1, keyCode: 0 })
     expect(host('textarea').data.value).toBe('next')
 
     host('submit').triggerEvent('tap', {})

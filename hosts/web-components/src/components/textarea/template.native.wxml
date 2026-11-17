@@ -1,0 +1,27 @@
+<!--
+  iOS same-layer variant. The native text view is inserted by the host.
+  `native-textarea` is a transparent fallback/measurement layer for
+  auto-height and for the brief period before the native view is attached.
+-->
+<div
+  id="container"
+  class="tiny-textarea-wrapper"
+  role="textbox"
+  aria-placeholder="{{placeholder}}"
+  aria-hidden="{{nativeViewActive ? 'true' : 'false'}}"
+  bindtap="handleWrapperTap"
+>
+  <div id="inner" class="tiny-textarea-native-inner"></div>
+  <div
+    id="native-textarea"
+    class="tiny-textarea tiny-textarea-native-content {{autoHeight ? 'is-auto-height' : ''}} {{disableDefaultPadding ? 'is-no-default-padding' : ''}} {{nativeViewActive ? 'is-native-active' : ''}}"
+    aria-hidden="true"
+  >{{value}}</div>
+  <div
+    id="placeholder"
+    wx:if="{{placeholder && !value}}"
+    class="tiny-textarea-placeholder placeholder-class"
+    style="{{placeholderStyle}}"
+  >{{placeholder}}</div>
+</div>
+<slot />

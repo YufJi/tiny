@@ -187,6 +187,21 @@ describe('event dispatch', () => {
     await host.close()
   })
 
+  test('a listener return value does not stop bubbling', async () => {
+    const calls: string[] = []
+    const { host, dispatch } = await boot(NESTED, {
+      data: {},
+      outer() { calls.push('outer') },
+      inner() {
+        calls.push('inner')
+        return false
+      },
+    })
+    await dispatch('#inner')
+    expect(calls).toEqual(['inner', 'outer'])
+    await host.close()
+  })
+
   test('exposes target/currentTarget geometry on the dispatched event', async () => {
     const seen: Array<{
       currentLeft: unknown

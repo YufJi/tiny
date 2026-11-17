@@ -42,6 +42,11 @@ export type BuiltinComponentFactoryContext = {
    * status-bar tap. Hosts omit this seam when the capability is unavailable.
    */
   hostEvents?: BuiltinHostEventSource
+  /**
+   * Host-owned text input variant. `native` selects the WebView same-layer
+   * template and native adapter; the default `dom` uses browser controls.
+   */
+  textInputHost?: 'dom' | 'native'
 }
 
 export type BuiltinComponentFactory = (

@@ -87,7 +87,7 @@
 | --- | --- | --- |
 | [`wx-autofill-provider`](../../hosts/web-components/src/behaviors/pending/autofill-provider/PLACEHOLDER.md) | 共享/DOM | form |
 | [`wx-image-route`](../../hosts/web-components/src/behaviors/pending/image-route/PLACEHOLDER.md) | 共享/DOM | map |
-| [`wx-keyboard-accessory-host`](../../hosts/web-components/src/behaviors/pending/keyboard-accessory-host/PLACEHOLDER.md) | 共享/DOM | input, textarea |
+| [`wx-keyboard-accessory-host`](../../hosts/web-components/src/behaviors/keyboardAccessoryHost.ts) | 共享/DOM | input, textarea |
 | [`wx-mask-behavior`](../../hosts/web-components/src/behaviors/pending/mask-behavior/PLACEHOLDER.md) | 共享/DOM | toast, action-sheet, modal |
 | [`wx-player`](../../hosts/web-components/src/behaviors/pending/player/PLACEHOLDER.md) | 媒体/原生 | audio, video |
 | [`wx-request`](../../hosts/web-components/src/behaviors/pending/request/PLACEHOLDER.md) | 宿主平台 | video |

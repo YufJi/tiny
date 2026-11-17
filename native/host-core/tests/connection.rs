@@ -65,6 +65,31 @@ fn handshake_emits_hello_and_waits_for_ready() {
     let events = host.receive_frame(frame(vec![ready]), 1_010);
     assert!(host.is_ready());
     assert!(matches!(events.as_slice(), [BridgeEvent::Ready { .. }]));
+
+    let frames = host.take_outbound_frames();
+    assert_eq!(frames.len(), 1);
+    let ready_reply = &frames[0].messages[0];
+    assert_eq!(ready_reply.kind, ProtocolKind::Reply);
+    assert_eq!(ready_reply.reply_to.as_deref(), Some("msg-test-ready"));
+    assert_eq!(ready_reply.payload.as_ref().unwrap()["ok"], true);
+}
+
+#[test]
+fn ready_event_does_not_emit_a_reply() {
+    let mut host =
+        BridgeConnection::new(ProtocolRole::Host, ProtocolRole::Service, Value::Null, None);
+    let ready = message(
+        ProtocolKind::Event,
+        ProtocolDomain::Runtime,
+        "ready",
+        ProtocolRole::Service,
+        ProtocolRole::Host,
+        json!({ "protocolVersion": 1 }),
+        None,
+    );
+    let events = host.receive_frame(frame(vec![ready]), 1_010);
+    assert!(matches!(events.as_slice(), [BridgeEvent::Ready { .. }]));
+    assert!(host.take_outbound_frames().is_empty());
 }
 
 #[test]

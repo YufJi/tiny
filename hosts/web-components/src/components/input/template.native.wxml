@@ -1,0 +1,21 @@
+<!-- iOS same-layer variant: native view + hidden input + WeChat aria content. -->
+<div
+  id="container"
+  class="tiny-input-wrapper"
+  role="textbox"
+  aria-placeholder="{{placeholder}}"
+  aria-hidden="{{nativeViewActive ? 'true' : 'false'}}"
+  bindtap="handleWrapperTap"
+>
+  <div id="inner" class="tiny-input-native-inner"></div>
+  <div class="tiny-input-native-content {{nativeViewActive ? 'is-native-active' : ''}}">{{value}}</div>
+  <input id="native-input" class="tiny-input" style="visibility: hidden;" disabled />
+  <div
+    wx:if="{{placeholder && !value}}"
+    id="placeholder"
+    class="tiny-input-placeholder placeholder-class"
+    style="{{placeholderStyle}}"
+  >{{placeholder}}</div>
+  <ul id="dropdown" class="tiny-input-dropdown" style="display: none;"></ul>
+</div>
+<slot />

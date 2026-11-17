@@ -17,6 +17,8 @@ export type GlassRenderEntryOptions = {
   resolveAssetUrl?: (src: string, sourcePath?: string) => string | undefined
   /** Host-owned capability events delivered to built-in components. */
   hostEvents?: BuiltinHostEventSource
+  /** DOM or native same-layer text input implementation. */
+  textInputHost?: 'dom' | 'native'
   /** Page id when the render document was created for a specific page. */
   pageId?: string
   /** Document used to install built-in styles; defaults to the current one. */
@@ -69,6 +71,7 @@ export function createGlassRenderEntry(options: GlassRenderEntryOptions = {}): G
       container: options.container ?? document.getElementById('app') ?? document.body,
       ...(options.resolveAssetUrl ? { resolveAssetUrl: options.resolveAssetUrl } : {}),
       ...(options.hostEvents ? { hostEvents: options.hostEvents } : {}),
+      ...(options.textInputHost ? { textInputHost: options.textInputHost } : {}),
     }),
     ...(options.pageId ? { pageId: options.pageId } : {}),
     ...(options.loadTemplates ? { loadTemplates: options.loadTemplates } : {}),

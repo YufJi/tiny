@@ -23,8 +23,8 @@ enum NativeRenderSurfaceSmoke {
       let host = UIView(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
       host.isHidden = true
       window.addSubview(host)
-      surface.webView.frame = host.bounds
-      host.addSubview(surface.webView)
+      surface.view.frame = host.bounds
+      host.addSubview(surface.view)
       self.hostView = host
     }
     surface.onReady = {

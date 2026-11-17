@@ -8,6 +8,7 @@ import { createDisabledBehavior } from './disabled'
 import { createGroupBehavior } from './group'
 import { createHoverBehavior } from './hover'
 import { createHtmlParseBehavior } from './htmlParse'
+import { createKeyboardAccessoryHostBehavior } from './keyboardAccessoryHost'
 import { createNativeBehavior } from './native'
 import { createNativeCoverBehavior } from './nativeCover'
 import { createNativeHoverBehavior } from './nativeHover'
@@ -58,6 +59,7 @@ export function createBuiltinBehaviors(space: glassEasel.ComponentSpace) {
     hover: createHoverBehavior(space),
     reload: createReloadBehavior(space),
     autofill: createAutofillBehavior(space),
+    keyboardAccessoryHost: createKeyboardAccessoryHostBehavior(space),
     labelAria: createLabelAriaBehavior(space),
     labelTarget: createLabelTargetBehavior(space),
     disabled: createDisabledBehavior(space),

@@ -69,15 +69,20 @@ for (const [name, templatePath] of internalTemplates) {
   }
 }
 for (const tag of tags) {
-  const templatePath = path.join(componentsRoot, tag, 'template.wxml')
-  if (!fs.existsSync(templatePath)) {
-    throw new Error(`Missing built-in template: ${templatePath}`)
-  }
-  const source = injectInternalScopeClasses(fs.readFileSync(templatePath, 'utf8'))
-  const warnings = group.addTmpl(tag, source)
-  if (warnings.length > 0) {
-    const messages = warnings.map((warning) => `${warning.kind} at ${JSON.stringify(warning.start)}`)
-    throw new Error(`Template warnings for ${tag}: ${messages.join(', ')}`)
+  for (const variant of [null, 'native']) {
+    const fileName = variant ? `template.${variant}.wxml` : 'template.wxml'
+    const templatePath = path.join(componentsRoot, tag, fileName)
+    if (!fs.existsSync(templatePath)) {
+      if (variant) continue
+      throw new Error(`Missing built-in template: ${templatePath}`)
+    }
+    const source = injectInternalScopeClasses(fs.readFileSync(templatePath, 'utf8'))
+    const name = variant ? `${tag}@${variant}` : tag
+    const warnings = group.addTmpl(name, source)
+    if (warnings.length > 0) {
+      const messages = warnings.map((warning) => `${warning.kind} at ${JSON.stringify(warning.start)}`)
+      throw new Error(`Template warnings for ${name}: ${messages.join(', ')}`)
+    }
   }
 }
 

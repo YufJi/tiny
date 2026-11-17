@@ -128,6 +128,10 @@ const assetsBase = new URL(
 installRemoteCanvas()
 
 const hostEvents = createRenderHostEventBus()
+// The iOS render WebView uses the native input proxy rather than WKWebView's
+// DOM keyboard. Seed the capability before the tree mounts so components do
+// not race the asynchronous host-event channel during attachment.
+hostEvents.emit('keyboardMode', { native: true })
 ;(window as NativeRenderWindow).__tinyRenderHostEvent = (event) => {
   if (typeof event?.name !== 'string' || event.name.length === 0) return
   hostEvents.emit(event.name, event.payload)
@@ -166,6 +170,7 @@ async function loadRenderTemplates(): Promise<TemplateRegistry | undefined> {
 
 const entry = createGlassRenderEntry({
   hostEvents: hostEvents.source,
+  textInputHost: 'native',
   container: document.getElementById('app') ?? document.body,
   resolveAssetUrl: (src, sourcePath) => {
     const reference = resolveAssetReference(sourcePath || '', src)

@@ -126,9 +126,11 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       },
       dispatchPageMethod: (pageId, handler, event) => {
         const page = this.options.getPage(pageId)
-        if (!page?.hasMethod(handler)) return false
-        page.invokeMethod(handler, [event])
-        return true
+        if (!page?.hasMethod(handler)) return { handled: false }
+        return {
+          handled: true,
+          result: page.invokeMethod(handler, [event]),
+        }
       },
       onDiagnostic: (diagnostic) => this.connection.sendDiagnostic('warn', diagnostic),
       onError: (pageId, message, details) => {

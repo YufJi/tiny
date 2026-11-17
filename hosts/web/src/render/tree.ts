@@ -35,6 +35,8 @@ import type {
 } from '@tiny/runtime'
 import {
   BUILTIN_COMPONENT_TAGS,
+  EVENT_RETURN_TOKEN_FIELD,
+  applyKeyboardListenerReturn as applyKeyboardReturn,
   createBuiltinComponents,
   getPublicBuiltinBehaviors,
   type BuiltinComponentTag,
@@ -49,7 +51,8 @@ export type GlassRenderEvent = {
   targetId?: string
   name: string
   detail?: unknown
-  native?: Record<string, unknown>
+  /** Opaque render-side token used to correlate a listener return. */
+  eventToken?: string
   touches?: unknown[]
   changedTouches?: unknown[]
   target?: RenderEventGeometry
@@ -126,6 +129,8 @@ export type GlassRenderTreeOptions = {
   attach?: boolean
   /** Host-owned capability events delivered to built-in components. */
   hostEvents?: BuiltinHostEventSource
+  /** DOM or native same-layer text input implementation. */
+  textInputHost?: 'dom' | 'native'
   /** Forward host events from render nodes back to the logic layer. */
   onEvent?: (event: GlassRenderEvent) => void
   /** Local override for host request/response capabilities. */
@@ -178,6 +183,11 @@ export type GlassRenderTree = {
   setPageFrameComponents?: (components: RenderComponentIdentity[]) => void
   /** Dispatch a service-triggered custom event so WXS handlers can run. */
   dispatchCustomEvent?: (request: CustomEventMessage) => void
+  /** Apply an opaque listener return correlated by the render-side token. */
+  applyEventReturn?: (request: {
+    eventToken: string
+    result: unknown
+  }) => void
   setPageData?: (data: Record<string, unknown>) => void
   applyPageDataPatches?: (patches: Array<Record<string, unknown>>) => void
   setComponentData?: (data: Record<string, Record<string, unknown>>) => void
@@ -496,6 +506,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     },
     hostAction: (action) => hostActionSink?.(action),
     ...(options.hostEvents ? { hostEvents: options.hostEvents } : {}),
+    ...(options.textInputHost ? { textInputHost: options.textInputHost } : {}),
     hostRequest: (method, payload) => {
       if (options.hostRequest) return options.hostRequest(method, payload)
       if (hostRequestSink) return hostRequestSink(method, payload)
@@ -564,6 +575,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       offsetHeight?: number
     } | null
     const targetRender = renderTargetOf(source.target)
+    const eventToken = (source as Record<string, unknown>)[EVENT_RETURN_TOKEN_FIELD]
     const viewId = element?.getAttribute?.(TINY_ENGINE_NAMING.nodeIdAttribute) ?? ''
     const dataset = plainDataset(element?.dataset)
     const geometry = element && typeof element.offsetLeft === 'number'
@@ -591,6 +603,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       ...(dataset ? { dataset } : {}),
       ...(geometry ? { currentTarget: geometry } : {}),
       ...(targetRender.identity ? { targetId: targetRender.identity } : {}),
+      ...(typeof eventToken === 'string' && eventToken
+        ? { eventToken }
+        : {}),
       ...(targetRender.geometry ? { target: targetRender.geometry } : {}),
     })
   }
@@ -1180,14 +1195,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
             // before the bubble phase so `capture-bind:tap` sees it.
             capturePhase: true,
             originalEvent: gesture.originalEvent,
-            extraFields: {
-              native: {
-                clientX: gesture.detail.x,
-                clientY: gesture.detail.y,
-                x: gesture.detail.x,
-                y: gesture.detail.y,
-              },
-            },
           })
         },
       })
@@ -1492,7 +1499,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       target?: unknown
       touches?: unknown
       changedTouches?: unknown
-      native?: Record<string, unknown>
     },
     original: unknown,
   ): GlassRenderEvent => {
@@ -1501,11 +1507,15 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     const renderTarget = renderTargetOf(event.target)
     const targetGeometry = renderTarget.geometry
     const targetId = renderTarget.identity
+    const eventToken = (event as unknown as Record<string, unknown>)[EVENT_RETURN_TOKEN_FIELD]
     const payload: GlassRenderEvent = {
       id: node.component === true ? node.id! : locatorOfNodeId(node.id!) ?? node.id!,
       name,
       ...(currentTarget ? { currentTarget } : {}),
       ...(targetId ? { targetId } : {}),
+      ...(typeof eventToken === 'string' && eventToken
+        ? { eventToken }
+        : {}),
     }
     if (isTouch) {
       const touchEvent = original as TouchEvent | null
@@ -1520,9 +1530,23 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     } else if (event.detail !== undefined) {
       const detail = plainEventDetail(event.detail)
       if (detail !== undefined) payload.detail = detail
+    } else if (name === 'tap' || name === 'longpress') {
+      const native = nativeFields((original ?? event) as Event)
+      payload.detail = {
+        x: native.clientX ?? 0,
+        y: native.clientY ?? 0,
+      }
+    } else if (name === 'scroll') {
+      const native = nativeFields((original ?? event) as Event)
+      payload.detail = {
+        scrollTop: native.scrollTop ?? 0,
+        scrollLeft: native.scrollLeft ?? 0,
+        scrollHeight: native.scrollHeight ?? 0,
+        scrollWidth: native.scrollWidth ?? 0,
+        deltaX: native.deltaX ?? 0,
+        deltaY: native.deltaY ?? 0,
+      }
     }
-    if (original) payload.native = nativeFields(original as Event)
-    else if (event.native) payload.native = event.native
     if (targetGeometry) payload.target = targetGeometry
     return payload
   }
@@ -3050,6 +3074,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       } finally {
         serviceEventDepth -= 1
       }
+    },
+    applyEventReturn: (request) => {
+      applyKeyboardReturn(request.eventToken, request.result)
     },
     setWxsBinding: (binding) => {
       dynamicBindingModes.set(wxsBindingKey(binding.viewId, binding.event), binding)

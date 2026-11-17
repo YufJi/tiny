@@ -157,7 +157,7 @@ async function boot(pages: PageOptions[], components: ComponentOptions[] = []): 
       host.service.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, {
         id: node!.viewId,
         name: 'tap',
-        native: {},
+        detail: { x: 0, y: 0 },
       }, { pageId })
       await new Promise((resolve) => setTimeout(resolve, 20))
     },

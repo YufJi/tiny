@@ -91,6 +91,7 @@ service 和 render 是两条独立连接，握手不能跨连接复用。
 | 宿主等待 ready | 宿主在 hello 回复之外还等待 `runtime.ready`，只有收到 ready 才认为线程装配完成。HostCore 把它映射为 `BridgeEvent::Ready`。 | BridgeEvent::Ready |
 | 宿主发起调用 | handshake() 只允许宿主调用；payload 包含 protocolVersion、role 和 capabilities，默认 30 秒超时。 | call('runtime', 'hello', { protocolVersion, role }) |
 | 对端回复并发送 ready | hello 的回复带上对端的握手信息；同时对端发出 runtime.ready，宿主收到 ready 后结束等待。 | control('runtime', 'ready', handshakePayload()) |
+| 宿主确认 ready | 对端把 ready 作为 control 等待 reply；宿主确认后返回 `{ accepted: true }`，避免对端等待满 30 秒。 | reply('runtime.ready') |
 | 宿主返回握手信息 | 宿主等的是 ready，而不只是 hello 的回复。如果 ready 没到就超时，避免出现“hello 成功但线程还没装配好”的情况。 | handshake → ready |
 :::
 
@@ -227,17 +228,24 @@ Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动
 | `tree.flow` | service → render | 首屏 flow：`define`（该页可见组件定义）、`tree`（整棵页面渲染快照）、`ready`；payload 另带 `componentFlow` 组件身份流，并可带独立 `tabFrame`、页面样式、fallback app 样式、`pageScope`、`pageUsing`、`behaviorScheme`、`wxsModules`、`pageData` 和 `componentData` |
 | `tree.patch` | service → render | pageframe 只发 `pageDataPatches` / `componentData`，结构变化时附带 `renderHints` 和 `componentFlow`；不再携带页面 virtual-node `patches`。独立 tabBar 的模板更新走 `tabFrame` |
 | `tree.ack` | render → service | 批次确认：回显 flow/patch 上的 `ack` token；service 用它 settle `setData` completion |
-| `tree.event` | render → service | 组件 id 或元素 locator、可选 `targetId`、name、detail、native 字段、touches 和 target/currentTarget 几何；service 从最内层 target 节点开始分发，并保留当前 binding 的 currentTarget |
+| `tree.event` | render → service | 组件 id 或元素 locator、可选 `targetId`、name、宿主已归一化的 detail、touches 和 target/currentTarget 几何；service 从最内层 target 节点开始分发，并保留当前 binding 的 currentTarget |
 | `tree.templateEvent` | render → service | render 求值的组件模板把绑定的方法调用交回 service |
+| `tree.eventReturn` | service → render | 通用 listener 返回值：`{ eventToken, result }`；token 和 result 由宿主解释，内核不识别 input/keyboard |
 | `tree.wxsBinding` | service → render | 动态 WXS 事件绑定决策 |
 | `tree.wxsEffect` | render → service | WXS `callMethod` / `triggerEvent` 的跨线程副作用 |
 | `tree.hostAction` | render → host | 内置组件的导航等宿主动作 |
-| `tree.hostRequest` | render → host | 内置组件的宿主请求/响应（如 picker） |
+| `tree.hostRequest` | render → host | 内置组件的宿主请求/响应（如 picker、keyboard、nativeView.*） |
 | `tree.ready` | host → service | render bootstrap 完成后请求逻辑树重发首屏 flow |
 | `runtime.inspectTree` / `tree.inspectTree` | host → render | 从渲染树导出 InspectNode |
 | `tree.measure` | service/host → render | 按组件 id 或元素 locator 读取 layout 矩形 |
 | `query.select` | service → host → render | selector query 在真实 DOM 中查节点，返回 rect/dataset/scroll |
 | `query.intersection` | service → render / render → service | 创建、断开 IntersectionObserver；entry 回到逻辑树 |
+
+`nativeView.*` 是宿主私有能力，不属于小程序语义：render 的 input/textarea 在原生键盘模式下通过
+`nativeView.attach` / `nativeView.update` / `nativeView.detach` 上报 `{ id, kind, frame, clip,
+mask, zIndex, visible, style, props }`；`mask` 是未被 DOM 浮层遮挡的矩形集合，host 用它
+生成 CAShapeLayer mask。host 负责创建、裁剪和移动原生视图。该消息只走
+`render → host`，不经过 service，也不进入内核事件契约。
 
 首屏 flow 是一个带页面元数据的 payload，`messages` 里只放组件定义和一棵嵌套快照，元素 id 不上 wire：
 
@@ -309,10 +317,11 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | tree | `animate` / `clearAnimate` | event | service → render | `this.animate` 关键帧与取消 |
 | tree | `event` | event | render → service | 渲染树事件回传逻辑树 |
 | tree | `templateEvent` | event | render → service | render 求值的组件模板回调 service 方法 |
+| tree | `eventReturn` | event | service → render | 通用 listener 返回值回传；宿主按 opaque token 消费 |
 | tree | `wxsBinding` | event | service → render | 动态 WXS 事件绑定 |
 | tree | `wxsEffect` | event | render → service | WXS `callMethod` / `triggerEvent` |
 | tree | `hostAction` | event | render → host | 内置组件主动导航等宿主动作 |
-| tree | `hostRequest` | call | render → host | 内置组件的宿主请求/响应 |
+| tree | `hostRequest` | call | render → host | 内置组件的宿主请求/响应；`nativeView.*` 用于页面级原生视图挂载/几何同步 |
 | tree | `ready` | event | host → service | 请求首屏 flow |
 | tree | `inspectTree` | control | host/devtool → render | 导出渲染树元素树 |
 | tree | `measure` | control | service → render | 按组件 id / 元素 locator 测量矩形 |

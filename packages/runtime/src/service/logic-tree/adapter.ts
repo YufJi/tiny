@@ -86,7 +86,11 @@ export type LogicTreeAdapterOptions = {
     options?: { bubbles?: boolean; composed?: boolean },
   ) => void
   /** Invoke a Page/Component-as-page method on the actual page runtime. */
-  dispatchPageMethod?: (pageId: string, handler: string, event: unknown) => boolean
+  dispatchPageMethod?: (
+    pageId: string,
+    handler: string,
+    event: unknown,
+  ) => { handled: boolean; result?: unknown }
   /** Render-thread animation commands issued by `this.animate`/`clearAnimate`. */
   viewAnimation?: {
     play: (request: RenderAnimationRequest & { pageId: string }) => void
@@ -963,7 +967,7 @@ export class LogicTreeAdapter {
     targetId?: string
     currentTarget?: { offsetLeft?: number; offsetTop?: number; offsetWidth?: number; offsetHeight?: number }
     target?: { offsetLeft?: number; offsetTop?: number; offsetWidth?: number; offsetHeight?: number }
-  }): boolean {
+  }, onListenerReturn?: (result: unknown) => void): boolean {
     const node = this.backend.findByViewId(payload.componentId)
     const element = node?.__wxElement
     if (!element) return false
@@ -1007,9 +1011,12 @@ export class LogicTreeAdapter {
       typeof path === 'string'
       && this.manifest.pages.some((page) => page.path === path)
       && payload.pageId
-      && this.dispatchPageMethod?.(payload.pageId, payload.handler, event)
     ) {
-      return true
+      const dispatched = this.dispatchPageMethod?.(payload.pageId, payload.handler, event)
+      if (dispatched?.handled) {
+        onListenerReturn?.(dispatched.result)
+        return true
+      }
     }
     const method = typeof path === 'string'
       ? this.componentDefinitions?.get(path)?.methods.get(payload.handler)
@@ -1018,11 +1025,15 @@ export class LogicTreeAdapter {
     if (typeof method !== 'function') return false
     const caller = (component as { getMethodCaller?: () => unknown }).getMethodCaller?.()
       ?? component
-    method.call(caller, event)
+    const result = method.call(caller, event)
+    onListenerReturn?.(result)
     return true
   }
 
-  dispatchViewEvent(payload: ViewEventPayload): boolean {
+  dispatchViewEvent(
+    payload: ViewEventPayload,
+    onListenerReturn?: (result: unknown) => void,
+  ): boolean {
     if (payload.touches || payload.changedTouches) {
       this.activeTouches = payload.touches
       this.activeChangedTouches = payload.changedTouches
@@ -1043,29 +1054,14 @@ export class LogicTreeAdapter {
     const currentGeometry = payload.currentTarget ?? payload.target
     if (currentGeometry) applyEventGeometry(element, currentGeometry)
     if (payload.target) applyEventGeometry(targetElement ?? dispatchElement, payload.target)
-    const native = payload.native ?? {}
     // Hosts normalize built-in event detail (switch/checkbox-group/slider/...);
-    // the service must not re-derive it from tag names. The fallback below only
-    // covers hosts that still send raw native fields.
+    // the service must not re-derive it from host-native event fields.
     let detail: unknown = payload.detail ?? {}
     if (payload.name.startsWith('touch')) {
       detail = {
         ...(payload.detail && typeof payload.detail === 'object' ? payload.detail as object : {}),
         touches: payload.touches ?? [],
         changedTouches: payload.changedTouches ?? [],
-      }
-    } else if (payload.detail === undefined && (payload.name === 'input' || payload.name === 'change' || payload.name === 'confirm')) {
-      detail = { value: native.value ?? '', cursor: native.cursor }
-    } else if (payload.detail === undefined && (payload.name === 'tap' || payload.name === 'longpress')) {
-      detail = { x: native.clientX ?? 0, y: native.clientY ?? 0 }
-    } else if (payload.detail === undefined && payload.name === 'scroll') {
-      detail = {
-        scrollTop: native.scrollTop ?? 0,
-        scrollLeft: native.scrollLeft ?? 0,
-        scrollHeight: native.scrollHeight ?? 0,
-        scrollWidth: native.scrollWidth ?? 0,
-        deltaX: native.deltaX ?? 0,
-        deltaY: native.deltaY ?? 0,
       }
     }
     if (payload.name.startsWith('touch')) {
@@ -1112,11 +1108,17 @@ export class LogicTreeAdapter {
           : {}),
         ...(payload.wxsHandled ? { [TINY_ENGINE_NAMING.wxsHandledField]: true } : {}),
       }
-      dispatchElement.triggerEvent(payload.name, detail, {
+      let listenerReturn: unknown
+      const handleListenerReturn = (result: unknown): void => {
+        listenerReturn = result
+      }
+      glassEasel.Event.triggerEvent(dispatchElement as never, payload.name, detail, {
         bubbles: true,
         composed: true,
         ...(extraFields ? { extraFields } : {}),
+        handleListenerReturn,
       })
+      onListenerReturn?.(listenerReturn)
     } finally {
       this.activeTouches = undefined
       this.activeChangedTouches = undefined

@@ -25,8 +25,10 @@ export function createSystemApi(context: ApiContext): ApiHost {
       if (typeof callback === 'function') Promise.resolve().then(() => callback())
     },
     getLaunchOptionsSync: () => cloneJsonSafe(context.launchOptions ?? {}),
-    hideKeyboard: (params: unknown = {}) => runApi(params, 'hideKeyboard', () => ({
-      errMsg: 'hideKeyboard:ok',
-    })),
+    hideKeyboard: (params: unknown = {}) => runApi(
+      params,
+      'hideKeyboard',
+      () => callHost(context, 'keyboard.hide'),
+    ),
   }
 }

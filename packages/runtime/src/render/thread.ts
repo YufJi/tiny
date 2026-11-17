@@ -10,6 +10,7 @@ import {
   type ComponentDefinitionPayload,
   type ComponentFlow,
   type CustomEventMessage,
+  type EventReturnMessage,
   type RenderAnimationRequest,
   type RenderClearAnimationRequest,
   type RenderComponentIdentity,
@@ -32,15 +33,15 @@ export type TreeEventPayload = {
   name: string
   pageId?: string
   detail?: unknown
-  native?: Record<string, unknown>
   touches?: unknown[]
   changedTouches?: unknown[]
+  /** Opaque render-side token used to correlate a listener return. */
+  eventToken?: string
   /** Geometry of the innermost node the host resolved for this event. */
   target?: RenderEventGeometry
   /** Geometry of the node that owns the binding being dispatched. */
   currentTarget?: RenderEventGeometry
 }
-
 
 export type TreeRenderer = {
   /** Mount a page from its compiled template; WXML evaluation belongs here. */
@@ -102,6 +103,11 @@ export type TreeRenderer = {
   measureLocators?: (locators: string[]) => Record<string, unknown>
   /** Dispatch a service-triggered custom event so WXS handlers can run. */
   dispatchCustomEvent?: (request: CustomEventMessage) => void
+  /** Apply an opaque listener return correlated by the render-side token. */
+  applyEventReturn?: (request: {
+    eventToken: string
+    result: unknown
+  }) => void
   query?: (selector: string, all: boolean, scopeId?: string) => unknown[]
   observeIntersection?: (
     request: RenderIntersectionRequest,
@@ -371,6 +377,14 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     const payload = (message.payload ?? {}) as Partial<CustomEventMessage>
     if (!payload.componentId || !payload.name) return
     options.renderer.dispatchCustomEvent?.(payload as CustomEventMessage)
+  })
+  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.eventReturn, (message) => {
+    const payload = (message.payload ?? {}) as Partial<EventReturnMessage>
+    if (!payload.eventToken) return
+    options.renderer.applyEventReturn?.({
+      eventToken: payload.eventToken,
+      result: payload.result,
+    })
   })
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.wxsBinding, (message) => {
     const payload = (message.payload ?? {}) as Partial<WxsBindingMessage>

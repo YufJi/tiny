@@ -45,6 +45,11 @@ hosts/ios/                         iOS 的前端标准包（pnpm workspace）
 - 逻辑层真正跑在 `JSContext`：App/Page/Component、glass-easel 逻辑树、逻辑模板实例化、WXS 表达式、observer/relations/页面栈全部在 JSCore；最终页面/组件 WXML 求值在 render WKWebView 的 pageframe。
 - 渲染层跑在 WKWebView：每页一个独立 `NativeRenderSurface`，复用 `createGlassRenderEntry` / `createGlassRenderTree`；
   与 browser/devtool 一样由 render pageframe 执行页面/组件 WXML。隐藏页保留 DOM、滚动位置、定时器和页级 WXSS。
+- 每页有独立的 `NativeViewLayer`：input/textarea 聚焦时通过 `nativeView.*` 上报 frame/clip/style，
+  原生输入视图挂在页面级 slot 中，随页面转场、滚动和裁剪移动；失焦后回到 DOM 文本。
+- 内置 input/textarea 的 DOM 与 iOS 实现分开：共享组件只保留小程序属性、表单和事件语义，
+  `dom-host.ts`/`native-host.ts` 各自负责焦点、选区和键盘；iOS 原生模板按微信同层结构组织，
+  textarea 的 `native-textarea` 仅用于自动高度测量和原生视图挂载前的透明回退。
 - 页面间只走现有 Bridge 协议；service 帧和 render 帧由 Swift `HostCoreSession` 通过原生消息处理器转发。
 - 原生存储：启动时把该 app 的 UserDefaults 快照交给 runtime，运行期 `wx.setStorage*` 经宿主 API 落盘。
 - 原生系统信息/安全区/菜单按钮几何注入；`getSystemInfoSync`、`getWindowInfo`、
@@ -274,6 +279,15 @@ Launcher 持有一个最多 3 个 `MiniProgramSession` 的 LRU 池（含当前�
 - WKWebView host event bridge：render 侧 `pageVisibility`、原生键盘高度
   `keyboardheightchange` / `wx.onKeyboardHeightChange`，以及 input/textarea 的
   active-page AutoFocus。
+- `input` / `textarea` 使用原生 `UITextField` / `UITextView` 持有 first responder：
+  代理视图覆盖到字段矩形以显示原生光标；键盘外观、`type`、`confirm-type`、`confirm-hold`、数字/密码键盘和
+  textarea 的 `show-confirm-bar` 均由宿主配置；`keyboardInput` / `keyboardSelection` /
+  `keyboardConfirm` / `keyboardBlur` 回写标准 `input`、`selectionchange`、`confirm`、
+  `change`、`blur` 事件。`bindinput` 返回的 `{ value, cursor }` / 字符串会回写组件；
+  `wx.hideKeyboard()` 会收起原生键盘；`type="idcard"` 使用数字 + X 自定义键盘。
+  同类型输入框复用同一个原生输入代理：切换 owner 只更新值、光标和字段矩形，不销毁重建键盘；
+  native 模式下 DOM 只保留非焦点的文本显示节点，避免 WKWebView 与原生 first responder 争抢。
+  点击输入框外的页面会收起键盘，`hold-keyboard` 除外。
 
 明确不支持（第一版）：
 

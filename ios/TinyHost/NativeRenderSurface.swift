@@ -12,6 +12,8 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
   let appId: String
   let generatedRoot: URL
   let templatesSource: String?
+  let view = UIView()
+  let nativeViewLayer = NativeViewLayer()
   private(set) var webView: WKWebView!
 
   var onReady: (() -> Void)?
@@ -81,6 +83,14 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
     webView.scrollView.contentInsetAdjustmentBehavior = .never
     webView.navigationDelegate = self
     self.webView = webView
+    view.backgroundColor = .clear
+    view.clipsToBounds = true
+    webView.frame = view.bounds
+    webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    nativeViewLayer.view.frame = view.bounds
+    nativeViewLayer.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    view.addSubview(webView)
+    view.addSubview(nativeViewLayer.view)
 
     var components = URLComponents()
     components.scheme = "tinyapp"
@@ -137,14 +147,19 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
   }
 
   func setVisible(_ visible: Bool) {
-    webView.isHidden = !visible
-    webView.alpha = visible ? 1 : 0
+    view.isHidden = !visible
+    view.alpha = visible ? 1 : 0
+    if !visible {
+      nativeViewLayer.hideAll()
+    }
   }
 
   func destroy() {
+    nativeViewLayer.detachAll()
     webView.configuration.userContentController.removeScriptMessageHandler(forName: "tinyRender")
     webView.stopLoading()
     webView.removeFromSuperview()
+    view.removeFromSuperview()
     onReady = nil
     onFrame = nil
     ready = false

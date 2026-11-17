@@ -12,7 +12,10 @@ export type BuiltinComponentFactoryOptions = BuiltinComponentFactoryContext
 export type BuiltinContext = {
   space: glassEasel.ComponentSpace
   options: BuiltinComponentFactoryOptions
-  template: (tag: BuiltinComponentTag) => glassEasel.template.ComponentTemplate
+  template: (
+    tag: BuiltinComponentTag,
+    variant?: 'native',
+  ) => glassEasel.template.ComponentTemplate
   /** Precompiled templates for private implementation components. */
   internalTemplate: (name: string) => glassEasel.template.ComponentTemplate
   behaviors: BuiltinBehaviors

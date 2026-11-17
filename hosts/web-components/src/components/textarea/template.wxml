@@ -1,4 +1,10 @@
-<div id="wrapped" class="tiny-textarea-wrapper">
+<!-- Web/devtools variant: WeChat's wx-dev-textarea structure. -->
+<div
+  id="wrapped"
+  class="tiny-textarea-wrapper"
+  aria-placeholder="{{placeholder}}"
+  bindtap="handleWrapperTap"
+>
   <div
     id="placeholder"
     wx:if="{{placeholder && !value}}"
@@ -11,6 +17,7 @@
     value="{{value}}"
     disabled="{{disabled}}"
     maxlength="{{maxlength > 0 ? maxlength : -1}}"
+    tabindex="0"
     confirm-type="{{confirmType}}"
     enterkeyhint="{{confirmType}}"
     aria-label="{{ariaLabel}}"
