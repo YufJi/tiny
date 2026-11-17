@@ -8,5 +8,7 @@
     "navigationBarTitleText": "Taro3 Todo",
     "navigationBarTextStyle": "black"
   },
-  "sitemapLocation": "sitemap.json"
+  "sitemapLocation": "sitemap.json",
+  "componentFramework": "glass-easel",
+  "renderer": "webview"
 }

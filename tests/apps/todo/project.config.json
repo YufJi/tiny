@@ -38,6 +38,8 @@
     "showES6CompileOption": false
   },
   "compileType": "miniprogram",
+  "componentFramework": "glass-easel",
+  "libVersion": "3.17.5",
   "simulatorType": "wechat",
   "simulatorPluginLibVersion": {},
   "condition": {}

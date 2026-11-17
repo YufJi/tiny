@@ -20,6 +20,7 @@ const startedAt = Date.now()
 const activeServers = new Set()
 
 const steps = [
+  ['Check fixture platform config', ['node', 'scripts/check-fixture-platform.mjs']],
   ['Build active glass-easel packages', ['pnpm', 'build:glass-easel']],
   ['Check runtime core purity', ['node', 'scripts/check-runtime-purity.mjs']],
   ['Check runtime layer boundaries', ['node', 'scripts/check-runtime-layers.mjs']],
@@ -145,8 +146,8 @@ function finish(ok) {
     console.log(`
 ✅ P0 acceptance gate passed in ${total}s.
 
-Automated: build, compiler/runtime tests, P0 demo browser flow, the existing example app
-flow, the Taro 3 output flow, the WeChat demo flow and the runtime debugger flow
+Automated: fixture platform config, build, compiler/runtime tests, P0 demo browser flow,
+the existing example app flow, the Taro 3 output flow, the WeChat demo flow and the runtime debugger flow
 (launcher → per-app preview → 3-app LRU keepalive → reload/close/deep links).
 Manual debug hosts: pnpm dev:glass-easel, pnpm dev:devtool
 `)

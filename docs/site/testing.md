@@ -28,6 +28,7 @@ pnpm accept:glass-easel 是唯一完整的端到端入口，任何单个包的�
 :::sequence
 | title | detail | code |
 | --- | --- | --- |
+| 校验 fixture 平台 | 扫描 `tests/apps/*` 的 `app.json`、页面/组件配置和 `project.config.json`，要求统一为 WebView + glass-easel、基础库 3.17.5，禁止 Skyline 覆盖。 | `pnpm check:fixture-platform` |
 | 构建 12 个目标 | 通过 turbo 构建 css-units、manifest、wxs-runtime、stylesheet-compiler、template-compiler、bridge、cli、runtime、api、host-web-components、host-core-wasm 和 host-web；本地命中 turbo 缓存时约 1 秒。 | `pnpm build:glass-easel` |
 | 检查内核依赖 | 从 packages/runtime/src/index.ts、packages/api/src/index.ts 和 packages/wxs-runtime/src/index.ts 遍历依赖图，禁止浏览器全局，也禁止反向依赖 @tiny/host-* 或 hosts/*；WXS 语言级 require 单独放行。 | `pnpm check:runtime-purity` |
 | 一次跑完单元测试 | 根 `vitest.workspace.ts` 把 12 个包的配置装进同一个 Vitest 进程，各包仍保留自己的 alias、snapshot 和 globals 配置；单包调试仍可 `pnpm --filter <package> test`。 | `pnpm test` |
@@ -147,6 +148,11 @@ pnpm ios:smoke:jsc    # 在 macOS jsc 里启动 demo 的 service engine + app-da
 
 fixture 不是单元测试里的假数据，而是完整的小程序源码或预构建产物。
 
+所有 fixture 的 `app.json` 都显式声明 `renderer: "webview"` 和
+`componentFramework: "glass-easel"`，页面/组件不再覆盖为 Skyline；
+`project.config.json` 统一使用基础库 3.17.5。`pnpm check:fixture-platform`
+会扫描这些配置并阻止偏离，确保微信开发者工具和 Tiny 本地使用同一渲染基线。
+
 | Fixture | 形态 | 覆盖内容 | 是否进入验收 |
 | --- | --- | --- | --- |
 | `demo` | 6 个页面 + 11 个组件 | P0 内置组件、作用域样式、导航、storage、页面滚动、WXS 事件、canvas 诊断、按钮矩阵、Behavior/observers/relations、styleIsolation、externalClasses | 是 |
@@ -215,6 +221,9 @@ pnpm --filter @tiny/cli test
 
 # 检查内核是否依赖浏览器 API
 pnpm check:runtime-purity
+
+# 检查所有 fixture 的渲染器/组件框架/基础库配置
+pnpm check:fixture-platform
 
 # 本地宿主和调试器
 pnpm dev:glass-easel      # :5173

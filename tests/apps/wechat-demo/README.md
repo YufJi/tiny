@@ -18,6 +18,10 @@ compiler and browser host.
 
 ## Adaptations for Tiny
 
+- Every page and component runs through the `webview` renderer with the
+  `glass-easel` component framework. The fixture declares both at app level,
+  removes per-page Skyline overrides, and keeps `project.config.json` on base
+  library 3.17.5 so WeChat DevTools and Tiny compare the same platform.
 - Theme variables in `app.json` (`@tabBarColor`, `@iconPathComponent`, ...) are
   replaced with their light values from `demo.theme.json`, because the engine
   does not resolve theme variables yet. `themeLocation` and `demo.theme.json`

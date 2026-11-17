@@ -30,6 +30,7 @@
     "parity:wechat:button": "node scripts/wechat-parity-button-compare.mjs",
     "parity:probe": "node scripts/parity-probe.mjs",
     "dev:wechat-demo": "pnpm compile:wechat-demo && pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --port 5174",
+    "check:fixture-platform": "node scripts/check-fixture-platform.mjs",
     "check:runtime-purity": "node scripts/check-runtime-purity.mjs",
     "check:runtime-layers": "node scripts/check-runtime-layers.mjs",
     "host-core:test": "cargo test --manifest-path native/Cargo.toml --workspace",

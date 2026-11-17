@@ -1,0 +1,8 @@
+{
+  "appid": "wxe74013f8e3c6e90f",
+  "compileType": "miniprogram",
+  "componentFramework": "glass-easel",
+  "libVersion": "3.17.5",
+  "projectname": "tiny-wechat-demo",
+  "miniprogramRoot": "./"
+}

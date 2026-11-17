@@ -196,16 +196,7 @@
   ],
   "lazyCodeLoading": "requiredComponents",
   "__lazyCodeLoadingChunk": true,
-  "rendererOptions": {
-    "skyline": {
-      "defaultDisplayBlock": true,
-      "defaultContentBox": true,
-      "tagNameStyleIsolation": "legacy",
-      "disableABTest": true,
-      "sdkVersionBegin": "3.0.0",
-      "sdkVersionEnd": "15.255.255"
-    }
-  },
+  "renderer": "webview",
   "componentFramework": "glass-easel",
   "appBar": {},
   "supportedMaterials": [

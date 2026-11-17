@@ -10,6 +10,12 @@ pnpm install
 pnpm accept:glass-easel
 ```
 
+Before building, the gate runs `pnpm check:fixture-platform`. Every fixture under
+`tests/apps` must declare the WebView renderer and glass-easel component framework
+at app level, must not override them with Skyline in page/component configs, and
+must use base library 3.17.5 in `project.config.json`. This keeps WeChat DevTools
+and Tiny on the same rendering baseline for reference comparisons.
+
 The gate builds the active glass-easel packages, runs bridge/compiler/template/
 stylesheet/built-in-component/runtime tests, compiles the demo, starts the standalone
 dual-thread host, and drives the full P0, existing-app, Taro 3, WeChat demo, and debugger flows

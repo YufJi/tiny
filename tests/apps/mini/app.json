@@ -53,5 +53,7 @@
         "packageA"
       ]
     }
-  }
+  },
+  "componentFramework": "glass-easel",
+  "renderer": "webview"
 }
