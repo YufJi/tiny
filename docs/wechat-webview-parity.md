@@ -178,7 +178,7 @@ WebView renderer 和 glass-easel component framework 为准。
 
 > 事件覆盖按“事件名已绑定并能触发基础 detail”统计；button open-type 事件和部分 scroll-view refresher 事件目前是失败/模拟回调，不是微信平台 API 的真实成功语义。
 
-**外观保真度**：P0 视觉重写已完成，P1 组件也补齐了 wrapper/结构（input/textarea/button/form/swiper）；`button` 已按基础库 3.17.5 的 WebView/WeUI 默认值重建固定宽度、padding、字体、类型色、plain/disabled/mini/loading/hover。剩余差异主要是原生键盘属性、native/open-type、picker region 和 scroll-view 的 native 滚动。
+**外观保真度**：P0 视觉重写已完成，P1 组件也补齐了 wrapper/结构（input/textarea/button/form/swiper）；`button` 已按基础库 3.17.5 的 WebView 默认值重建：block 自动宽度（不是 184px）、`14px` 横向 padding、`18px/400`、`46px` 行高、`5px` 圆角、`::after` 半像素边框，以及 type/plain/disabled/mini/loading/hover 状态。`tests/apps/wechat-parity/pages/button` 覆盖 44 种组合，`pnpm parity:wechat:button` 会逐项对比微信模拟器与 Tiny 的计算样式。剩余差异主要是原生键盘属性、native/open-type、picker region 和 scroll-view 的 native 滚动。
 
 > 不支持的标签会降级为普通 DOM 元素，只发 `UNSUPPORTED_COMPONENT` warning，不抛错。页面能开，但组件没有行为。
 

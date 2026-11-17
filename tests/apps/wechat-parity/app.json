@@ -2,6 +2,7 @@
   "pages": [
     "pages/a/a",
     "pages/b/b",
+    "pages/button/button",
     "pages/flow/flow",
     "pages/move/move"
   ],

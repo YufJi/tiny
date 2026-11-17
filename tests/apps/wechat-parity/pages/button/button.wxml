@@ -1,0 +1,71 @@
+<view class="section">
+  <view class="section-title">type</view>
+  <button class="case" data-key="base">Base</button>
+  <button class="case" data-key="default" type="default">Default</button>
+  <button class="case" data-key="primary" type="primary">Primary</button>
+  <button class="case" data-key="warn" type="warn">Warn</button>
+</view>
+
+<view class="section">
+  <view class="section-title">plain</view>
+  <button class="case" data-key="plain" plain>Plain</button>
+  <button class="case" data-key="default-plain" type="default" plain>Default plain</button>
+  <button class="case" data-key="primary-plain" type="primary" plain>Primary plain</button>
+  <button class="case" data-key="warn-plain" type="warn" plain>Warn plain</button>
+</view>
+
+<view class="section">
+  <view class="section-title">disabled</view>
+  <button class="case" data-key="disabled" disabled>Disabled</button>
+  <button class="case" data-key="default-disabled" type="default" disabled>Default disabled</button>
+  <button class="case" data-key="primary-disabled" type="primary" disabled>Primary disabled</button>
+  <button class="case" data-key="warn-disabled" type="warn" disabled>Warn disabled</button>
+  <button class="case" data-key="plain-disabled" plain disabled>Plain disabled</button>
+  <button class="case" data-key="default-plain-disabled" type="default" plain disabled>Default plain disabled</button>
+  <button class="case" data-key="primary-plain-disabled" type="primary" plain disabled>Primary plain disabled</button>
+  <button class="case" data-key="warn-plain-disabled" type="warn" plain disabled>Warn plain disabled</button>
+</view>
+
+<view class="section">
+  <view class="section-title">mini</view>
+  <button class="case" data-key="mini" size="mini">Mini</button>
+  <button class="case" data-key="mini-default" type="default" size="mini">Mini default</button>
+  <button class="case" data-key="mini-primary" type="primary" size="mini">Mini primary</button>
+  <button class="case" data-key="mini-warn" type="warn" size="mini">Mini warn</button>
+  <button class="case" data-key="mini-plain" size="mini" plain>Mini plain</button>
+  <button class="case" data-key="mini-primary-plain" type="primary" size="mini" plain>Mini primary plain</button>
+  <button class="case" data-key="mini-disabled" size="mini" disabled>Mini disabled</button>
+  <button class="case" data-key="mini-primary-disabled" type="primary" size="mini" disabled>Mini primary disabled</button>
+</view>
+
+<view class="section">
+  <view class="section-title">loading</view>
+  <button class="case" data-key="loading" loading>Loading</button>
+  <button class="case" data-key="default-loading" type="default" loading>Default loading</button>
+  <button class="case" data-key="primary-loading" type="primary" loading>Primary loading</button>
+  <button class="case" data-key="warn-loading" type="warn" loading>Warn loading</button>
+  <button class="case" data-key="plain-loading" plain loading>Plain loading</button>
+  <button class="case" data-key="primary-plain-loading" type="primary" plain loading>Primary plain loading</button>
+  <button class="case" data-key="warn-plain-loading" type="warn" plain loading>Warn plain loading</button>
+  <button class="case" data-key="disabled-loading" disabled loading>Disabled loading</button>
+  <button class="case" data-key="primary-disabled-loading" type="primary" disabled loading>Primary disabled loading</button>
+  <button class="case" data-key="mini-loading" size="mini" loading>Mini loading</button>
+  <button class="case" data-key="mini-primary-loading" type="primary" size="mini" loading>Mini primary loading</button>
+</view>
+
+<view class="section">
+  <view class="section-title">hover class</view>
+  <button class="case button-hover" data-key="hover">Hover</button>
+  <button class="case button-hover" data-key="hover-default" type="default">Hover default</button>
+  <button class="case button-hover" data-key="hover-primary" type="primary">Hover primary</button>
+  <button class="case button-hover" data-key="hover-warn" type="warn">Hover warn</button>
+  <button class="case button-hover" data-key="hover-plain" plain>Hover plain</button>
+  <button class="case button-hover" data-key="hover-primary-plain" type="primary" plain>Hover primary plain</button>
+  <button class="case button-hover" data-key="hover-warn-plain" type="warn" plain>Hover warn plain</button>
+</view>
+
+<view class="section">
+  <view class="section-title">layout</view>
+  <button class="case" data-key="long-text">A very long button label that should wrap onto more than one line</button>
+  <button class="case wide" data-key="custom-width">Custom width</button>
+</view>
