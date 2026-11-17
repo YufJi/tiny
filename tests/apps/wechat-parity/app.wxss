@@ -1,3 +1,4 @@
 page {
   background: #fff;
+  font-family: "PingFang SC";
 }

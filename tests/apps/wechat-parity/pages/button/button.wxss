@@ -1,0 +1,17 @@
+page {
+  background: #fff;
+}
+
+.section {
+  padding: 8px 0 16px;
+}
+
+.section-title {
+  padding: 0 16px 8px;
+  color: #888;
+  font-size: 12px;
+}
+
+.wide {
+  width: 100%;
+}
