@@ -101,8 +101,8 @@ importers:
         specifier: ^22.0.0
         version: 22.20.1
       typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
+        specifier: ^6.0.3
+        version: 6.0.3
       vite:
         specifier: ^5.4.21
         version: 5.4.21(@types/node@22.20.1)(less@3.13.1)
@@ -135,8 +135,8 @@ importers:
         specifier: 1.1.0
         version: 1.1.0
       typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
+        specifier: ^6.0.3
+        version: 6.0.3
       vitest:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@25.6.2)(@vitest/ui@1.6.1)(less@3.13.1)
@@ -169,8 +169,8 @@ importers:
         specifier: ^8.4.38
         version: 8.5.14
       typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
+        specifier: ^6.0.3
+        version: 6.0.3
       vite:
         specifier: ^5.4.21
         version: 5.4.21(@types/node@22.20.1)(less@3.13.1)
@@ -193,8 +193,8 @@ importers:
         specifier: ^22.0.0
         version: 22.20.1
       typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
+        specifier: ^6.0.3
+        version: 6.0.3
       vitest:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
@@ -205,8 +205,8 @@ importers:
         specifier: ^22.0.0
         version: 22.20.1
       typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
+        specifier: ^6.0.3
+        version: 6.0.3
       vite:
         specifier: ^5.4.21
         version: 5.4.21(@types/node@22.20.1)(less@3.13.1)
@@ -220,8 +220,8 @@ importers:
         specifier: ^22.0.0
         version: 22.20.1
       typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
+        specifier: ^6.0.3
+        version: 6.0.3
       vite:
         specifier: ^5.4.21
         version: 5.4.21(@types/node@22.20.1)(less@3.13.1)
@@ -235,8 +235,8 @@ importers:
         specifier: ^22.0.0
         version: 22.20.1
       typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
+        specifier: ^6.0.3
+        version: 6.0.3
       vite:
         specifier: ^5.4.21
         version: 5.4.21(@types/node@22.20.1)(less@3.13.1)
@@ -266,8 +266,8 @@ importers:
         specifier: ^22.0.0
         version: 22.20.1
       typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
+        specifier: ^6.0.3
+        version: 6.0.3
       vitest:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.20.1)(@vitest/ui@1.6.1)(less@3.13.1)
@@ -285,8 +285,8 @@ importers:
         version: 8.5.14
     devDependencies:
       typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
+        specifier: ^6.0.3
+        version: 6.0.3
       vitest:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@25.6.2)(@vitest/ui@1.6.1)(less@3.13.1)
@@ -307,8 +307,8 @@ importers:
         specifier: workspace:*
         version: link:../wxs-runtime
       typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
+        specifier: ^6.0.3
+        version: 6.0.3
       vite:
         specifier: ^5.4.21
         version: 5.4.21(@types/node@25.6.2)(less@3.13.1)
@@ -322,8 +322,8 @@ importers:
         specifier: ^22.0.0
         version: 22.20.1
       typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
+        specifier: ^6.0.3
+        version: 6.0.3
       vite:
         specifier: ^5.4.21
         version: 5.4.21(@types/node@22.20.1)(less@3.13.1)
@@ -353,8 +353,8 @@ importers:
         specifier: ^22.0.0
         version: 22.20.1
       typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
+        specifier: ^6.0.3
+        version: 6.0.3
       vite:
         specifier: ^5.4.21
         version: 5.4.21(@types/node@22.20.1)(less@3.13.1)
@@ -1447,8 +1447,8 @@ packages:
     resolution: {integrity: sha512-Acylog8/luQ8L7il+geoSxhEkazvkslg7PSNKOX59mbB9cOveP5aq9h74Y7YU8yDpJwetzQQrfIwtf4Wp4LKcw==}
     engines: {node: '>=4'}
 
-  typescript@5.9.3:
-    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
+  typescript@6.0.3:
+    resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -2752,7 +2752,7 @@ snapshots:
 
   type-detect@4.1.0: {}
 
-  typescript@5.9.3: {}
+  typescript@6.0.3: {}
 
   ufo@1.6.4: {}
 

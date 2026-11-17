@@ -29,7 +29,7 @@
     "@tiny/host-web-components": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
+    "typescript": "^6.0.3",
     "@tiny/template-compiler": "workspace:^",
     "vitest": "^1.6.1",
     "glass-easel": "1.1.0"

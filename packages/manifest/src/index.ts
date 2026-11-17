@@ -2,15 +2,15 @@
  * Versioned contract between the compiler and the runtime/debugger.
  * Keep these types free of compiler- or runtime-specific dependencies.
  */
-import type { RuntimeCompatibilityConfig } from './compatibility'
-import { TINY_ENGINE_NAMING } from './engine-naming'
+import type { RuntimeCompatibilityConfig } from './compatibility.js'
+import { TINY_ENGINE_NAMING } from './engine-naming.js'
 
-export * from './compatibility'
-export * from './engine-naming'
-export * from './builtin'
-export * from './builtin-capabilities'
-export * from './asset-path'
-export * from './diagnostic-codes'
+export * from './compatibility.js'
+export * from './engine-naming.js'
+export * from './builtin.js'
+export * from './builtin-capabilities.js'
+export * from './asset-path.js'
+export * from './diagnostic-codes.js'
 
 /**
  * Read `app.json.window` from an effective configuration. Kept in the shared

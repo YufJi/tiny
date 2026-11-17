@@ -3,6 +3,7 @@
     "lib": ["ESNext", "DOM"],
     "target": "ESNext",
     "module": "CommonJS",
+    "moduleResolution": "Bundler",
     "noEmit": true,
     "strict": true,
     "esModuleInterop": true,

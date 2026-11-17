@@ -34,7 +34,7 @@
     "postcss": "^8.4.38"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
+    "typescript": "^6.0.3",
     "vitest": "^1.6.1"
   }
 }

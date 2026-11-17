@@ -34,7 +34,7 @@
     "@tiny/template-compiler": "workspace:*",
     "@types/node": "^22.0.0",
     "postcss": "^8.4.38",
-    "typescript": "^5.0.0",
+    "typescript": "^6.0.3",
     "vite": "^5.4.21",
     "vitest": "^1.6.1",
     "glass-easel": "1.1.0"

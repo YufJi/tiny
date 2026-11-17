@@ -1,9 +1,10 @@
 {
   "compilerOptions": {
     "lib": ["ESNext"],
+    "types": ["node"],
     "target": "ESNext",
     "module": "CommonJS",
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
     "declaration": true,
     "outDir": "./dist",
     "strict": true,

@@ -3,7 +3,7 @@
     "lib": ["ESNext"],
     "target": "ESNext",
     "module": "CommonJS",
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
     "declaration": true,
     "outDir": "./dist",
     "strict": true,

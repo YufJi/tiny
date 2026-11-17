@@ -1,4 +1,4 @@
-import { TINY_ENGINE_NAMING } from './engine-naming'
+import { TINY_ENGINE_NAMING } from './engine-naming.js'
 
 export const BUILTIN_COMPONENT_TAGS = [
   'view',
