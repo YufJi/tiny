@@ -9,7 +9,6 @@ behavior 占位。每个目录只有一个 `PLACEHOLDER.md`，不会被 `src/ind
 | --- | --- | --- | --- |
 | `wx-autofill-provider` | 共享 | form | [autofill-provider](./autofill-provider/PLACEHOLDER.md) |
 | `wx-image-route` | 共享 | map | [image-route](./image-route/PLACEHOLDER.md) |
-| `wx-keyboard-accessory-host` | 共享 | input, textarea | [keyboard-accessory-host](./keyboard-accessory-host/PLACEHOLDER.md) |
 | `wx-mask-behavior` | 共享 | toast, action-sheet, modal | [mask-behavior](./mask-behavior/PLACEHOLDER.md) |
 | `wx-player` | 媒体 | audio, video | [player](./player/PLACEHOLDER.md) |
 | `wx-request` | 平台 | video | [request](./request/PLACEHOLDER.md) |
@@ -30,3 +29,4 @@ behavior 占位。每个目录只有一个 `PLACEHOLDER.md`，不会被 `src/ind
 - `wx-cloud` 按基线明确不做（依赖微信云开发），不建 pending 占位。
 - `wx-player` 依赖原生/宿主媒体能力，仍需保留缺口。
 - `wx-positioning-container` / `wx-positioning-target` 已按 web 语义实现，见 `src/behaviors/positioningContainer.ts`、`positioningTarget.ts`。
+- `wx-keyboard-accessory-host` 已实现宿主子组件探测，见 `src/behaviors/keyboardAccessoryHost.ts`。

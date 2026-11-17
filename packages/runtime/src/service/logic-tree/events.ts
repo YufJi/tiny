@@ -32,12 +32,12 @@ export type ViewEventPayload = {
   detail?: unknown
   touches?: unknown[]
   changedTouches?: unknown[]
-  /** Native fields a host may forward (coordinates, key, input value, ...). */
-  native?: Record<string, unknown>
   /** Layout geometry of the innermost node the host resolved. */
   target?: RenderEventGeometry
   /** Layout geometry of the node owning the binding being dispatched. */
   currentTarget?: RenderEventGeometry
   /** Set when render already ran a local WXS handler for this event. */
   wxsHandled?: boolean
+  /** Opaque token used to correlate a service listener return. */
+  eventToken?: string
 }

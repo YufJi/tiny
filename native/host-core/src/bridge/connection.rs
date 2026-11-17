@@ -311,9 +311,11 @@ impl BridgeConnection {
             && matches!(message.kind, ProtocolKind::Control | ProtocolKind::Event)
         {
             self.ready = true;
-            return Ok(vec![BridgeEvent::Ready {
-                payload: message.payload.unwrap_or(Value::Null),
-            }]);
+            let payload = message.payload.clone().unwrap_or(Value::Null);
+            if message.kind == ProtocolKind::Control {
+                self.reply(&message, Some(json!({ "accepted": true })), None, _now_ms)?;
+            }
+            return Ok(vec![BridgeEvent::Ready { payload }]);
         }
 
         if message.kind == ProtocolKind::Event {

@@ -35,4 +35,11 @@ describe('batch 4 media built-ins', () => {
     expect(componentStyle('map')).toContain('#markers')
     expect(componentStyle('map')).toContain('wx-map-marker')
   })
+
+  test('textarea keeps WeChat content-box sizing and a one-line auto-height floor', () => {
+    expect(BUILTIN_HOST_STYLES).toContain(
+      'tiny-textarea {\n  display: block;\n  cursor: auto;\n  position: relative;\n  box-sizing: content-box;',
+    )
+    expect(BUILTIN_HOST_STYLES).toContain('tiny-textarea[auto-height] {\n  height: auto;\n  min-height: 1.4em;')
+  })
 })

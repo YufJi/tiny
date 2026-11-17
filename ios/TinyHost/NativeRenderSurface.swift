@@ -12,6 +12,8 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
   let appId: String
   let generatedRoot: URL
   let templatesSource: String?
+  let view = UIView()
+  let sameLayerHost = NativeSameLayerHost()
   private(set) var webView: WKWebView!
 
   var onReady: (() -> Void)?
@@ -19,6 +21,7 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
   var onError: ((String) -> Void)?
   private var ready = false
   private var pendingFrames: [String] = []
+  private var pendingHostEvents: [[String: Any]] = []
 
   init(
     pageId: String,
@@ -69,7 +72,7 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
         forMainFrameOnly: true
       ))
     }
-    let webView = WKWebView(frame: .zero, configuration: configuration)
+    let webView = NativeSameLayerWebView(frame: .zero, configuration: configuration)
     // Host chrome may follow a dark navigation style, but the mini-program
     // WebView itself is currently a light-theme page.
     webView.overrideUserInterfaceStyle = .light
@@ -80,6 +83,11 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
     webView.scrollView.contentInsetAdjustmentBehavior = .never
     webView.navigationDelegate = self
     self.webView = webView
+    view.backgroundColor = .clear
+    view.clipsToBounds = true
+    webView.frame = view.bounds
+    webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    view.addSubview(webView)
 
     var components = URLComponents()
     components.scheme = "tinyapp"
@@ -125,19 +133,35 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
     }
   }
 
+  /// Deliver a host-owned event into the page render WebView.
+  func sendHostEvent(name: String, payload: [String: Any] = [:]) {
+    let event: [String: Any] = ["name": name, "payload": payload]
+    guard ready else {
+      pendingHostEvents.append(event)
+      return
+    }
+    deliverHostEvent(event)
+  }
+
   func setVisible(_ visible: Bool) {
-    webView.isHidden = !visible
-    webView.alpha = visible ? 1 : 0
+    view.isHidden = !visible
+    view.alpha = visible ? 1 : 0
+    if !visible {
+      sameLayerHost.detachAll()
+    }
   }
 
   func destroy() {
+    sameLayerHost.detachAll()
     webView.configuration.userContentController.removeScriptMessageHandler(forName: "tinyRender")
     webView.stopLoading()
     webView.removeFromSuperview()
+    view.removeFromSuperview()
     onReady = nil
     onFrame = nil
     ready = false
     pendingFrames.removeAll()
+    pendingHostEvents.removeAll()
   }
 
   func userContentController(
@@ -149,6 +173,7 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
     case "ready":
       ready = true
       flushPendingFrames()
+      flushPendingHostEvents()
       onReady?()
     case "frame":
       if let frame = body["frame"] as? String {
@@ -180,6 +205,27 @@ final class NativeRenderSurface: NSObject, WKScriptMessageHandler, WKNavigationD
     pendingFrames.removeAll()
     for frame in frames {
       receive(frame: frame)
+    }
+  }
+
+  private func flushPendingHostEvents() {
+    let events = pendingHostEvents
+    pendingHostEvents.removeAll()
+    for event in events {
+      deliverHostEvent(event)
+    }
+  }
+
+  private func deliverHostEvent(_ event: [String: Any]) {
+    webView.callAsyncJavaScript(
+      "window.__tinyRenderHostEvent?.(event)",
+      arguments: ["event": event],
+      in: nil,
+      in: .page
+    ) { result in
+      if case .failure(let error) = result {
+        print("[tiny native render] host event delivery failed: \(error.localizedDescription)")
+      }
     }
   }
 

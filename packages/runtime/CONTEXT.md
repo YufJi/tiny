@@ -98,7 +98,12 @@ property installation.
   same pageframe mount path (`tabFrame`), not WeChat's legacy `FLOW_UPDATE` /
   `FLOW_SET_DATA` /
   `FLOW_DATA_OBSERVER` messages. Events return through `tree.event`; selector
-  queries and intersection observers return through `query.*`. A batch that
+  queries and intersection observers return through `query.*`. Listener return
+  values travel back as opaque `tree.eventReturn { eventToken, result }`
+  frames: the runtime never interprets the token or result. A host that can
+  consume a return value attaches the token to its event and routes the result
+  in its own render adapter (for example, the web host's keyboard owner). A
+  batch that
   carries `setData` completions also carries opaque `ack` tokens, echoed by the
   render thread on `tree.ack`. Both trees address nodes by the shared stable
   `RenderNodeId`.

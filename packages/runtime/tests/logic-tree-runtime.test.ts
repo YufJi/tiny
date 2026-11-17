@@ -21,7 +21,7 @@ function createTemplates() {
     templateScriptExtension: '.wxs',
   })
   group.addTmpl(PAGE_PATH, '<parent id="parent" />')
-  group.addTmpl(PARENT_PATH, '<view id="probe" class="probe" data-count="{{ count }}" data-date="{{ date }}" bindtap="onTap">{{ seen }}</view><view id="cb" bindtap="onCallbackTap">{{ callbackSeen }}</view><switch id="sw" bindchange="onSwitch" /><checkbox-group id="group" bindchange="onGroupChange" /><child id="child" fn="{{ fn }}" bind:custom="onCustom" />')
+  group.addTmpl(PARENT_PATH, '<view id="probe" class="probe" data-count="{{ count }}" data-date="{{ date }}" bindtap="onTap">{{ seen }}</view><view id="cb" bindtap="onCallbackTap">{{ callbackSeen }}</view><switch id="sw" bindchange="onSwitch" /><checkbox-group id="group" bindchange="onGroupChange" /><input id="filtered-input" bindinput="onInput" /><child id="child" fn="{{ fn }}" bind:custom="onCustom" />')
   group.addTmpl(CHILD_PATH, '<view id="fire" bindtap="fire">fire</view><view>{{ seen }}</view>')
   const groupList = new Function(`return ${group.getTmplGenObjectGroups()}`)() as Record<string, unknown>
   return {
@@ -93,6 +93,12 @@ describe('logic tree runtime options', () => {
         onGroupChange(event: { detail: { value: string[] } }) {
           ;(this as unknown as { setData: (patch: Record<string, unknown>) => void })
             .setData({ groupValue: event.detail.value })
+        },
+        onInput(event: { detail: { value: string; cursor: number } }) {
+          return {
+            value: event.detail.value.replace(/11/g, '2'),
+            cursor: Math.max(0, event.detail.cursor - 1),
+          }
         },
       },
       observers: {
@@ -242,9 +248,9 @@ describe('logic tree runtime options', () => {
     expect(tree.dispatchViewEvent({
       viewId: viewIdOf('.probe')!,
       name: 'tap',
-      native: { clientX: 1, clientY: 2 },
+      detail: { x: 1, y: 2 },
     })).toBe(true)
-    expect(tree.dispatchViewEvent({ viewId: viewIdOf('#fire')!, name: 'tap', native: {} })).toBe(true)
+    expect(tree.dispatchViewEvent({ viewId: viewIdOf('#fire')!, name: 'tap', detail: { x: 0, y: 0 } })).toBe(true)
     expect((parent as unknown as { data: { custom?: string } }).data.custom).toBe('hi')
     const sw = { id: viewIdOf('#sw')! }
     expect(sw.id).toBeTruthy()
@@ -256,13 +262,12 @@ describe('logic tree runtime options', () => {
       detail: { value: true },
     })).toBe(true)
     expect((parent as unknown as { data: { switchValue?: boolean } }).data.switchValue).toBe(true)
-    // A host-provided detail always wins over raw native fields; the service
-    // must not re-derive switch/checkbox-group values from the tag name.
+    // The service dispatches host-normalized detail unchanged; it must not
+    // re-derive switch/checkbox-group values from the tag name.
     expect(tree.dispatchViewEvent({
       viewId: sw!.id,
       name: 'change',
       detail: { value: false },
-      native: { checked: true },
     })).toBe(true)
     expect((parent as unknown as { data: { switchValue?: boolean } }).data.switchValue).toBe(false)
     const group = { id: viewIdOf('#group')! }
@@ -273,10 +278,19 @@ describe('logic tree runtime options', () => {
       detail: { value: ['a', 'b'] },
     })).toBe(true)
     expect((parent as unknown as { data: { groupValue?: string[] } }).data.groupValue).toEqual(['a', 'b'])
+    let listenerReturn: unknown
+    expect(tree.dispatchViewEvent({
+      viewId: viewIdOf('#filtered-input')!,
+      name: 'input',
+      detail: { value: '11', cursor: 2 },
+    }, (result) => {
+      listenerReturn = result
+    })).toBe(true)
+    expect(listenerReturn).toEqual({ value: '2', cursor: 1 })
     expect((parent as unknown as { data: { seen?: string } }).data.seen).toBe('tapped')
     const cb = { id: viewIdOf('#cb')! }
     expect(cb).toBeDefined()
-    expect(tree.dispatchViewEvent({ viewId: cb!.id, name: 'tap', native: {} })).toBe(true)
+    expect(tree.dispatchViewEvent({ viewId: cb!.id, name: 'tap', detail: { x: 0, y: 0 } })).toBe(true)
     // Event handlers receive a glass method caller; setData's completion
     // callback must still run so nested updates like `doPopup` work. It waits
     // for glass's own render pass here because nobody else acknowledges it.

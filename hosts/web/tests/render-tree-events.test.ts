@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import * as glassEasel from '@tiny/runtime/glass-easel'
 import { TmplGroup } from '@tiny/template-compiler'
+import { EVENT_RETURN_TOKEN_FIELD } from '@tiny/host-web-components'
 import { createGlassRenderTree } from '../src/render/tree'
 import type { GlassRenderEvent } from '../src/render/tree'
 
@@ -100,6 +101,29 @@ describe('render tree event forwarding', () => {
     // projection carries an original event and must be ignored.
     fire(tree, 'child', 'input', { value: 'x' }, {})
     expect(events).toEqual([])
+  })
+
+  test('forwards the host listener-return token as an opaque field', () => {
+    const events: GlassRenderEvent[] = []
+    const tree = createGlassRenderTree({
+      backend: new glassEasel.EmptyBackendContext(),
+      onEvent: (event) => events.push(event),
+    })
+    tree.mount(element('root', 'view', [], [
+      element('input', 'input', [{ name: 'input' }]),
+    ]) as never)
+    const target = tree.getNode('input') as never
+    glassEasel.Event.triggerEvent(target, 'input', { value: '2' }, {
+      bubbles: true,
+      composed: true,
+      extraFields: { [EVENT_RETURN_TOKEN_FIELD]: 'input-7' },
+    })
+    expect(events).toHaveLength(1)
+    expect(events[0]).toMatchObject({
+      name: 'input',
+      eventToken: 'input-7',
+      detail: { value: '2' },
+    })
   })
 
   test('native tap crosses a component boundary but native click is not projected', () => {

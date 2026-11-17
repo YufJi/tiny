@@ -48,16 +48,34 @@ fn frame(messages: Vec<ProtocolMessage>) -> String {
     .expect("encode frame")
 }
 
+fn is_handshake_reply(message: &ProtocolMessage) -> bool {
+    message.kind == ProtocolKind::Reply && message.method == "ready"
+}
+
 fn service_frame(actions: &[HostAction]) -> Option<&TransportFrame> {
     actions.iter().find_map(|action| match action {
-        HostAction::SendServiceFrame { frame } => Some(frame),
+        HostAction::SendServiceFrame { frame }
+            if frame
+                .messages
+                .iter()
+                .any(|message| !is_handshake_reply(message)) =>
+        {
+            Some(frame)
+        }
         _ => None,
     })
 }
 
 fn render_frame(actions: &[HostAction]) -> Option<&TransportFrame> {
     actions.iter().find_map(|action| match action {
-        HostAction::SendRenderFrame { frame, .. } => Some(frame),
+        HostAction::SendRenderFrame { frame, .. }
+            if frame
+                .messages
+                .iter()
+                .any(|message| !is_handshake_reply(message)) =>
+        {
+            Some(frame)
+        }
         _ => None,
     })
 }
@@ -68,7 +86,11 @@ fn only_frame_message(actions: &[HostAction], service: bool) -> &ProtocolMessage
     } else {
         render_frame(actions).expect("render frame")
     };
-    frame.messages.first().expect("frame message")
+    frame
+        .messages
+        .iter()
+        .find(|message| !is_handshake_reply(message))
+        .expect("frame message")
 }
 
 #[test]
@@ -794,7 +816,10 @@ fn render_host_request_round_trips() {
     });
     let (page_id, reply) = reply.expect("render host request reply");
     assert_eq!(page_id, "page-1");
-    assert_eq!(reply.payload.as_ref().and_then(|value| value.get("result")), Some(&result));
+    assert_eq!(
+        reply.payload.as_ref().and_then(|value| value.get("result")),
+        Some(&result)
+    );
 }
 
 #[test]

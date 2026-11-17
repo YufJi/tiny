@@ -2,11 +2,16 @@ import type { Transport, TransportFrame } from '@tiny/bridge'
 import { bootTreeThread, resolveAssetReference } from '@tiny/runtime'
 import { connectHostBridge, installHostBridge } from '@tiny/bridge'
 import type { TemplateRegistry, TreeRenderer } from '@tiny/runtime'
-import { createGlassRenderEntry, installPageLifecycleBridge } from '@tiny/host-web'
+import {
+  createGlassRenderEntry,
+  createRenderHostEventBus,
+  installPageLifecycleBridge,
+} from '@tiny/host-web'
 import { installRemoteCanvas } from './canvas'
 
 type NativeRenderWindow = Window & {
   __tinyRenderReceive?: (raw: string) => void
+  __tinyRenderHostEvent?: (event: { name?: string; payload?: unknown }) => void
   __TINY_NATIVE_TEMPLATES_SOURCE__?: string
   webkit?: {
     messageHandlers?: {
@@ -122,6 +127,16 @@ const assetsBase = new URL(
 
 installRemoteCanvas()
 
+const hostEvents = createRenderHostEventBus()
+// The iOS render WebView uses the native input proxy rather than WKWebView's
+// DOM keyboard. Seed the capability before the tree mounts so components do
+// not race the asynchronous host-event channel during attachment.
+hostEvents.emit('keyboardMode', { native: true })
+;(window as NativeRenderWindow).__tinyRenderHostEvent = (event) => {
+  if (typeof event?.name !== 'string' || event.name.length === 0) return
+  hostEvents.emit(event.name, event.payload)
+}
+
 /**
  * The render WebView owns page/component WXML evaluation, so it loads the same
  * compiled bundle the service uses for its logic tree. `templates.js` is the
@@ -154,6 +169,8 @@ async function loadRenderTemplates(): Promise<TemplateRegistry | undefined> {
 }
 
 const entry = createGlassRenderEntry({
+  hostEvents: hostEvents.source,
+  textInputHost: 'native',
   container: document.getElementById('app') ?? document.body,
   resolveAssetUrl: (src, sourcePath) => {
     const reference = resolveAssetReference(sourcePath || '', src)

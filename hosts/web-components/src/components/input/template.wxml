@@ -1,8 +1,14 @@
-<!-- Use bind: for keydown/composition/select: catch: marks listeners as
-     final in glass-easel and calls preventDefault, which blocks text input. -->
-<div id="wrapper" class="tiny-input-wrapper" role="textbox">
+<!-- Web/devtools variant: WeChat's wx-input wrapper + real DOM input. -->
+<div
+  id="wrapper"
+  class="tiny-input-wrapper"
+  role="textbox"
+  aria-placeholder="{{placeholder}}"
+  bindtap="handleWrapperTap"
+>
   <div
     wx:if="{{placeholder && !value}}"
+    id="placeholder"
     class="tiny-input-placeholder placeholder-class"
     style="{{placeholderStyle}}"
   >{{placeholder}}</div>
@@ -14,6 +20,7 @@
     disabled="{{disabled}}"
     type="{{password || type === 'password' ? 'password' : 'text'}}"
     maxlength="{{maxlength > 0 ? maxlength : -1}}"
+    tabindex="0"
     enterkeyhint="{{confirmType}}"
     aria-label="{{ariaLabel}}"
     catchinput="handleInput"

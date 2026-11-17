@@ -13,8 +13,7 @@ skills-lock.json
 ios/Generated/
 ios/.build/
 ios/.derived/
-ios/.derived-mac/
-ios/.derived-device/
+ios/.derived-**
 ios/.artifacts/
 ios/TinyHost.xcodeproj/xcuserdata/
 ios/TinyHost.xcodeproj/project.xcworkspace/xcuserdata/

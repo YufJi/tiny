@@ -1,0 +1,30 @@
+<!--
+  iOS same-layer variant. The native text view is inserted into WebKit's
+  child scroll view. `native-textarea` is the transparent content and
+  auto-height measurement layer before the native control takes over.
+-->
+<div
+  id="container"
+  class="{{nativeViewClass}} tiny-native-scroll-container"
+  role="textbox"
+  aria-placeholder="{{placeholder}}"
+  aria-hidden="{{nativeViewActive ? 'true' : 'false'}}"
+  bindtap="handleWrapperTap"
+>
+  <div class="tiny-native-scroll-trigger" aria-hidden="true"></div>
+  <div class="tiny-textarea-wrapper">
+    <div id="inner" class="tiny-textarea-native-inner"></div>
+    <div
+      id="native-textarea"
+      class="tiny-textarea tiny-textarea-native-content {{autoHeight ? 'is-auto-height' : ''}} {{disableDefaultPadding ? 'is-no-default-padding' : ''}} {{nativeViewActive ? 'is-native-active' : ''}}"
+      aria-hidden="true"
+    >{{value}}</div>
+    <div
+      id="placeholder"
+      wx:if="{{placeholder && !value}}"
+      class="tiny-textarea-placeholder placeholder-class"
+      style="{{placeholderStyle}}"
+    >{{placeholder}}</div>
+  </div>
+</div>
+<slot />

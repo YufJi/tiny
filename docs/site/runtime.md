@@ -206,7 +206,7 @@ Component({
 :::
 
 :::card{title="observer 只在 service 执行"}
-render 发现 DOM 事件后把组件 id 或元素 locator 和 native 字段发回 service；事件处理、setData、observer 和逻辑树模板求值都在 service 完成。
+render 发现 DOM 事件后把组件 id 或元素 locator、宿主已归一化的 detail 和几何发回 service；事件处理、setData、observer 和逻辑树模板求值都在 service 完成。
 :::
 
 :::card{title="completion 等 render 确认"}
@@ -221,7 +221,7 @@ observer 递归深度上限是 20，超过会产生 `OBSERVER_RECURSION_LIMIT`�
 
 ## 事件从渲染树回到逻辑树 {#events kicker="事件"}
 
-渲染树只负责把真实 DOM 事件转成 `tree.event`：带组件 id 或元素 locator、事件名、detail、native 字段和 touch 列表。service 解析到逻辑节点，取出带类型的 dataset，再走 glass-easel 的捕获/冒泡。
+渲染树只负责把真实 DOM 事件转成 `tree.event`：带组件 id 或元素 locator、事件名、detail、target/currentTarget 几何和 touch 列表。宿主私有的 native 字段在 render 侧归一化，不会进入通用事件载荷；service 解析到逻辑节点，取出带类型的 dataset，再走 glass-easel 的捕获/冒泡。
 
 :::sequence
 | title | detail | code |

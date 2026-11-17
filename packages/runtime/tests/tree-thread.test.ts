@@ -329,7 +329,7 @@ describe('tree thread', () => {
       pageFrame: { rootViewId: 'page' },
       messages: [{ type: 'tree', root: tree }, { type: 'ready' }],
     }, { pageId: 'page-1' })
-    emit?.({ id: 'button', name: 'tap', native: { clientX: 1 } })
+    emit?.({ id: 'button', name: 'tap', detail: { x: 1, y: 2 } })
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(pageFrames).toHaveLength(1)
@@ -337,8 +337,36 @@ describe('tree thread', () => {
       id: 'button',
       name: 'tap',
       pageId: 'page-1',
-      native: { clientX: 1 },
+      detail: { x: 1, y: 2 },
     })
+  })
+
+  test('routes opaque listener returns back to the renderer by token', async () => {
+    const [hostTransport, renderTransport] = createInMemoryTransportPair()
+    const returns: Array<{ eventToken: string; result: unknown }> = []
+    bootTreeThread({
+      connection: createRenderConnection(renderTransport),
+      initialPageId: 'page-1',
+      renderer: {
+        mountPage: () => {},
+        applyEventReturn: (request) => returns.push(request),
+      },
+    })
+    const host = new BridgeConnection({
+      localRole: 'host',
+      peerRole: 'render',
+      transport: hostTransport,
+      respondToHello: false,
+    })
+    await host.handshake()
+
+    host.sendEvent('tree', 'eventReturn', {
+      eventToken: 'token-1',
+      result: { value: '2' },
+    }, { pageId: 'page-1' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(returns).toEqual([{ eventToken: 'token-1', result: { value: '2' } }])
   })
 
   test('bridges intersection observers to the renderer', async () => {

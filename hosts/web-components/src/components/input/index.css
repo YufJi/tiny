@@ -3,7 +3,7 @@ tiny-input {
   cursor: auto;
   font-family: UICTFontTextStyleBody;
   position: relative;
-  box-sizing: border-box;
+  box-sizing: content-box;
   width: 100%;
   height: 1.4rem;
   min-height: 1.4rem;
@@ -20,6 +20,27 @@ tiny-input[hidden] {
   position: relative;
   width: 100%;
   height: 100%;
+}
+
+.tiny-native-scroll-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  -webkit-overflow-scrolling: touch;
+  overflow: scroll;
+}
+
+.tiny-native-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+.tiny-native-scroll-trigger {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 101%;
+  height: 101%;
+  pointer-events: none;
 }
 
 .tiny-input {
@@ -42,6 +63,41 @@ tiny-input[hidden] {
   text-overflow: clip;
   overflow: hidden;
   white-space: nowrap;
+}
+
+.tiny-input-wrapper.is-native-keyboard .tiny-input {
+  pointer-events: none;
+}
+
+.tiny-input-display {
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.tiny-input-display.is-native-active {
+  color: transparent;
+}
+
+.tiny-input-native-inner,
+.tiny-input-native-content {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.tiny-input-native-content {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
+}
+
+.tiny-input-native-content.is-native-active {
+  color: transparent;
 }
 
 .tiny-input::placeholder {

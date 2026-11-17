@@ -40,6 +40,14 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private var nativePicker: NativePickerController?
   private var pickerSessionId: String?
   private var pickerColumns: [[String: Any]] = []
+  private var appVisible = true
+  private var keyboardHeight: CGFloat = 0
+  private var lastKeyboardHeight: CGFloat = 0
+  private var pendingKeyboardRequests: [(requestId: String, pageId: String)] = []
+  private var nativeKeyboard: NativeKeyboardHost?
+  private var nativeKeyboardPageId: String?
+  private var nativeKeyboardShowToken = 0
+  private var pendingNativeKeyboardShow: (requestId: String, token: Int, ownerId: String)?
 
   var onReady: ((String) -> Void)?
   var onUIState: ((HostUIState) -> Void)?
@@ -72,6 +80,41 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     )
     gesture.edges = .left
     container.addGestureRecognizer(gesture)
+    installKeyboardObservers()
+  }
+
+  private func installKeyboardObservers() {
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(keyboardWillChangeFrame(_:)),
+      name: UIResponder.keyboardWillChangeFrameNotification,
+      object: nil
+    )
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(keyboardWillHide(_:)),
+      name: UIResponder.keyboardWillHideNotification,
+      object: nil
+    )
+  }
+
+  @objc private func keyboardWillChangeFrame(_ notification: Notification) {
+    guard
+      let info = notification.userInfo,
+      let endFrame = info[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
+    else { return }
+    let converted = container.convert(endFrame, from: nil)
+    let referenceBottom = container.window?.bounds.maxY ?? container.bounds.maxY
+    let height = max(0, referenceBottom - converted.minY)
+    let duration = (info[UIResponder.keyboardAnimationDurationUserInfoKey] as? NSNumber)?
+      .doubleValue ?? 0
+    deliverKeyboardHeight(height, duration: duration)
+  }
+
+  @objc private func keyboardWillHide(_ notification: Notification) {
+    let duration = (notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? NSNumber)?
+      .doubleValue ?? 0
+    deliverKeyboardHeight(0, duration: duration)
   }
 
   private static func loadStorage(prefix: String) -> [String: Any] {
@@ -173,6 +216,353 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     ])
   }
 
+  private func deliverKeyboardHeight(_ height: CGFloat, duration: TimeInterval) {
+    let normalizedHeight = max(0, height.rounded())
+    let durationMs = max(0, Int((duration * 1000).rounded()))
+    let changed = abs(normalizedHeight - lastKeyboardHeight) > 0.5
+    keyboardHeight = normalizedHeight
+    lastKeyboardHeight = normalizedHeight
+    resolvePendingKeyboardRequests(height: normalizedHeight, duration: durationMs)
+    guard changed else { return }
+    let payload: [String: Any] = [
+      "height": Double(normalizedHeight),
+      "duration": durationMs,
+    ]
+    if let activePageId {
+      surfaces[activePageId]?.sendHostEvent(
+        name: "keyboardHeightChange",
+        payload: payload
+      )
+    }
+    try? core?.command([
+      "type": "emitEvent",
+      "name": "keyboardHeightChange",
+      "payload": payload,
+    ])
+  }
+
+  private func resolvePendingKeyboardRequests(
+    height: CGFloat,
+    duration: Int,
+    onlyRequestId: String? = nil
+  ) {
+    var remaining: [(requestId: String, pageId: String)] = []
+    for request in pendingKeyboardRequests {
+      if let onlyRequestId, request.requestId != onlyRequestId {
+        remaining.append(request)
+        continue
+      }
+      try? core?.renderHostResult(
+        requestId: request.requestId,
+        result: [
+          "status": "ok",
+          "height": Double(height),
+          "duration": duration,
+          "native": true,
+        ]
+      )
+    }
+    pendingKeyboardRequests = remaining
+  }
+
+  private func broadcastPageVisibility() {
+    for (pageId, surface) in surfaces {
+      surface.sendHostEvent(
+        name: "pageVisibility",
+        payload: [
+          "pageId": pageId,
+          "active": appVisible && pageId == activePageId,
+        ]
+      )
+    }
+  }
+
+  private func beginNativeKeyboard(
+    requestId: String,
+    pageId: String,
+    payload: [String: Any]
+  ) {
+    let targetPageId = pageId.isEmpty ? (activePageId ?? "") : pageId
+    guard !targetPageId.isEmpty, let surface = surfaces[targetPageId] else {
+      try? core?.renderHostResult(
+        requestId: requestId,
+        result: ["status": "error", "errMsg": "showKeyboard:fail page is not active"]
+      )
+      return
+    }
+    let ownerId = payload["ownerId"] as? String ?? ""
+    guard !ownerId.isEmpty else {
+      try? core?.renderHostResult(
+        requestId: requestId,
+        result: ["status": "error", "errMsg": "showKeyboard:fail missing owner"]
+      )
+      return
+    }
+    let frame = nativeViewFrame(payload["style"]) ?? container.bounds
+    nativeKeyboardShowToken += 1
+    let token = nativeKeyboardShowToken
+    if let previous = pendingNativeKeyboardShow {
+      pendingNativeKeyboardShow = nil
+      try? core?.renderHostResult(
+        requestId: previous.requestId,
+        result: ["status": "error", "errMsg": "showKeyboard:fail superseded"]
+      )
+    }
+    pendingNativeKeyboardShow = (requestId: requestId, token: token, ownerId: ownerId)
+    attemptNativeKeyboardShow(
+      requestId: requestId,
+      pageId: targetPageId,
+      surface: surface,
+      ownerId: ownerId,
+      frame: frame,
+      payload: payload,
+      token: token,
+      attempt: 0
+    )
+  }
+
+  private func attemptNativeKeyboardShow(
+    requestId: String,
+    pageId: String,
+    surface: NativeRenderSurface,
+    ownerId: String,
+    frame: CGRect,
+    payload: [String: Any],
+    token: Int,
+    attempt: Int
+  ) {
+    guard token == nativeKeyboardShowToken,
+          pendingNativeKeyboardShow?.token == token,
+          surfaces[pageId] === surface
+    else { return }
+    guard let target = sameLayerContainer(for: surface, ownerId: ownerId, frame: frame) else {
+      guard attempt < 30 else {
+        failNativeKeyboardShow(
+          requestId: requestId,
+          token: token,
+          reason: "native same-layer view unavailable"
+        )
+        return
+      }
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self, weak surface] in
+        guard let self, let surface else { return }
+        self.attemptNativeKeyboardShow(
+          requestId: requestId,
+          pageId: pageId,
+          surface: surface,
+          ownerId: ownerId,
+          frame: frame,
+          payload: payload,
+          token: token,
+          attempt: attempt + 1
+        )
+      }
+      return
+    }
+    presentNativeKeyboard(
+      requestId: requestId,
+      pageId: pageId,
+      surface: surface,
+      ownerId: ownerId,
+      target: target,
+      payload: payload,
+      token: token
+    )
+  }
+
+  private func presentNativeKeyboard(
+    requestId: String,
+    pageId: String,
+    surface: NativeRenderSurface,
+    ownerId: String,
+    target: UIView,
+    payload: [String: Any],
+    token: Int
+  ) {
+    guard pendingNativeKeyboardShow?.token == token else { return }
+    pendingNativeKeyboardShow = nil
+    if let existing = nativeKeyboard {
+      if existing.ownerId == ownerId, existing.isActive {
+        existing.move(to: target)
+        resolveKeyboardShow(requestId: requestId, pageId: pageId)
+        return
+      }
+      if nativeKeyboardPageId == pageId,
+         existing.isActive,
+         existing.canReuse(config: payload) {
+        let previousOwnerId = existing.ownerId
+        let previous = existing.snapshot()
+        existing.move(to: target)
+        if previousOwnerId != ownerId {
+          surface.sameLayerHost.detach(marker: sameLayerMarker(previousOwnerId))
+        }
+        configureNativeKeyboard(existing, pageId: pageId, ownerId: ownerId)
+        _ = existing.retarget(
+          ownerId: ownerId,
+          config: payload,
+          value: payload["value"] as? String ?? "",
+          cursor: intPayload(payload["cursor"], fallback: -1),
+          selectionStart: intPayload(payload["selectionStart"], fallback: -1),
+          selectionEnd: intPayload(payload["selectionEnd"], fallback: -1)
+        )
+        surface.sendHostEvent(
+          name: "keyboardBlur",
+          payload: [
+            "ownerId": previousOwnerId,
+            "value": previous.value,
+            "cursor": previous.cursor,
+          ]
+        )
+        resolveKeyboardShow(requestId: requestId, pageId: pageId)
+        return
+      }
+      existing.dismiss()
+      nativeKeyboard = nil
+      nativeKeyboardPageId = nil
+    }
+    let keyboard = NativeKeyboardHost(
+      container: target,
+      ownerId: ownerId
+    )
+    configureNativeKeyboard(keyboard, pageId: pageId, ownerId: ownerId)
+    guard keyboard.begin(config: payload) else {
+      keyboard.dismiss(suppressBlur: true)
+      surface.sameLayerHost.detach(marker: sameLayerMarker(ownerId))
+      try? core?.renderHostResult(
+        requestId: requestId,
+        result: ["status": "error", "errMsg": "showKeyboard:fail native input unavailable"]
+      )
+      return
+    }
+    nativeKeyboard = keyboard
+    nativeKeyboardPageId = pageId
+    resolveKeyboardShow(requestId: requestId, pageId: pageId)
+  }
+
+  private func failNativeKeyboardShow(
+    requestId: String,
+    token: Int,
+    reason: String
+  ) {
+    guard pendingNativeKeyboardShow?.token == token else { return }
+    pendingNativeKeyboardShow = nil
+    try? core?.renderHostResult(
+      requestId: requestId,
+      result: ["status": "error", "errMsg": "showKeyboard:fail \(reason)"]
+    )
+  }
+
+  private func cancelPendingNativeKeyboardShow(reason: String) {
+    nativeKeyboardShowToken += 1
+    guard let pending = pendingNativeKeyboardShow else { return }
+    pendingNativeKeyboardShow = nil
+    try? core?.renderHostResult(
+      requestId: pending.requestId,
+      result: ["status": "error", "errMsg": "showKeyboard:fail \(reason)"]
+    )
+  }
+
+  private func nativeViewFrame(_ raw: Any?) -> CGRect? {
+    guard let value = raw as? [String: Any] else { return nil }
+    let left = doubleValue(value["left"], fallback: 0)
+    let top = doubleValue(value["top"], fallback: 0)
+    let width = max(0, doubleValue(value["width"], fallback: 0))
+    let height = max(0, doubleValue(value["height"], fallback: 0))
+    return CGRect(x: left, y: top, width: width, height: height)
+  }
+
+  private func sameLayerMarker(_ ownerId: String) -> String {
+    "tiny-native-view-\(ownerId)"
+  }
+
+  private func sameLayerContainer(
+    for surface: NativeRenderSurface,
+    ownerId: String,
+    frame: CGRect?
+  ) -> UIView? {
+    guard !ownerId.isEmpty else { return nil }
+    return surface.sameLayerHost.container(
+      for: sameLayerMarker(ownerId),
+      in: surface.webView,
+      targetFrame: frame
+    )
+  }
+
+  private func doubleValue(_ value: Any?, fallback: Double) -> Double {
+    if let number = value as? NSNumber { return number.doubleValue }
+    if let value = value as? Double { return value }
+    if let value = value as? Int { return Double(value) }
+    if let value = value as? String, let number = Double(value) { return number }
+    return fallback
+  }
+
+  private func configureNativeKeyboard(
+    _ keyboard: NativeKeyboardHost,
+    pageId: String,
+    ownerId: String
+  ) {
+    keyboard.onValueChange = { [weak self] value, cursor in
+      self?.surfaces[pageId]?.sendHostEvent(
+        name: "keyboardInput",
+        payload: ["ownerId": ownerId, "value": value, "cursor": cursor]
+      )
+    }
+    keyboard.onSelectionChange = { [weak self] start, end in
+      self?.surfaces[pageId]?.sendHostEvent(
+        name: "keyboardSelection",
+        payload: ["ownerId": ownerId, "selectionStart": start, "selectionEnd": end]
+      )
+    }
+    keyboard.onConfirm = { [weak self] value, cursor in
+      self?.surfaces[pageId]?.sendHostEvent(
+        name: "keyboardConfirm",
+        payload: ["ownerId": ownerId, "value": value, "cursor": cursor]
+      )
+    }
+    keyboard.onBlur = { [weak self, weak keyboard] value, cursor in
+      guard let self else { return }
+      self.surfaces[pageId]?.sendHostEvent(
+        name: "keyboardBlur",
+        payload: ["ownerId": ownerId, "value": value, "cursor": cursor]
+      )
+      guard let keyboard else { return }
+      if self.nativeKeyboard === keyboard, !keyboard.isActive {
+        self.nativeKeyboard = nil
+        self.nativeKeyboardPageId = nil
+      }
+    }
+  }
+
+  private func resolveKeyboardShow(requestId: String, pageId: String) {
+    if keyboardHeight > 0.5 {
+      try? core?.renderHostResult(
+        requestId: requestId,
+        result: [
+          "status": "ok",
+          "height": Double(keyboardHeight),
+          "duration": 0,
+          "native": true,
+        ]
+      )
+    } else {
+      pendingKeyboardRequests.append((requestId: requestId, pageId: pageId))
+      DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+        self?.resolvePendingKeyboardRequests(
+          height: 0,
+          duration: 0,
+          onlyRequestId: requestId
+        )
+      }
+    }
+  }
+
+  private func intPayload(_ value: Any?, fallback: Int) -> Int {
+    if let number = value as? NSNumber { return number.intValue }
+    if let value = value as? Int { return value }
+    if let value = value as? String, let number = Int(value) { return number }
+    return fallback
+  }
+
   var systemSnapshot: [String: Any] {
     systemInfo
   }
@@ -192,15 +582,27 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   }
 
   func setVisible(_ visible: Bool) {
+    appVisible = visible
+    if !visible, let activePageId {
+      cancelPendingNativeKeyboardShow(reason: "app is hidden")
+      surfaces[activePageId]?.webView.endEditing(true)
+      nativeKeyboard?.endEditing()
+    }
     try? core?.command([
       "type": "emitEvent",
       "name": visible ? "appShow" : "appHide",
       "payload": [:],
     ])
     try? core?.command(["type": "setPageVisible", "visible": visible])
+    broadcastPageVisibility()
   }
 
   func close() {
+    NotificationCenter.default.removeObserver(self)
+    cancelPendingNativeKeyboardShow(reason: "host closed")
+    nativeKeyboard?.dismiss(suppressBlur: true)
+    nativeKeyboard = nil
+    nativeKeyboardPageId = nil
     nativePicker?.dismiss(animated: false)
     nativePicker = nil
     for surface in surfaces.values {
@@ -208,6 +610,9 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     }
     surfaces.removeAll()
     deferredDestroyIds.removeAll()
+    pendingKeyboardRequests.removeAll()
+    keyboardHeight = 0
+    lastKeyboardHeight = 0
     networkMonitor?.cancel()
     networkMonitor = nil
     core = nil
@@ -258,8 +663,8 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       generatedRoot: generatedRoot,
       templatesSource: renderTemplatesSource
     )
-    surface.webView.frame = container.bounds
-    surface.webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    surface.view.frame = container.bounds
+    surface.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     surface.onFrame = { [weak self] frame in
       guard let self, let core = self.core else { return }
       do {
@@ -268,10 +673,12 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
         self.fail("HostCore render event failed: \(error)")
       }
     }
-    surface.onReady = { [weak self] in
-      guard let self, let core = self.core else { return }
+    surface.onReady = { [weak self, weak surface] in
+      guard let self, let core = self.core, let surface else { return }
       do {
+        surface.sendHostEvent(name: "keyboardMode", payload: ["native": true])
         try core.pageReady(pageId: pageId)
+        self.broadcastPageVisibility()
       } catch {
         self.fail("HostCore pageReady failed: \(error)")
       }
@@ -281,15 +688,26 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     }
     deferredDestroyIds.remove(pageId)
     surfaces[pageId] = surface
-    container.addSubview(surface.webView)
+    container.addSubview(surface.view)
     surface.setVisible(false)
+    broadcastPageVisibility()
     _ = path
   }
 
   func activatePage(pageId: String) {
     let previousId = activePageId
+    if previousId != pageId {
+      cancelPendingNativeKeyboardShow(reason: "page changed")
+      nativeKeyboard?.dismiss()
+      nativeKeyboard = nil
+      nativeKeyboardPageId = nil
+      if let previousId {
+        surfaces[previousId]?.sameLayerHost.detachAll()
+      }
+    }
     guard let newSurface = surfaces[pageId] else {
       activePageId = pageId
+      broadcastPageVisibility()
       return
     }
     let newStack = core?.pageStack() ?? []
@@ -299,6 +717,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       activePageId = pageId
       displayedStack = newStack
       newSurface.setVisible(true)
+      broadcastPageVisibility()
       if !finished {
         finished = true
         let result: [String: Any] = [
@@ -318,6 +737,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
 
     if previousId == pageId {
       newSurface.setVisible(true)
+      broadcastPageVisibility()
       return
     }
 
@@ -330,6 +750,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     )
     activePageId = pageId
     displayedStack = newStack
+    broadcastPageVisibility()
     animatePageTransition(
       from: oldSurface,
       to: newSurface,
@@ -373,20 +794,20 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     pageTransitionInProgress = true
     let width = max(container.bounds.width, UIScreen.main.bounds.width)
     newSurface.setVisible(true)
-    newSurface.webView.alpha = 1
+    newSurface.view.alpha = 1
 
     if kind == .fade {
-      newSurface.webView.transform = .identity
-      newSurface.webView.alpha = 0
-      container.bringSubviewToFront(newSurface.webView)
+      newSurface.view.transform = .identity
+      newSurface.view.alpha = 0
+      container.bringSubviewToFront(newSurface.view)
     } else if kind == .push {
-      newSurface.webView.transform = CGAffineTransform(translationX: width, y: 0)
-      container.bringSubviewToFront(newSurface.webView)
+      newSurface.view.transform = CGAffineTransform(translationX: width, y: 0)
+      container.bringSubviewToFront(newSurface.view)
     } else if let oldSurface {
       if !interactive {
-        newSurface.webView.transform = CGAffineTransform(translationX: -width * 0.32, y: 0)
+        newSurface.view.transform = CGAffineTransform(translationX: -width * 0.32, y: 0)
       }
-      container.insertSubview(newSurface.webView, belowSubview: oldSurface.webView)
+      container.insertSubview(newSurface.view, belowSubview: oldSurface.view)
     }
 
     let duration = interactive ? 0.22 : 0.32
@@ -395,26 +816,26 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       delay: 0,
       options: [.curveEaseInOut, .beginFromCurrentState, .allowUserInteraction]
     ) {
-      newSurface.webView.transform = .identity
-      newSurface.webView.alpha = 1
+      newSurface.view.transform = .identity
+      newSurface.view.alpha = 1
       if let oldSurface {
         switch kind {
         case .push:
-          oldSurface.webView.transform = CGAffineTransform(translationX: -width, y: 0)
+          oldSurface.view.transform = CGAffineTransform(translationX: -width, y: 0)
         case .pop:
-          oldSurface.webView.transform = CGAffineTransform(translationX: width, y: 0)
+          oldSurface.view.transform = CGAffineTransform(translationX: width, y: 0)
         case .fade:
-          oldSurface.webView.alpha = 0
+          oldSurface.view.alpha = 0
         }
       }
     } completion: { [weak self] _ in
       guard let self else { return }
       oldSurface?.setVisible(false)
-      oldSurface?.webView.transform = .identity
-      oldSurface?.webView.alpha = 1
-      newSurface.webView.transform = .identity
-      newSurface.webView.alpha = 1
-      self.container.bringSubviewToFront(newSurface.webView)
+      oldSurface?.view.transform = .identity
+      oldSurface?.view.alpha = 1
+      newSurface.view.transform = .identity
+      newSurface.view.alpha = 1
+      self.container.bringSubviewToFront(newSurface.view)
       self.pageTransitionInProgress = false
       self.interactiveBackActive = false
       self.interactiveBackPreviousId = nil
@@ -464,8 +885,8 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       interactiveBackPreviousId = previousId
       pageTransitionInProgress = true
       previous.setVisible(true)
-      previous.webView.transform = CGAffineTransform(translationX: -width * 0.32, y: 0)
-      container.insertSubview(previous.webView, belowSubview: current.webView)
+      previous.view.transform = CGAffineTransform(translationX: -width * 0.32, y: 0)
+      container.insertSubview(previous.view, belowSubview: current.view)
 
     case .changed:
       guard interactiveBackActive,
@@ -476,8 +897,8 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       else { return }
       let translation = min(max(gesture.translation(in: container).x, 0), width)
       let progress = translation / width
-      current.webView.transform = CGAffineTransform(translationX: translation, y: 0)
-      previous.webView.transform = CGAffineTransform(
+      current.view.transform = CGAffineTransform(translationX: translation, y: 0)
+      previous.view.transform = CGAffineTransform(
         translationX: -width * 0.32 * (1 - progress),
         y: 0
       )
@@ -517,13 +938,13 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   ) {
     pageTransitionInProgress = true
     UIView.animate(withDuration: 0.22, delay: 0, options: [.curveEaseOut, .beginFromCurrentState]) {
-      current.webView.transform = .identity
-      previous.webView.transform = CGAffineTransform(translationX: -width * 0.32, y: 0)
+      current.view.transform = .identity
+      previous.view.transform = CGAffineTransform(translationX: -width * 0.32, y: 0)
     } completion: { [weak self] _ in
       guard let self else { return }
       previous.setVisible(false)
-      previous.webView.transform = .identity
-      current.webView.transform = .identity
+      previous.view.transform = .identity
+      current.view.transform = .identity
       self.pageTransitionInProgress = false
       self.interactiveBackActive = false
       self.interactiveBackPreviousId = nil
@@ -595,7 +1016,9 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   }
 
   func setAppVisible(_ visible: Bool) {
+    appVisible = visible
     container.isHidden = !visible
+    broadcastPageVisibility()
   }
 
   func updateUIState(_ state: [String: Any]) {
@@ -653,6 +1076,59 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     method: String,
     payload: [String: Any]
   ) {
+    if method.hasPrefix("nativeView.") {
+      handleNativeViewRequest(
+        requestId: requestId,
+        pageId: pageId,
+        method: method,
+        payload: payload
+      )
+      return
+    }
+    if method == "updateKeyboard" {
+      if let keyboard = nativeKeyboard,
+         keyboard.ownerId == (payload["ownerId"] as? String ?? "") {
+        _ = keyboard.update(
+          value: payload["value"] as? String ?? "",
+          cursor: intPayload(payload["cursor"], fallback: -1),
+          selectionStart: intPayload(payload["selectionStart"], fallback: -1),
+          selectionEnd: intPayload(payload["selectionEnd"], fallback: -1)
+        )
+      }
+      try? core?.renderHostResult(requestId: requestId, result: ["status": "ok"])
+      return
+    }
+    if method == "showKeyboard" {
+      beginNativeKeyboard(requestId: requestId, pageId: pageId, payload: payload)
+      return
+    }
+    if method == "hideKeyboard" {
+      let targetPageId: String? = pageId.isEmpty ? activePageId : pageId
+      let requestedOwnerId = payload["ownerId"] as? String
+      if let pending = pendingNativeKeyboardShow,
+         requestedOwnerId == nil || pending.ownerId == requestedOwnerId {
+        cancelPendingNativeKeyboardShow(reason: "keyboard hidden")
+      }
+      if let targetPageId {
+        surfaces[targetPageId]?.webView.endEditing(true)
+      }
+      if let keyboard = nativeKeyboard,
+         requestedOwnerId == nil || keyboard.ownerId == requestedOwnerId {
+        keyboard.endEditing()
+        if let targetPageId {
+          surfaces[targetPageId]?.sameLayerHost.detach(
+            marker: sameLayerMarker(keyboard.ownerId)
+          )
+        }
+        nativeKeyboard = nil
+        nativeKeyboardPageId = nil
+      }
+      try? core?.renderHostResult(
+        requestId: requestId,
+        result: ["status": "ok", "height": 0, "duration": 0]
+      )
+      return
+    }
     if method == "pollPicker" {
       let sessionId = payload["sessionId"] as? String ?? ""
       let events = sessionId == pickerSessionId ? pickerColumns : []
@@ -714,6 +1190,61 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     nativePicker = picker
     presenter.present(picker, animated: true)
     _ = pageId
+  }
+
+  private func handleNativeViewRequest(
+    requestId: String,
+    pageId: String,
+    method: String,
+    payload: [String: Any]
+  ) {
+    let targetPageId = pageId.isEmpty ? (activePageId ?? "") : pageId
+    guard !targetPageId.isEmpty, let surface = surfaces[targetPageId] else {
+      try? core?.renderHostResult(requestId: requestId, result: ["status": "error"])
+      return
+    }
+    let id = payload["id"] as? String ?? ""
+    guard !id.isEmpty else {
+      try? core?.renderHostResult(requestId: requestId, result: ["status": "error"])
+      return
+    }
+    if method == "nativeView.detach" {
+      surface.sameLayerHost.detach(marker: sameLayerMarker(id))
+      if pendingNativeKeyboardShow?.ownerId == id {
+        cancelPendingNativeKeyboardShow(reason: "native view detached")
+      }
+      if nativeKeyboard?.ownerId == id {
+        nativeKeyboard?.dismiss(suppressBlur: true)
+        nativeKeyboard = nil
+        nativeKeyboardPageId = nil
+      }
+      try? core?.renderHostResult(requestId: requestId, result: ["status": "ok"])
+      return
+    }
+    let frame = nativeViewFrame(payload["frame"]) ?? .zero
+    guard let container = sameLayerContainer(for: surface, ownerId: id, frame: frame) else {
+      if ProcessInfo.processInfo.environment["TINY_DEBUG_NATIVE_VIEW"] == "1" {
+        HostDebug.log("nativeView \(method) page=\(targetPageId) id=\(id) missing same-layer view")
+      }
+      try? core?.renderHostResult(
+        requestId: requestId,
+        result: ["status": "error", "errMsg": "native same-layer view unavailable"]
+      )
+      return
+    }
+    if ProcessInfo.processInfo.environment["TINY_DEBUG_NATIVE_VIEW"] == "1" {
+      HostDebug.log(
+        "nativeView \(method) page=\(targetPageId) id=\(id) frame=\(frame) "
+          + "container=\(container.convert(container.bounds, to: nil))"
+      )
+    }
+    if nativeKeyboard?.ownerId == id {
+      nativeKeyboard?.move(to: container)
+      nativeKeyboard?.updateGeometry(
+        style: payload["style"] as? [String: Any]
+      )
+    }
+    try? core?.renderHostResult(requestId: requestId, result: ["status": "ok"])
   }
 
   private func topViewController() -> UIViewController? {
@@ -813,6 +1344,9 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
           "currentSize": 0,
           "limitSize": 10240,
         ])
+      case "keyboard.hide":
+        nativeKeyboard?.endEditing()
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "hideKeyboard:ok"])
       default:
         try core?.platformResult(requestId: requestId, result: ["errMsg": "\(method):ok"])
       }

@@ -2,7 +2,7 @@ tiny-textarea {
   display: block;
   cursor: auto;
   position: relative;
-  box-sizing: border-box;
+  box-sizing: content-box;
   width: 300px;
   height: 150px;
 }
@@ -13,12 +13,34 @@ tiny-textarea[hidden] {
 
 tiny-textarea[auto-height] {
   height: auto;
+  min-height: 1.4em;
 }
 
 .tiny-textarea-wrapper {
   position: relative;
   width: 100%;
   height: 100%;
+}
+
+.tiny-native-scroll-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  -webkit-overflow-scrolling: touch;
+  overflow: scroll;
+}
+
+.tiny-native-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+.tiny-native-scroll-trigger {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 101%;
+  height: 101%;
+  pointer-events: none;
 }
 
 .tiny-textarea {
@@ -37,6 +59,39 @@ tiny-textarea[auto-height] {
   font-family: inherit;
   line-height: 1.2;
   cursor: auto;
+}
+
+.tiny-textarea-wrapper.is-native-keyboard .tiny-textarea {
+  pointer-events: none;
+}
+
+.tiny-textarea-display {
+  white-space: pre-wrap;
+  word-break: break-all;
+  pointer-events: none;
+}
+
+.tiny-textarea-display.is-native-active {
+  color: transparent;
+}
+
+.tiny-textarea-native-inner,
+.tiny-textarea-native-content {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.tiny-textarea-native-content {
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow: hidden;
+}
+
+.tiny-textarea-native-content.is-native-active {
+  color: transparent;
 }
 
 .tiny-textarea.is-auto-height {

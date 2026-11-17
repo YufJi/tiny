@@ -59,6 +59,8 @@ export type RenderTemplateEvent = {
   currentTarget?: RenderEventGeometry
   /** Render identity of the innermost event target. */
   targetId?: string
+  /** Opaque render-side token used to correlate a listener return. */
+  eventToken?: string
   target?: RenderEventGeometry
 }
 

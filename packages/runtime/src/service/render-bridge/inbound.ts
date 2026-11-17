@@ -100,6 +100,7 @@ function handleTemplateEvent(
     id?: string
     dataset?: Record<string, unknown>
     targetId?: string
+    eventToken?: string
     currentTarget?: {
       offsetLeft?: number
       offsetTop?: number
@@ -107,7 +108,6 @@ function handleTemplateEvent(
       offsetHeight?: number
     }
     target?: {
-      viewId?: string
       offsetLeft?: number
       offsetTop?: number
       offsetWidth?: number
@@ -129,6 +129,22 @@ function handleTemplateEvent(
       ...(payload.targetId ? { targetId: payload.targetId } : {}),
       ...(payload.currentTarget ? { currentTarget: payload.currentTarget } : {}),
       ...(payload.target ? { target: payload.target } : {}),
+    }, (result) => {
+      if (
+        !payload.eventToken
+        || result === undefined
+        || result === null
+      ) return
+      connection.sendEvent(
+        TREE_PROTOCOL.domain,
+        TREE_PROTOCOL.eventReturn,
+        {
+          eventToken: payload.eventToken,
+          result,
+          ...(message.pageId ? { pageId: message.pageId } : {}),
+        },
+        message.pageId ? { pageId: message.pageId } : {},
+      )
     })
     if (!handled) {
       connection.sendDiagnostic('warn', {
@@ -162,12 +178,12 @@ function handleViewEvent(
     targetId?: string
     name?: string
     detail?: unknown
-    native?: Record<string, unknown>
     touches?: unknown[]
     changedTouches?: unknown[]
     target?: ViewEventPayload['target']
     currentTarget?: ViewEventPayload['currentTarget']
     wxsHandled?: boolean
+    eventToken?: string
   }
   if (!payload.id || !payload.name) return
   try {
@@ -177,12 +193,28 @@ function handleViewEvent(
       name: payload.name,
       pageId: message.pageId,
       detail: payload.detail,
-      native: payload.native,
       touches: payload.touches,
       changedTouches: payload.changedTouches,
       ...(payload.target ? { target: payload.target } : {}),
       ...(payload.currentTarget ? { currentTarget: payload.currentTarget } : {}),
       ...(payload.wxsHandled ? { wxsHandled: true } : {}),
+      ...(payload.eventToken ? { eventToken: payload.eventToken } : {}),
+    }, (result) => {
+      if (
+        !payload.eventToken
+        || result === undefined
+        || result === null
+      ) return
+      connection.sendEvent(
+        TREE_PROTOCOL.domain,
+        TREE_PROTOCOL.eventReturn,
+        {
+          eventToken: payload.eventToken,
+          result,
+          ...(message.pageId ? { pageId: message.pageId } : {}),
+        },
+        message.pageId ? { pageId: message.pageId } : {},
+      )
     })
   } catch (error) {
     const description = error instanceof Error ? error.message : String(error)

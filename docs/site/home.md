@@ -149,7 +149,7 @@ service 执行小程序逻辑并维护逻辑树，render 线程由宿主持有�
 - 每页一个 render root；Web 侧由 `createGlassRenderTree` 创建
 - 真实 `tiny-*` 内置组件、组件模板求值、slot、shadow root 和布局
 - 应用 flow 和 patch，按组件定义求值 shadow tree，不执行 app methods / observers / relations
-- 事件带上组件 id / 元素 locator、name、detail 和 native 字段回传
+- 事件带上组件 id / 元素 locator、name、宿主归一化的 detail 和几何回传
 - 元素树导出、canvas 测量、DOM 查询和 IntersectionObserver
 - DOM 渲染树由 `@tiny/host-web` 提供，内置组件和基础 CSS 由 `@tiny/host-web-components` 提供
 :::

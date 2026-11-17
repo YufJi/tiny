@@ -1,11 +1,19 @@
-import type * as glassEasel from '@tiny/runtime/glass-easel'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
-import { valueFromEvent } from '../../events'
 import {
+  EVENT_RETURN_TOKEN_FIELD,
   createKeyboardOwnerId,
+  currentHostKeyboardMode,
+  registerKeyboardListenerTarget,
   hideHostKeyboard,
-  showHostKeyboard,
   subscribeKeyboard,
+  subscribeHostKeyboardMode,
+  subscribeKeyboardBlur,
+  subscribeKeyboardConfirm,
+  subscribeKeyboardOutsideTouch,
+  subscribeKeyboardSelection,
+  subscribeKeyboardValue,
+  type HostKeyboardSelectionEvent,
+  type HostKeyboardValueEvent,
   type HostKeyboardEvent,
 } from '../../host-keyboard'
 import {
@@ -13,31 +21,36 @@ import {
   isHostPageActive,
   requestHostFrame,
   subscribeHostPageVisibility,
-  type HostFrame,
 } from '../../host-page'
+import { nativeViewMarkerClass } from '../../host-native-view'
 import { builtinDefinitionName } from '../../tags'
-
-type InputRuntime = {
-  __keyboardOwnerId: string
-  __keyboardHeight: number
-  __keyboardRequestId: number
-  __unsubscribeKeyboard?: () => void
-  __unsubscribePage?: () => void
-  __pageActive: boolean
-  __autoFocused: boolean
-  __focusScheduled: boolean
-  __focusFrame?: HostFrame
-}
+import type { InputHostComponent, InputHostRuntime } from './host'
+import { inputRuntime } from './host'
+import { createDomInputHost } from './dom-host'
+import { createNativeInputHost } from './native-host'
 
 export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
+  const nativeTextInput = ctx.options.textInputHost === 'native'
+    || (ctx.options.textInputHost !== 'dom' && currentHostKeyboardMode(ctx)?.native === true)
+  const host = nativeTextInput ? createNativeInputHost(ctx) : createDomInputHost(ctx)
   return ctx.space.defineComponent({
     is: builtinDefinitionName('input'),
-    template: ctx.template('input'),
+    template: ctx.template('input', nativeTextInput ? 'native' : undefined),
+    data: {
+      nativeKeyboard: false,
+      nativeViewActive: false,
+      nativeViewClass: '',
+    },
     behaviors: [
       ctx.behaviors.base,
+      ctx.behaviors.native,
+      ctx.behaviors.positioningTarget,
+      ctx.behaviors.reload,
+      ctx.behaviors.sizeNormalizer,
       ctx.behaviors.dataComponent,
       ctx.behaviors.classPrefix,
       ctx.behaviors.autofill,
+      ctx.behaviors.keyboardAccessoryHost,
       ctx.behaviors.labelTarget,
     ],
     properties: {
@@ -53,6 +66,8 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
       autoFocus: { type: Boolean, value: false },
       confirmType: { type: String, value: 'done' },
       confirmHold: { type: Boolean, value: false },
+      keyboardAppearance: { type: String, value: 'default' },
+      cursorSpacing: { type: Number, value: 0 },
       cursor: { type: Number, value: -1 },
       selectionStart: { type: Number, value: -1 },
       selectionEnd: { type: Number, value: -1 },
@@ -72,45 +87,109 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
         if (value) this.scheduleInputFocus()
         else this.cancelScheduledFocus()
       },
-      'cursor, selectionStart, selectionEnd'() {
-        this.applySelection()
-      },
       value(next: string) {
         this.syncNativeValue(next)
         this.restoreSelection()
+        const instance = this as unknown as InputHostRuntime
+        if (!instance.__applyingHostKeyboardValue) {
+          this.syncKeyboardValue()
+          this.syncNativeViewGeometry()
+        }
+      },
+      'cursor, selectionStart, selectionEnd'() {
+        this.applySelection()
+        this.syncKeyboardValue()
       },
     },
     lifetimes: {
       attached() {
-        const instance = this as unknown as InputRuntime
+        const instance = this as unknown as InputHostRuntime
         instance.__keyboardOwnerId = createKeyboardOwnerId('input')
+        instance.__unregisterReturnTarget = registerKeyboardListenerTarget(
+          instance.__keyboardOwnerId,
+          this,
+        )
         instance.__keyboardHeight = 0
         instance.__keyboardRequestId = 0
         instance.__pageActive = isHostPageActive(ctx)
         instance.__autoFocused = false
         instance.__focusScheduled = false
-        instance.__unsubscribeKeyboard = subscribeKeyboard(ctx, (event) => {
-          this.handleHostKeyboard(event)
+        instance.__nativeKeyboard = currentHostKeyboardMode(ctx)?.native ?? false
+        instance.__nativeKeyboardVisible = false
+        instance.__keyboardShowPending = false
+        instance.__applyingHostKeyboardValue = false
+        instance.__hostCursor = -1
+        instance.__hostSelectionStart = -1
+        instance.__hostSelectionEnd = -1
+        instance.__nativeViewActive = false
+        this.setData({
+          nativeKeyboard: instance.__nativeKeyboard,
+          nativeViewClass: nativeViewMarkerClass(instance.__keyboardOwnerId),
         })
+        const unsubscribers = [
+          subscribeKeyboard(ctx, (event) => {
+            this.handleHostKeyboard(event)
+          }),
+          subscribeHostKeyboardMode(ctx, (mode) => {
+            instance.__nativeKeyboard = mode.native
+            this.setData({ nativeKeyboard: mode.native })
+            if (!mode.native && instance.__nativeKeyboardVisible) this.blurNative()
+          }),
+          subscribeKeyboardValue(ctx, (event) => {
+            this.handleHostKeyboardValue(event)
+          }),
+          subscribeKeyboardSelection(ctx, (event) => {
+            this.handleHostKeyboardSelection(event)
+          }),
+          subscribeKeyboardConfirm(ctx, (event) => {
+            this.handleHostKeyboardConfirm(event)
+          }),
+          subscribeKeyboardBlur(ctx, (event) => {
+            this.handleHostKeyboardBlur(event)
+          }),
+        ].filter((unsubscribe): unsubscribe is () => void => typeof unsubscribe === 'function')
+        instance.__unsubscribeKeyboard = () => {
+          for (const unsubscribe of unsubscribers) unsubscribe()
+        }
         instance.__unsubscribePage = subscribeHostPageVisibility(ctx, (visibility) => {
           instance.__pageActive = visibility.active
           if (visibility.active) {
             this.scheduleInputFocus()
           } else {
             this.cancelScheduledFocus()
-            if (this.isNativeFocused()) this.blurNative()
+            if (instance.__nativeKeyboardVisible) this.blurNative()
           }
         })
+        instance.__unsubscribeOutsideTouch = subscribeKeyboardOutsideTouch(
+          () => Boolean(this.data.nativeKeyboard && instance.__nativeKeyboardVisible),
+          () => Boolean(this.data.holdKeyboard),
+          () => this.blurNative(),
+        )
+        this.bindKeyboardActivation()
         this.scheduleInputFocus()
       },
+      ready() {
+        this.bindKeyboardActivation()
+      },
       detached() {
-        const instance = this as unknown as InputRuntime
+        const instance = this as unknown as InputHostRuntime
         instance.__unsubscribeKeyboard?.()
         instance.__unsubscribeKeyboard = undefined
         instance.__unsubscribePage?.()
         instance.__unsubscribePage = undefined
+        instance.__unsubscribeOutsideTouch?.()
+        instance.__unsubscribeOutsideTouch = undefined
+        instance.__unsubscribeActivation?.()
+        instance.__unsubscribeActivation = undefined
+        this.detachNativeViewLayer()
+        instance.__unregisterReturnTarget?.()
+        instance.__unregisterReturnTarget = undefined
         this.cancelScheduledFocus()
-        if (instance.__keyboardHeight > 0) {
+        if (
+          instance.__keyboardHeight > 0
+          || instance.__nativeKeyboardVisible
+          || instance.__keyboardShowPending
+        ) {
           hideHostKeyboard(ctx, {
             ownerId: instance.__keyboardOwnerId,
             source: 'input',
@@ -122,80 +201,18 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
     externalClasses: ['placeholder-class'],
     options: ctx.hostOptions('input'),
     methods: {
-      nativeInput(): {
-        focus?: (options?: FocusOptions) => void
-        blur?: () => void
-        setSelectionRange?: (start: number, end: number) => void
-        selectionStart?: number
-        selectionEnd?: number
-        value?: string
-      } | null {
-        const element = (this.getShadowRoot?.() as {
-          getElementById?: (id: string) => { getBackendElement?: () => unknown } | null
-        } | null)?.getElementById?.('native-input')?.getBackendElement?.()
-        return (element as {
-          focus?: (options?: FocusOptions) => void
-          blur?: () => void
-          setSelectionRange?: (start: number, end: number) => void
-          selectionStart?: number
-          selectionEnd?: number
-          value?: string
-        } | null) ?? null
-      },
-      syncNativeValue(next: unknown) {
-        const element = this.nativeInput()
-        const value = String(next ?? '')
-        if (element && typeof element.value === 'string' && element.value !== value) {
-          element.value = value
-        }
-      },
-      rememberSelection() {
-        const element = this.nativeInput()
-        if (!element || typeof element.selectionStart !== 'number' || typeof element.selectionEnd !== 'number') return
-        ;(this as unknown as { _selection?: { start: number; end: number } })._selection = {
-          start: element.selectionStart,
-          end: element.selectionEnd,
-        }
-      },
-      restoreSelection() {
-        const selection = (this as unknown as {
-          _selection?: { start: number; end: number }
-        })._selection
-        if (!selection) return
-        const explicit = Number(this.data.cursor ?? -1) >= 0 ||
-          Number(this.data.selectionStart ?? -1) >= 0 ||
-          Number(this.data.selectionEnd ?? -1) >= 0
-        if (explicit) return
-        setTimeout(() => {
-          const element = this.nativeInput()
-          if (!element?.setSelectionRange) return
-          if (typeof document !== 'undefined' && document.activeElement !== element) return
-          const value = String(element.value ?? '')
-          const clamp = (position: number) => Math.max(0, Math.min(value.length, position))
-          element.setSelectionRange(clamp(selection.start), clamp(selection.end))
-        }, 0)
-      },
-      shouldFocus(): boolean {
-        const instance = this as unknown as InputRuntime
+      shouldFocus(this: InputHostComponent): boolean {
+        const instance = inputRuntime(this)
         return Boolean(this.data.focus || (this.data.autoFocus && !instance.__autoFocused))
       },
-      isNativeFocusable(): boolean {
-        const element = this.nativeInput() as HTMLElement | null
-        if (!element || element.isConnected === false || this.data.disabled) return false
-        const style = typeof window !== 'undefined'
-          ? window.getComputedStyle(element)
-          : null
-        if (style?.display === 'none' || style?.visibility === 'hidden') return false
-        return element.offsetWidth > 0 || element.offsetHeight > 0
-      },
-      cancelScheduledFocus() {
-        const instance = this as unknown as InputRuntime
+      cancelScheduledFocus(this: InputHostComponent) {
+        const instance = inputRuntime(this)
         cancelHostFrame(instance.__focusFrame)
         instance.__focusFrame = undefined
         instance.__focusScheduled = false
       },
-      scheduleInputFocus() {
-        const instance = this as unknown as InputRuntime
+      scheduleInputFocus(this: InputHostComponent) {
+        const instance = inputRuntime(this)
         if (!instance.__pageActive || instance.__focusScheduled || !this.shouldFocus()) return
         instance.__focusScheduled = true
         instance.__focusFrame = requestHostFrame(() => {
@@ -206,62 +223,12 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
           if (this.data.autoFocus) instance.__autoFocused = true
         })
       },
-      focusNative(): boolean {
-        const element = this.nativeInput()
-        if (!element?.focus) return false
-        try {
-          element.focus({ preventScroll: true })
-        } catch {
-          element.focus()
-        }
-        this.applySelection()
-        return this.isNativeFocused()
-      },
-      blurNative() {
-        this.nativeInput()?.blur?.()
-      },
-      isNativeFocused(): boolean {
-        const element = this.nativeInput()
-        return Boolean(element && typeof document !== 'undefined' && document.activeElement === element)
-      },
-      focusScrollIntoView() {
-        if (!this.data.adjustPosition) return
-        const element = this.nativeInput() as {
-          scrollIntoView?: (options?: ScrollIntoViewOptions) => void
-        } | null
-        element?.scrollIntoView?.({ block: 'center', inline: 'nearest' })
-      },
-      requestKeyboardShow(value: unknown) {
-        const instance = this as unknown as InputRuntime
-        const requestId = ++instance.__keyboardRequestId
-        const element = this.nativeInput()
-        const request = {
-          ownerId: instance.__keyboardOwnerId,
-          source: 'input' as const,
-          value: String(value ?? this.data.value ?? ''),
-          maxlength: Number(this.data.maxlength ?? 0),
-          confirmType: String(this.data.confirmType ?? 'done'),
-          password: Boolean(this.data.password),
-          disabled: Boolean(this.data.disabled),
-          adjustPosition: Boolean(this.data.adjustPosition),
-          holdKeyboard: Boolean(this.data.holdKeyboard),
-          selectionStart: Number(element?.selectionStart ?? -1),
-          selectionEnd: Number(element?.selectionEnd ?? -1),
-        }
-        void showHostKeyboard(ctx, request).then((detail) => {
-          if (requestId !== instance.__keyboardRequestId) return
-          const height = detail?.height ?? 0
-          this.triggerEvent(
-            'focus',
-            { value: this.data.value, height },
-            { bubbles: true, composed: true },
-          )
-          if (height > 0) this.focusScrollIntoView()
-        })
-      },
-      releaseKeyboard(reason: string) {
-        const instance = this as unknown as InputRuntime
+      releaseKeyboard(this: InputHostComponent, reason: string) {
+        const instance = inputRuntime(this)
         instance.__keyboardRequestId += 1
+        instance.__keyboardShowPending = false
+        instance.__nativeKeyboardVisible = false
+        this.detachNativeViewLayer()
         hideHostKeyboard(ctx, {
           ownerId: instance.__keyboardOwnerId,
           source: 'input',
@@ -269,9 +236,13 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
           value: String(this.data.value ?? ''),
         })
       },
-      handleHostKeyboard(event: HostKeyboardEvent) {
-        const instance = this as unknown as InputRuntime
+      handleHostKeyboard(this: InputHostComponent, event: HostKeyboardEvent) {
+        const instance = inputRuntime(this)
         if (event.ownerId && event.ownerId !== instance.__keyboardOwnerId) return
+        if (event.height === 0) {
+          instance.__nativeKeyboardVisible = false
+          instance.__keyboardShowPending = false
+        }
         if (event.height === instance.__keyboardHeight) {
           if (event.height === 0 && event.blur && this.isNativeFocused()) this.blurNative()
           return
@@ -284,110 +255,153 @@ export function defineInput(ctx: BuiltinContext): BuiltinDefinition {
         )
         if (event.height === 0 && event.blur && this.isNativeFocused()) this.blurNative()
       },
-      applySelection() {
-        const element = this.nativeInput()
-        if (!element?.setSelectionRange) return
-        const value = String(element.value ?? this.data.value ?? '')
-        const cursor = Number(this.data.cursor ?? -1)
-        let start = Number(this.data.selectionStart ?? -1)
-        let end = Number(this.data.selectionEnd ?? -1)
-        if (cursor >= 0) {
-          start = cursor
-          end = cursor
+      handleHostKeyboardValue(this: InputHostComponent, event: HostKeyboardValueEvent) {
+        const instance = inputRuntime(this)
+        if (event.ownerId && event.ownerId !== instance.__keyboardOwnerId) return
+        instance.__nativeKeyboardVisible = true
+        instance.__hostCursor = event.cursor
+        instance.__hostSelectionStart = event.cursor
+        instance.__hostSelectionEnd = event.cursor
+        if (!instance.__nativeViewActive) {
+          instance.__nativeViewActive = true
+          this.setData({ nativeViewActive: true })
         }
-        if (start < 0 && end < 0) return
-        const max = value.length
-        const clamp = (position: number) => Math.max(0, Math.min(max, Number.isFinite(position) ? position : 0))
-        element.setSelectionRange(clamp(start), clamp(end))
+        this.applyHostKeyboardValue(event.value)
+        this.triggerEvent(
+          'input',
+          { value: event.value, cursor: event.cursor, keyCode: 0 },
+          {
+            bubbles: true,
+            composed: true,
+            ...this.eventTargetFields(),
+          },
+        )
       },
-      maxlengthChanged(next: number): void {
+      applyKeyboardListenerReturn(this: InputHostComponent, result: unknown) {
+        const instance = inputRuntime(this)
+        let value: string | undefined
+        let cursor = -1
+        if (typeof result === 'string' || typeof result === 'number') {
+          value = String(result)
+          cursor = value.length
+        } else if (result && typeof result === 'object') {
+          const detail = result as { value?: unknown; cursor?: unknown }
+          if (detail.value === undefined) return
+          value = String(detail.value)
+          const requestedCursor = Number(detail.cursor)
+          if (Number.isInteger(requestedCursor) && requestedCursor >= 0) {
+            cursor = requestedCursor
+          }
+        }
+        if (value === undefined) return
+        this.applyHostKeyboardValue(value)
+        if (cursor >= 0) {
+          instance.__hostCursor = cursor
+          instance.__hostSelectionStart = cursor
+          instance.__hostSelectionEnd = cursor
+        }
+        const element = this.nativeInput()
+        if (cursor >= 0 && element?.setSelectionRange) {
+          element.setSelectionRange(cursor, cursor)
+        }
+        this.syncKeyboardValue(cursor >= 0 ? cursor : undefined)
+      },
+      handleHostKeyboardSelection(this: InputHostComponent, event: HostKeyboardSelectionEvent) {
+        const instance = inputRuntime(this)
+        if (event.ownerId && event.ownerId !== instance.__keyboardOwnerId) return
+        instance.__hostCursor = event.selectionEnd >= 0 ? event.selectionEnd : event.selectionStart
+        instance.__hostSelectionStart = event.selectionStart
+        instance.__hostSelectionEnd = event.selectionEnd
+        this.triggerEvent(
+          'selectionchange',
+          {
+            selectionStart: event.selectionStart,
+            selectionEnd: event.selectionEnd,
+          },
+          { bubbles: true, composed: true },
+        )
+      },
+      handleHostKeyboardConfirm(this: InputHostComponent, event: HostKeyboardValueEvent) {
+        const instance = inputRuntime(this)
+        if (event.ownerId && event.ownerId !== instance.__keyboardOwnerId) return
+        instance.__nativeKeyboardVisible = true
+        instance.__hostCursor = event.cursor
+        instance.__hostSelectionStart = event.cursor
+        instance.__hostSelectionEnd = event.cursor
+        if (event.value !== this.data.value) this.applyHostKeyboardValue(event.value)
+        this.triggerEvent(
+          'confirm',
+          { value: event.value },
+          { bubbles: true, composed: true },
+        )
+        if (!this.data.confirmHold) this.releaseKeyboard('confirm')
+      },
+      handleHostKeyboardBlur(this: InputHostComponent, event: HostKeyboardValueEvent) {
+        const instance = inputRuntime(this)
+        if (event.ownerId && event.ownerId !== instance.__keyboardOwnerId) return
+        instance.__nativeKeyboardVisible = false
+        instance.__keyboardShowPending = false
+        instance.__hostCursor = event.cursor
+        instance.__hostSelectionStart = event.cursor
+        instance.__hostSelectionEnd = event.cursor
+        this.detachNativeViewLayer()
+        if (event.value !== this.data.value) this.applyHostKeyboardValue(event.value)
+        this.cancelScheduledFocus()
+        this.triggerEvent(
+          'change',
+          { value: event.value },
+          { bubbles: true, composed: true },
+        )
+        this.triggerEvent(
+          'blur',
+          { value: event.value, cursor: event.cursor },
+          { bubbles: true, composed: true },
+        )
+      },
+      applyHostKeyboardValue(this: InputHostComponent, value: string) {
+        const instance = inputRuntime(this)
+        instance.__applyingHostKeyboardValue = true
+        try {
+          this.setData({ value })
+        } finally {
+          instance.__applyingHostKeyboardValue = false
+        }
+      },
+      maxlengthChanged(this: InputHostComponent, next: number): void {
         if (!(next > 0)) return
         const value = String(this.data.value ?? '')
         if (value.length > next) this.setData({ value: value.slice(0, next) })
       },
-      getFormData(callback?: (value: unknown) => void): unknown {
+      getFormData(this: InputHostComponent, callback?: (value: unknown) => void): unknown {
         if (typeof callback === 'function') {
           callback(this.data.value)
           return undefined
         }
         return this.data.value
       },
-      resetFormData(): void {
+      resetFormData(this: InputHostComponent): void {
         this.setData({ value: '' })
       },
-      autofillGetValue(): unknown {
+      autofillGetValue(this: InputHostComponent): unknown {
         return this.data.value
       },
-      autofillSetValue(value: unknown): void {
+      autofillSetValue(this: InputHostComponent, value: unknown): void {
         const next = String(value ?? '')
         this.setData({ value: next })
         this.triggerEvent('change', { value: next })
       },
-      handleLabelTap(): void {
+      handleLabelTap(this: InputHostComponent): void {
         this.focusNative()
       },
-      handleInput(event: glassEasel.ShadowedEvent<unknown>) {
-        const detail = (event.detail ?? {}) as { value?: unknown; cursor?: unknown; keyCode?: unknown }
-        const value = valueFromEvent(event)
-        const cursor = Number(detail.cursor ?? this.nativeInput()?.selectionEnd ?? -1)
-        const keyCode = Number(detail.keyCode ?? 0)
-        this.rememberSelection()
-        this.setData({ value })
-        this.restoreSelection()
-        this.triggerEvent('input', { value, cursor, keyCode }, { bubbles: true, composed: true })
-      },
-      handleChange(event: glassEasel.ShadowedEvent<unknown>) {
-        const value = valueFromEvent(event)
-        this.rememberSelection()
-        if (value !== this.data.value) this.setData({ value })
-        this.restoreSelection()
-        this.triggerEvent('change', { value }, { bubbles: true, composed: true })
-      },
-      handleFocus(event: glassEasel.ShadowedEvent<unknown>) {
-        const detail = (event.detail ?? {}) as { value?: unknown; height?: unknown }
-        const value = detail.value ?? this.data.value
-        this.requestKeyboardShow(value)
-      },
-      handleBlur(event: glassEasel.ShadowedEvent<unknown>) {
-        const detail = (event.detail ?? {}) as { value?: unknown }
-        const value = detail.value ?? this.data.value
-        if (value !== this.data.value) this.setData({ value })
-        const cursor = Number(this.nativeInput()?.selectionEnd ?? -1)
-        this.cancelScheduledFocus()
-        this.releaseKeyboard('blur')
-        this.triggerEvent('blur', { value, cursor }, { bubbles: true, composed: true })
-      },
-      handleCompositionStart(event: glassEasel.ShadowedEvent<unknown>) {
-        this.triggerEvent('keyboardcompositionstart', { value: valueFromEvent(event) }, { bubbles: true, composed: true })
-      },
-      handleCompositionUpdate(event: glassEasel.ShadowedEvent<unknown>) {
-        this.triggerEvent('keyboardcompositionupdate', { value: valueFromEvent(event) }, { bubbles: true, composed: true })
-      },
-      handleCompositionEnd(event: glassEasel.ShadowedEvent<unknown>) {
-        this.triggerEvent('keyboardcompositionend', { value: valueFromEvent(event) }, { bubbles: true, composed: true })
-      },
-      handleSelect(event: glassEasel.ShadowedEvent<unknown>) {
-        const element = (event.currentTarget as unknown as {
-          getBackendElement?: () => { selectionStart?: number; selectionEnd?: number } | null
-        } | null)?.getBackendElement?.()
-        this.rememberSelection()
-        this.triggerEvent('selectionchange', {
-          selectionStart: Number(element?.selectionStart ?? -1),
-          selectionEnd: Number(element?.selectionEnd ?? -1),
-        }, { bubbles: true, composed: true })
-      },
-      handleKeyDown(event: glassEasel.ShadowedEvent<unknown>) {
-        const detail = (event.detail ?? {}) as { key?: string; keyCode?: number; which?: number; value?: unknown }
-        const key = String(detail.key ?? '')
-        const keyCode = Number(detail.keyCode ?? detail.which ?? 0)
-        const value = detail.value ?? this.data.value
-        this.rememberSelection()
-        this.triggerEvent('keydown', { key, keyCode, value }, { bubbles: true, composed: true })
-        if (key === 'Enter' || keyCode === 13) {
-          this.triggerEvent('confirm', { value }, { bubbles: true, composed: true })
-          if (!this.data.confirmHold) this.releaseKeyboard('confirm')
+      eventTargetFields(this: InputHostComponent): Record<string, unknown> {
+        const instance = inputRuntime(this)
+        return {
+          extraFields: {
+            [EVENT_RETURN_TOKEN_FIELD]: instance.__keyboardOwnerId,
+          },
         }
       },
+      ...host,
     },
   }).general()
 }

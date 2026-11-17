@@ -46,6 +46,7 @@ function createApiHandlers(
 ): HostApiHandlers {
   const getSystemInfo = options.getSystemInfo
   return {
+    'keyboard.hide': () => ({ errMsg: 'hideKeyboard:ok' }),
     'system.info': () => getSystemInfo(),
     'system.menuButton': () => options.getMenuButtonBoundingClientRect?.(),
     'network.request': (params) => request(params),

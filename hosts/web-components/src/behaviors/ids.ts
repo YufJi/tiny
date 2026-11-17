@@ -22,6 +22,8 @@ export const BUILTIN_BEHAVIOR_IDS = Object.freeze({
   disabled: `${TINY_ENGINE_NAMING.behaviorPrefix}disabled`,
   dataComponent: `${TINY_ENGINE_NAMING.behaviorPrefix}data-component`,
   autofill: `${TINY_ENGINE_NAMING.behaviorPrefix}autofill`,
+  keyboardAccessoryHost: `${TINY_ENGINE_NAMING.behaviorPrefix}keyboard-accessory-host`,
+  keyboardAccessory: `${TINY_ENGINE_NAMING.behaviorPrefix}keyboard-accessory`,
   group: `${TINY_ENGINE_NAMING.behaviorPrefix}group`,
   item: `${TINY_ENGINE_NAMING.behaviorPrefix}item`,
   labelTarget: `${TINY_ENGINE_NAMING.behaviorPrefix}label-target`,

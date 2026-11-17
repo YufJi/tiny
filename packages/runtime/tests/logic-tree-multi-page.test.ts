@@ -171,7 +171,7 @@ describe('logic tree with multiple mounted pages', () => {
       viewId: locator,
       name: 'tap',
       pageId: 'page-1',
-      native: { clientX: 1, clientY: 1 },
+      detail: { x: 1, y: 1 },
     })).toBe(true)
     expect(changes).toEqual(['page-1'])
     const firstPage = tree.glass.getMountedComponentByPageId('page-1') as unknown as {
@@ -234,7 +234,7 @@ describe('logic tree with multiple mounted pages', () => {
       viewId: locator,
       name: 'tap',
       pageId: 'page-1',
-      native: { clientX: 1, clientY: 1 },
+      detail: { x: 1, y: 1 },
     })).toBe(true)
   })
 
