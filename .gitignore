@@ -5,6 +5,7 @@ dist/
 .turbo/
 .sisyphus/
 tests/host/generated/
+tests/apps/**/project.private.config.json
 hosts/web-components/src/generated/
 .agents/
 skills-lock.json

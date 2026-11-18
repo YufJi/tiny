@@ -175,7 +175,6 @@
   },
   "workers": "workers",
   "debug": false,
-  "style": "v2",
   "permission": {
     "scope.userLocation": {
       "desc": "你的位置信息将用于小程序位置接口的效果展示"
@@ -194,15 +193,7 @@
     "chooseLocation",
     "chooseAddress"
   ],
-  "lazyCodeLoading": "requiredComponents",
-  "__lazyCodeLoadingChunk": true,
   "renderer": "webview",
   "componentFramework": "glass-easel",
-  "appBar": {},
-  "supportedMaterials": [
-  
-  ],
-  "multiSelectSupportedMaterials": [
-
-  ]
+  "appBar": {}
 }

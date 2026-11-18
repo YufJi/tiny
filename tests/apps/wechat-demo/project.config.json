@@ -4,5 +4,9 @@
   "componentFramework": "glass-easel",
   "libVersion": "3.17.5",
   "projectname": "tiny-wechat-demo",
-  "miniprogramRoot": "./"
+  "miniprogramRoot": "./",
+  "setting": {
+    "enhance": true,
+    "es6": true
+  }
 }
