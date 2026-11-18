@@ -51,6 +51,8 @@ tap could resolve to another logical node (or to nothing).
   next snapshot. The browser gate has a dedicated keyed-reorder step
   (`Reorder` fixture: tap, rotate, tap the same element, assert target id and
   the new `currentTarget.dataset.index`).
+- The WeChat 3.17.5 16-checkpoint trace (A/B/flow/move) is 1:1 after these
+  changes, including the keyed `moved` order and event target/dataset.
 - Legacy hosts that still send locator `viewId`s lose element-targeted
   `tree.event` dispatch; they must send the shared component id (or the
   render-resolved target) instead. This is the same contract WeChat uses.
