@@ -6,7 +6,7 @@ import { QUERY_CONTROL, TREE_PROTOCOL } from '../../tree-protocol/protocol'
 
 export type RenderRpc = Pick<
   LogicTreeAdapterOptions,
-  'measureView' | 'measureLocators' | 'queryView' | 'viewIntersection' | 'viewAnimation'
+  'measureView' | 'queryView' | 'viewIntersection' | 'viewAnimation'
 >
 
 /**
@@ -29,19 +29,6 @@ export function createRenderRpc(connection: BridgeConnection): RenderRpc {
           TREE_PROTOCOL.domain,
           TREE_PROTOCOL.measure,
           { ids: viewIds },
-        )
-        return (result ?? {}) as Record<string, ViewRect>
-      } catch {
-        return {}
-      }
-    },
-    measureLocators: async (locators) => {
-      if (locators.length === 0) return {}
-      try {
-        const result = await connection.call(
-          TREE_PROTOCOL.domain,
-          TREE_PROTOCOL.measure,
-          { locators },
         )
         return (result ?? {}) as Record<string, ViewRect>
       } catch {

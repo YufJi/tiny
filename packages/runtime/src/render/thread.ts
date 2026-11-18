@@ -108,8 +108,6 @@ export type TreeRenderer = {
   inspectTree?: () => unknown
   setWxsModules?: (table: WxsModuleTable) => void
   measure?: (ids: string[]) => Record<string, unknown>
-  /** Geometry of elements addressed by component-scoped locators. */
-  measureLocators?: (locators: string[]) => Record<string, unknown>
   /** Dispatch a service-triggered custom event so WXS handlers can run. */
   dispatchCustomEvent?: (request: CustomEventMessage) => void
   /** Apply an opaque listener return correlated by the render-side token. */
@@ -529,11 +527,8 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
   })
 
   connection.onControl(TREE_PROTOCOL.domain, TREE_PROTOCOL.measure, (message) => {
-    const payload = (message.payload ?? {}) as { ids?: string[]; locators?: string[] }
-    return {
-      ...(options.renderer.measure?.(payload.ids ?? []) ?? {}),
-      ...(options.renderer.measureLocators?.(payload.locators ?? []) ?? {}),
-    }
+    const payload = (message.payload ?? {}) as { ids?: string[] }
+    return options.renderer.measure?.(payload.ids ?? []) ?? {}
   })
 
   return { connection }

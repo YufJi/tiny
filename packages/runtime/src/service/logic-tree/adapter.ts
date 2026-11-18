@@ -49,7 +49,6 @@ export type LogicTreeAdapterOptions = {
   componentDefinitions?: ReadonlyMap<string, NormalizedComponentDefinition>
   measureView?: (viewIds: string[]) => Promise<Record<string, ViewRect>>
   /** Geometry of elements addressed by component-scoped locators. */
-  measureLocators?: (locators: string[]) => Promise<Record<string, ViewRect>>
   /** Scoped render query for nodes that have no render-side node id. */
   queryView?: (request: QueryViewRequest & { pageId?: string }) => Promise<QueryViewResult>
   loadStyle?: (outputPath: string) => string
@@ -129,7 +128,6 @@ export class LogicTreeAdapter {
   private componentDefinitions?: ReadonlyMap<string, NormalizedComponentDefinition>
   private readonly styledPages = new Set<string>()
   private readonly measureView?: (viewIds: string[]) => Promise<Record<string, ViewRect>>
-  private readonly measureLocators?: (locators: string[]) => Promise<Record<string, ViewRect>>
   private readonly queryView?: (request: QueryViewRequest & { pageId?: string }) => Promise<QueryViewResult>
   private readonly customTabBarPath?: string
   private readonly tabBarPagePaths = new Set<string>()
@@ -155,7 +153,6 @@ export class LogicTreeAdapter {
     this.resolveProtocolRelativeUrl = options.resolveProtocolRelativeUrl
     this.isComponentPage = options.isComponentPage
     this.measureView = options.measureView
-    this.measureLocators = options.measureLocators
     this.queryView = options.queryView
     this.viewIntersection = options.viewIntersection
     this.viewAnimation = options.viewAnimation
@@ -837,7 +834,6 @@ export class LogicTreeAdapter {
       this.queryView
         ? (request) => this.queryView!({ ...request, ...(pageId ? { pageId } : {}) })
         : undefined,
-      this.measureLocators,
     )
   }
 

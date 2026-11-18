@@ -897,16 +897,6 @@ describe('glass render tree', () => {
     expect(generic?._$genericImpls?.pick?.final?.is).toBe('components/item/item')
     expect(diagnostics).toEqual([])
   })
-  test('resolves component-scoped locators for geometry', () => {
-    const tree = createGlassRenderTree({ backend: new glassEasel.EmptyBackendContext() })
-    tree.mount(element('root', 'view', {}, [element('page-node', 'view')]))
-
-    // `owner#index.path`: owner is the page root, path is the child index chain.
-    expect(Object.keys(tree.measureLocators?.(['root#0']) ?? {})).toEqual(['root#0'])
-    expect(tree.measureLocators?.(['root#9'])).toEqual({})
-    expect(tree.measureLocators?.(['missing#0'])).toEqual({})
-    expect(tree.measureLocators?.(['invalid'])).toEqual({})
-  })
   test('merges successive component data patches per instance', () => {
     const path = 'components/month/month'
     const tree = createGlassRenderTree({

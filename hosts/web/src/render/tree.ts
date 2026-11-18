@@ -154,8 +154,6 @@ export type GlassRenderTree = {
   applyStyles?: (styles: string[]) => void
   inspectTree?: () => unknown
   measure?: (ids: string[]) => Record<string, unknown>
-  /** Geometry of elements addressed by component-scoped locators. */
-  measureLocators?: (locators: string[]) => Record<string, unknown>
   query?: (selector: string, all: boolean, scopeId?: string) => unknown[]
   measureCanvas?: (selector: string, canvasId: string) => {
     width: number
@@ -3470,21 +3468,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         }
       }
       return rootElement ? toInspectElement(rootElement) : null
-    },
-    measureLocators: (locators) => {
-      const result: Record<string, unknown> = {}
-      for (const locator of locators) {
-        const element = elementForLocator(locator)
-        if (!element) continue
-        const rect = element.getBoundingClientRect?.() ?? { left: 0, top: 0, width: 0, height: 0 }
-        result[locator] = {
-          left: rect.left,
-          top: rect.top,
-          width: rect.width,
-          height: rect.height,
-        }
-      }
-      return result
     },
     measure: (ids) => {
       const result: Record<string, unknown> = {}
