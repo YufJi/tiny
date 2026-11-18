@@ -935,6 +935,25 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
         /probe-ready: 1 rect: [1-9]\d*/,
         'component ready did not observe a rendered layout',
       )
+      // P0-5: inline style rpx is converted to vw in the pageframe (static,
+      // interpolated and style: bindings); P0-6: url() content is untouched.
+      const rpx = await render.evaluate(() => {
+        const innerWidth = window.innerWidth
+        const widthOf = (id) => document.querySelector(id)?.getBoundingClientRect().width ?? -1
+        return {
+          innerWidth,
+          widths: ['#rpx-static', '#rpx-dynamic', '#rpx-bound'].map(widthOf),
+          url: getComputedStyle(document.querySelector('#rpx-url')).backgroundImage,
+        }
+      })
+      const expectedRpx = rpx.innerWidth / 7.5
+      for (const width of rpx.widths) {
+        assert.ok(
+          Math.abs(width - expectedRpx) < 1,
+          `inline rpx width ${width} != ${expectedRpx} (viewport ${rpx.innerWidth})`,
+        )
+      }
+      assert.ok(rpx.url.includes('10rpx'), `url() rpx was rewritten: ${rpx.url}`)
       // P0-1: the setData completion issues a selector query that must see the
       // new width, i.e. the ack waited for the glass render pass.
       await byText(render, 'Bump', { exact: true }).first().click()
@@ -945,8 +964,9 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
 
     await step('lock page scroll under catchtouchmove', async () => {
       currentStep = 'lock page scroll under catchtouchmove'
-      await byText(render, 'Touch lock', { exact: true }).first().click()
-      await waitForText('Touch lock probe')
+      // A plain click can be dropped while the previous page transition is
+      // still settling; the navigation helper retries from the active page.
+      await tapToPage('Touch lock', 'Touch lock probe')
       await render.evaluate(() => window.scrollTo(0, 200))
       await page.waitForTimeout(50)
       const before = await render.evaluate(() => window.scrollY)

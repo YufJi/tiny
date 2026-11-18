@@ -73,7 +73,9 @@ The browser stage verifies:
     `event.target.id`/`dataset` and the new `currentTarget.dataset.index`.
 20. The `Timing` page proves both ordering contracts: `onLoad` observes a
     component before its `ready` ran, `ready` measures a non-zero width, and a
-    `setData` completion's selector query sees the new width.
+    `setData` completion's selector query sees the new width. It also renders
+    static, interpolated and `style:` inline `rpx` (each computed width is
+    `innerWidth / 7.5`) and keeps a `url("/a-10rpx.png")` path untouched.
 
 The runtime unit suite also holds the tree-protocol payload budget
 (`packages/runtime/tests/tree-payload-budget.test.ts`). It mounts a 2000-row

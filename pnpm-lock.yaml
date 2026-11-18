@@ -293,6 +293,9 @@ importers:
 
   packages/template-compiler:
     dependencies:
+      '@tiny/css-units':
+        specifier: workspace:*
+        version: link:../css-units
       '@tiny/manifest':
         specifier: workspace:*
         version: link:../manifest

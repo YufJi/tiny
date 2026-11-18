@@ -19,3 +19,8 @@
 .timing-status {
   margin-bottom: 8px;
 }
+
+.rpx-box {
+  background: #07c160;
+  margin-bottom: 4px;
+}

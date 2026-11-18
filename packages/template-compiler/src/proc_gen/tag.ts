@@ -1,5 +1,6 @@
 // proc_gen/tag.ts — mirrors proc_gen/tag.rs
 import { BUILTIN_COMPONENT_TAGS, TINY_ENGINE_NAMING } from '@tiny/manifest'
+import { convertRpx } from '@tiny/css-units'
 import { transformWxsSource } from '../wxs/transform'
 // Generates JavaScript code from parsed template ASTs.
 
@@ -723,16 +724,29 @@ function writeAttributeValue(
   value: Value,
   scopes: ScopeVar[],
   bmc: BindingMapCollector,
+  rpx = false,
 ): void {
+  // Inline `style` values go through the generated `__tinyRpx` helper; the
+  // helper body is tokenizer-aware, so url()/quoted strings stay untouched.
+  const writeValue = (ww: JsExprWriter, write: () => void): void => {
+    if (!rpx) {
+      write()
+      return
+    }
+    ww.write('__tinyRpx(Y(')
+    write()
+    ww.write('))')
+  }
   if (value.kind === 'Static') {
-    w.exprStmt((ww) => { ww.write(`if(C)${methodName}(N,${genLitStr(value.value)})`) })
+    const literal = rpx ? convertRpx(value.value) : value.value
+    w.exprStmt((ww) => { ww.write(`if(C)${methodName}(N,${genLitStr(literal)})`) })
   } else {
     const p = exprToProcGenPrepare(value.expression, w, scopes)
     w.exprStmt((ww) => {
       ww.write('if(C||K||')
       p.lvalueStateExpr(ww, scopes, false)
       ww.write(`)${methodName}(N,`)
-      p.valueExpr(ww)
+      writeValue(ww, () => p.valueExpr(ww))
       ww.write(')')
     })
     if (value.bindingMapKeys && !value.bindingMapKeys.isEmpty(bmc)) {
@@ -740,7 +754,7 @@ function writeAttributeValue(
         const p2 = exprToProcGenPrepare(value.expression, fw, scopes)
         fw.exprStmt((ww) => {
           ww.write(`${methodName}(N,`)
-          p2.valueExpr(ww)
+          writeValue(ww, () => p2.valueExpr(ww))
           ww.write(')')
         })
       })
@@ -1126,7 +1140,7 @@ function writeStyleAttribute(
 ): void {
   if (sty.kind === 'None') return
   if (sty.kind === 'String') {
-    writeAttributeValue(w, 'R.y', sty.value, scopes, bmc)
+    writeAttributeValue(w, 'R.y', sty.value, scopes, bmc, true)
     return
   }
   // Multiple style bindings
@@ -1135,7 +1149,7 @@ function writeStyleAttribute(
     if (value.kind === 'Dynamic') {
       pList.push(exprToProcGenPrepare(value.expression, w, scopes))
     } else {
-      pList.push(value.value)
+      pList.push(convertRpx(value.value))
     }
   }
   w.exprStmt((ww) => {
@@ -1148,9 +1162,9 @@ function writeStyleAttribute(
       if (item instanceof ExpressionProcGen) {
         ww.write('C||K||')
         item.lvalueStateExpr(ww, scopes, false)
-        ww.write('?Y(')
+        ww.write('?__tinyRpx(Y(')
         item.valueExpr(ww)
-        ww.write('):null')
+        ww.write(')):null')
       } else {
         ww.write(genLitStr(item))
       }
@@ -1163,9 +1177,9 @@ function writeStyleAttribute(
       value.bindingMapKeys.toProcGenWriteMap(w, bmc, (fw: JsFunctionScopeWriter) => {
         const p2 = exprToProcGenPrepare(value.expression, fw, scopes)
         fw.exprStmt((ww) => {
-          ww.write(`R.wi(N,${i},Y(`)
+          ww.write(`R.wi(N,${i},__tinyRpx(Y(`)
           p2.valueExpr(ww)
-          ww.write('))')
+          ww.write(')))')
         })
         fw.exprStmt((ww) => { ww.write('E(N)') })
       })

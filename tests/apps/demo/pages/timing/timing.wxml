@@ -2,6 +2,14 @@
   <text class="title">Timing</text>
   <view id="box" class="box" style="width: {{width}}px"></view>
   <text class="onload-status">onload-ready: {{onLoadReady}}</text>
+  <view id="rpx-static" class="rpx-box" style="width:100rpx;height:20rpx"></view>
+  <view id="rpx-dynamic" class="rpx-box" style="width:{{rpxWidth}}rpx;height:20rpx"></view>
+  <view id="rpx-bound" class="rpx-box" style:width="{{rpxWidth}}rpx" style:height="20rpx"></view>
+  <view
+    id="rpx-url"
+    class="rpx-box"
+    style='width:20rpx;height:20rpx;background-image:url("/a-10rpx.png")'
+  ></view>
   <timing-probe id="probe" bind:ready-rect="onProbeReady" />
   <text class="probe-status">probe-ready: {{probeReady}} rect: {{probeWidth}}</text>
   <text class="timing-status">timing: {{status}}</text>

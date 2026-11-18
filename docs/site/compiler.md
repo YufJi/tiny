@@ -228,7 +228,7 @@ app 样式没有 scope，按全局样式注册。
 :::
 
 :::card{tag="rpx" title="以 750 为基准换算 vw"}
-公式固定为 `value × 100 / 750`，保留 6 位有效数字；`calc()` 里的 rpx 也会换算。
+公式固定为 `value × 100 / 750`，保留 6 位有效数字；`calc()` 里的 rpx 也会换算。WXSS、WXS `setStyle` 和 WXML 内联 `style`（含 `style:prop` 绑定）共用同一个 tokenizer 实现；`url(...)`、引号字符串和注释原样保留，不会被误改。
 :::
 ::::
 

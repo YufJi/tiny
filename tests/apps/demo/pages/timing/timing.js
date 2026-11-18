@@ -5,6 +5,7 @@ Page({
     onLoadReady: -1,
     probeReady: 0,
     probeWidth: 0,
+    rpxWidth: 100,
   },
 
   onLoad() {
