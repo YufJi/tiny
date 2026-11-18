@@ -991,6 +991,16 @@ export class LogicTreeAdapter {
     id?: string
     dataset?: Record<string, unknown>
     targetId?: string
+    /** Render-resolved target node; preferred over the `targetId` lookup. */
+    targetNode?: {
+      nodeId?: string
+      id?: string
+      dataset?: Record<string, unknown>
+      offsetLeft?: number
+      offsetTop?: number
+      offsetWidth?: number
+      offsetHeight?: number
+    }
     currentTarget?: { offsetLeft?: number; offsetTop?: number; offsetWidth?: number; offsetHeight?: number }
     target?: { offsetLeft?: number; offsetTop?: number; offsetWidth?: number; offsetHeight?: number }
   }, onListenerReturn?: (result: unknown) => void): boolean {
@@ -1014,16 +1024,29 @@ export class LogicTreeAdapter {
       ? this.backend.findByViewId(payload.targetId)
       : undefined
     const targetGeometry = payload.target
-    const targetShape = targetNode
+    // The render thread resolved the target itself (id/dataset/geometry). The
+    // `targetId` locator is only a legacy fallback: after a reorder the
+    // service-side locator map can still describe the previous order.
+    const renderedTarget = payload.targetNode
+    const targetShape = renderedTarget
       ? {
-          id: targetNode.id,
-          dataset: Object.fromEntries(targetNode.dataset),
-          offsetLeft: targetGeometry?.offsetLeft ?? 0,
-          offsetTop: targetGeometry?.offsetTop ?? 0,
-          offsetWidth: targetGeometry?.offsetWidth ?? 0,
-          offsetHeight: targetGeometry?.offsetHeight ?? 0,
+          id: renderedTarget.id ?? '',
+          dataset: renderedTarget.dataset ?? {},
+          offsetLeft: renderedTarget.offsetLeft ?? 0,
+          offsetTop: renderedTarget.offsetTop ?? 0,
+          offsetWidth: renderedTarget.offsetWidth ?? 0,
+          offsetHeight: renderedTarget.offsetHeight ?? 0,
         }
-      : currentTargetShape
+      : targetNode
+        ? {
+            id: targetNode.id,
+            dataset: Object.fromEntries(targetNode.dataset),
+            offsetLeft: targetGeometry?.offsetLeft ?? 0,
+            offsetTop: targetGeometry?.offsetTop ?? 0,
+            offsetWidth: targetGeometry?.offsetWidth ?? 0,
+            offsetHeight: targetGeometry?.offsetHeight ?? 0,
+          }
+        : currentTargetShape
     const event = {
       type: payload.name,
       timeStamp: Date.now(),

@@ -40,6 +40,26 @@ export type RenderEventGeometry = {
 }
 
 /**
+ * Render-resolved identity of the event target (the innermost WXML node the
+ * user touched), as opposed to the node that owns the binding.
+ *
+ * WeChat computes `event.target` in the view thread; the service never maps it
+ * back. Carrying the descriptor makes `event.target.id` / `dataset` survive a
+ * structural update that has not reached the service's locator map yet.
+ */
+export type RenderEventTarget = {
+  /** Render-local stable id of the DOM node (never changes when it moves). */
+  nodeId?: string
+  /** WXML `id` attribute of the target node. */
+  id?: string
+  dataset?: Record<string, unknown>
+  offsetLeft?: number
+  offsetTop?: number
+  offsetWidth?: number
+  offsetHeight?: number
+}
+
+/**
  * Event forwarded from a template-declared handler inside a component whose
  * shadow tree was evaluated by the render thread. The service owns the method
  * table, so the render side only reports who fired and what the payload was.
@@ -57,8 +77,10 @@ export type RenderTemplateEvent = {
   id?: string
   dataset?: Record<string, unknown>
   currentTarget?: RenderEventGeometry
-  /** Render identity of the innermost event target. */
+  /** Render identity of the innermost event target (legacy service lookup). */
   targetId?: string
+  /** Render-resolved target node; preferred over the `targetId` lookup. */
+  targetNode?: RenderEventTarget
   /** Opaque render-side token used to correlate a listener return. */
   eventToken?: string
   target?: RenderEventGeometry

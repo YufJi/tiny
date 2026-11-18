@@ -5,7 +5,11 @@ import type {
   ViewEventPayload,
   ViewIntersectionEntry,
 } from '../logic-tree/events'
-import { QUERY_CONTROL, TREE_PROTOCOL } from '../../tree-protocol/protocol'
+import {
+  QUERY_CONTROL,
+  TREE_PROTOCOL,
+  type RenderEventTarget,
+} from '../../tree-protocol/protocol'
 
 export type RenderWxsEffect = {
   kind: 'callMethod' | 'triggerEvent'
@@ -100,6 +104,7 @@ function handleTemplateEvent(
     id?: string
     dataset?: Record<string, unknown>
     targetId?: string
+    targetNode?: RenderEventTarget
     eventToken?: string
     currentTarget?: {
       offsetLeft?: number
@@ -127,6 +132,7 @@ function handleTemplateEvent(
       ...(payload.id ? { id: payload.id } : {}),
       ...(payload.dataset ? { dataset: payload.dataset } : {}),
       ...(payload.targetId ? { targetId: payload.targetId } : {}),
+      ...(payload.targetNode ? { targetNode: payload.targetNode } : {}),
       ...(payload.currentTarget ? { currentTarget: payload.currentTarget } : {}),
       ...(payload.target ? { target: payload.target } : {}),
     }, (result) => {

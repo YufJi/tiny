@@ -14,6 +14,7 @@ import type {
   ComponentDefinitionPayload,
   ComponentFlowDelta,
   CustomEventMessage,
+  RenderEventTarget,
   RenderAnimationRequest,
   RenderClearAnimationRequest,
   RenderElement,
@@ -542,6 +543,67 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   )
 
   /**
+   * Stable render-local id of a DOM/backend node.
+   *
+   * The id is allocated on first use and never changes: a reorder moves the
+   * same DOM node, so the identity survives even though its locator changes.
+   */
+  const stableNodeIds = new WeakMap<object, string>()
+  let stableNodeIdCounter = 0
+  const stableNodeIdOf = (node: object): string => {
+    const existing = stableNodeIds.get(node)
+    if (existing) return existing
+    stableNodeIdCounter += 1
+    const id = `${RENDER_LOCAL_ID_PREFIX}${stableNodeIdCounter}`
+    stableNodeIds.set(node, id)
+    return id
+  }
+
+  /**
+   * The innermost WXML node behind a glass event target, resolved render-side.
+   *
+   * The glass node is the stable identity (the DOM node keeps it across moves);
+   * dataset/id come from it directly, and geometry from its backend element
+   * when the backend exposes layout (the empty test backend does not).
+   */
+  const renderEventTarget = (
+    target: unknown,
+    resolvedSemantic?: ReturnType<typeof semanticGlassTarget>,
+  ): RenderEventTarget | undefined => {
+    const semantic = resolvedSemantic ?? semanticGlassTarget(target)
+    const glass = (semantic?.node ?? (
+      typeof (target as { getBackendElement?: unknown })?.getBackendElement === 'function'
+      && typeof (target as { getAttribute?: unknown })?.getAttribute === 'function'
+        ? target
+        : undefined
+    )) as {
+      id?: unknown
+      dataset?: Record<string, unknown>
+      getAttribute?: (name: string) => string | null
+      getBackendElement?: () => unknown
+    } | undefined
+    const backend = glass ? backendElementOf(glass) : backendElementOf(target)
+    if (!glass && !backend) return undefined
+    const dataset = plainDataset(glass?.dataset ?? (backend as { dataset?: Record<string, unknown> } | null)?.dataset)
+    const rawId = glass?.id ?? glass?.getAttribute?.('id') ?? (backend as { id?: unknown } | null)?.id
+    const id = typeof rawId === 'string' ? rawId : ''
+    const geometry = backend && typeof (backend as { offsetLeft?: unknown }).offsetLeft === 'number'
+      ? {
+          offsetLeft: (backend as { offsetLeft: number }).offsetLeft,
+          offsetTop: (backend as { offsetTop: number }).offsetTop,
+          offsetWidth: (backend as { offsetWidth: number }).offsetWidth,
+          offsetHeight: (backend as { offsetHeight: number }).offsetHeight,
+        }
+      : undefined
+    return {
+      nodeId: stableNodeIdOf((glass ?? backend) as object),
+      ...(id ? { id } : {}),
+      ...(dataset ? { dataset } : {}),
+      ...(geometry ?? {}),
+    }
+  }
+
+  /**
    * A template handler inside an evaluated component: the render thread has no
    * method table, so report the call and let the service run the real method.
    */
@@ -580,7 +642,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       offsetWidth?: number
       offsetHeight?: number
     } | null
-    const targetRender = renderTargetOf(source.target)
+    const semanticTarget = semanticGlassTarget(source.target)
+    const targetRender = renderTargetOf(source.target, semanticTarget)
+    const targetNode = renderEventTarget(source.target, semanticTarget)
     const eventToken = (source as Record<string, unknown>)[EVENT_RETURN_TOKEN_FIELD]
     const viewId = element?.getAttribute?.(TINY_ENGINE_NAMING.nodeIdAttribute) ?? ''
     const dataset = plainDataset(element?.dataset)
@@ -609,6 +673,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       ...(dataset ? { dataset } : {}),
       ...(geometry ? { currentTarget: geometry } : {}),
       ...(targetRender.identity ? { targetId: targetRender.identity } : {}),
+      ...(targetNode ? { targetNode } : {}),
       ...(typeof eventToken === 'string' && eventToken
         ? { eventToken }
         : {}),
@@ -1529,8 +1594,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
 
   const renderTargetOf = (
     target: unknown,
+    resolvedSemantic?: ReturnType<typeof semanticGlassTarget>,
   ): { identity?: string; geometry?: RenderEventGeometry } => {
-    const semantic = semanticGlassTarget(target)
+    const semantic = resolvedSemantic ?? semanticGlassTarget(target)
     if (semantic) {
       const backend = backendElementOf(semantic.node)
       const componentId = backend?.getAttribute(TINY_ENGINE_NAMING.nodeIdAttribute) ?? ''

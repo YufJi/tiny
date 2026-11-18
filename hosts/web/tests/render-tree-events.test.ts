@@ -211,3 +211,59 @@ describe('render tree event forwarding', () => {
     expect((templateEvents[0] as { dataset?: Record<string, unknown> }).dataset).toBeUndefined()
   })
 })
+
+describe('render-resolved event target', () => {
+  test('a template event carries the target id/dataset without a service lookup', () => {
+    const pagePath = 'pages/target/target'
+    const group = TmplGroup.newDev({
+      directivePrefix: 'wx',
+      templateExtension: '.wxml',
+      templateScriptExtension: '.wxs',
+    })
+    group.addTmpl(
+      pagePath,
+      '<view id="outer" data-kind="outer" bindtap="onOuter">'
+        + '<view id="inner" data-kind="inner" data-role="target">tap me</view>'
+        + '</view>',
+    )
+    const generated = group.getTmplGenObjectGroups()
+    group.free()
+    const groupList = new Function(`return ${generated}`)() as Record<string, (name?: string) => unknown>
+    const templateEvents: Array<Record<string, unknown>> = []
+    const tree = createGlassRenderTree({
+      backend: new glassEasel.EmptyBackendContext(),
+      templates: {
+        groupList,
+        content: (entry, name = '') => groupList[entry]!(name),
+      },
+    })
+    tree.setTemplateEventSink?.((event) => templateEvents.push(event as unknown as Record<string, unknown>))
+    tree.mountPage({
+      pageId: 'page-1',
+      pagePath,
+      data: {},
+      methods: ['onOuter'],
+    })
+
+    const shadow = tree.root.shadowRoot as unknown as {
+      getElementById?: (id: string) => unknown
+      querySelector?: (selector: string) => unknown
+    }
+    const inner = shadow.getElementById?.('inner') ?? shadow.querySelector?.('#inner')
+    expect(inner).toBeDefined()
+    glassEasel.Event.triggerEvent(inner as never, 'tap', { x: 1 }, { bubbles: true })
+
+    expect(templateEvents).toHaveLength(1)
+    expect(templateEvents[0]).toMatchObject({
+      handler: 'onOuter',
+      name: 'tap',
+      id: 'outer',
+      dataset: { kind: 'outer' },
+      targetNode: {
+        id: 'inner',
+        dataset: { kind: 'inner', role: 'target' },
+      },
+    })
+    expect((templateEvents[0]!.targetNode as { nodeId?: string }).nodeId).toMatch(/^r:/)
+  })
+})
