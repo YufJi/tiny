@@ -216,7 +216,7 @@ reply(request, { ok: false, error: { code, message, details } })
 ::::
 
 :::callout{title="两套清洗函数"}
-Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动丢弃函数和 undefined、转换 Date/Map/Set，并把循环引用写成 `[Circular]`。事件序列化会先用后者清洗，确保能通过前者的校验。
+Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动丢弃函数和 undefined、转换 Date/Map/Set，并把循环引用写成 `[Circular]`。事件序列化会先用后者清洗，确保能通过前者的校验。API 域同理：`callHost` 在过桥前剥离 `success`/`fail`/`complete` 和顶层函数——它们属于 service realm，由 `runApi` 调用；宿主只收到纯参数。
 :::
 
 ## tree 域：两棵树之间的同步 {#tree-protocol kicker="tree 协议"}
