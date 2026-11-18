@@ -30,7 +30,10 @@ export type RenderWxsEffect = {
 export type RenderInboundHost = {
   getLogicTree: () => LogicTreeAdapter | null
   isMounted: (pageId: string) => boolean
+  /** Re-send the page flow so definitions that arrived late are applied. */
   sendFlow: (pageId: string) => void
+  /** Run component `ready` callbacks once the pageframe mounted the page. */
+  flushPageReady: (pageId: string) => void
   reportError: (message: string) => void
   dispatchWxsEffect: (pageId: string, effect: RenderWxsEffect) => void
   /** The render thread reflected a batch; run its `setData` completions. */
@@ -73,7 +76,14 @@ export function attachRenderInbound(
 
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.ready, (message) => {
     if (!host.getLogicTree() || !message.pageId || !host.isMounted(message.pageId)) return
+    // The host core emits this after a page finished. Re-sending the flow is
+    // what lets a lazily loaded package swap its placeholder for the real
+    // component (the flow carries the now-registered definitions).
     host.sendFlow(message.pageId)
+  })
+  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.pageReady, (message) => {
+    if (!host.getLogicTree() || !message.pageId || !host.isMounted(message.pageId)) return
+    host.flushPageReady(message.pageId)
   })
 
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.ack, (message) => {

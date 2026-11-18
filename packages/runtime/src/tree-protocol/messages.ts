@@ -7,7 +7,10 @@ export const TREE_PROTOCOL = Object.freeze({
   ack: 'ack',
   event: 'event',
   eventReturn: 'eventReturn',
+  /** Host core finished a page (re-send the flow so late definitions apply). */
   ready: 'ready',
+  /** The pageframe mounted the page and finished its first render. */
+  pageReady: 'pageReady',
   inspectTree: 'inspectTree',
   measure: 'measure',
   animate: 'animate',

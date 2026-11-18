@@ -66,7 +66,7 @@ service 是“小程序应用”真正运行的地方，由 bootServiceThread �
 | 注册 App | service.js 被导入时执行 App(...)，registerApp 会立即调用 onLaunch 和 onShow。此时页面还没有创建。 | registerApp(options) |
 | 整理 Page 和 Component 定义 | Page() 按顺序绑定到 manifest 里的页面路径；Component() 执行 normalizeComponentDefinition，合并 behaviors、observers、relations、options 和 externalClasses。 | registerComponent(options) |
 | bootstrap 创建逻辑树 | 等待 loadArtifacts，加载 templates 和 styles，构建组件 schema，创建 LogicTreeAdapter，挂载首屏逻辑树并触发 onLoad/onShow。 | control('runtime', 'bootstrap') |
-| render 就绪后同步首屏 | 宿主的渲染树挂载完成后发送 `tree.ready`，service 用逻辑树快照发送 `tree.flow`；随后宿主发 `page.ready`，service 触发 onReady。 | control('page', 'ready', { pageId }) |
+| render 就绪后同步首屏 | host core 在页面完成后发 `tree.ready`，service 重发 `tree.flow`（让晚注册的组件定义生效）；pageframe 挂载并完成首帧后发 `tree.pageReady`，service 才 flush 组件 `ready`。 | sendEvent('tree', 'pageReady', { pageId }) |
 :::
 
 | 页面操作 | service 逻辑树 | render 渲染树 |
@@ -176,7 +176,7 @@ glass-easel 尚未公开 host/style scope 属性配置，因此 `TINY_ENGINE_NAM
 | 重新求值模板 | 逻辑树里的 glass-easel 重新计算模板，得到新的虚拟 RenderNode。 | logicTree.updateRenderTree(pageId) |
 | diff 出 patch | 旧快照和新快照按 text、replace、props、insert、remove、reorder 做 diff，同一个 microtask 内的更新会合批。 | diffRenderTree(previous, next) |
 | 渲染树应用 patch | 宿主 TreeRenderer 把 patch 应用到真实组件和 DOM；带 completion 的批次同时携带 ack token，渲染树应用后回 `tree.ack`。 | tree.patch · tree.ack |
-| 执行完成回调 | `setData(patch, cb)` 的 `cb` 不在数据写入时执行：batch 被确认后才按调用顺序执行，回调异常走 `SET_DATA_CALLBACK_ERROR` 诊断。 | completeAfterRender(pageId, cb) |
+| 执行完成回调 | `setData(patch, cb)` 的 `cb` 不在数据写入时执行：batch 在 renderer 的 render pass 完成后才回 `tree.ack`，回调再按调用顺序执行；回调异常走 `SET_DATA_CALLBACK_ERROR` 诊断。 | completeAfterRender(pageId, cb) |
 :::
 
 :::::split
@@ -210,7 +210,7 @@ render 发现 DOM 事件后把所属组件 id、render 侧解析的 target/curre
 :::
 
 :::card{title="completion 等 render 确认"}
-`setData(patch, cb)` 的 data 写入是同步的，`cb` 却要等对应批次在渲染树应用后才执行。同一 microtask 内的多次 setData 合批、按调用顺序回调；回调里再 setData 会进入下一批。没有可渲染变化时，回调在本次 flush 末尾执行。
+`setData(patch, cb)` 的 data 写入是同步的，`cb` 却要等对应批次在渲染树应用、且 renderer 的 render pass 完成后才执行。同一 microtask 内的多次 setData 合批、按调用顺序回调；回调里再 setData 会进入下一批。没有可渲染变化时，回调在本次 flush 末尾执行。首挂载组件的 `ready` 也走同一套等待：`onLoad`/`onShow` 先跑，pageframe 挂载并完成首帧后发 `tree.pageReady`，service 再 flush ready，因此 `ready` 里能测量到布局。
 :::
 
 :::card{title="递归和异常都有诊断" tone="warn"}

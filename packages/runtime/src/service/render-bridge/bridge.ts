@@ -118,6 +118,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       getLogicTree: () => this.logicTree,
       isMounted: (pageId) => this.mountedPages.has(pageId),
       sendFlow: (pageId) => this.sendTreeFlow(pageId),
+      flushPageReady: (pageId) => this.flushPageReady(pageId),
       reportError: (message) => this.options.onError(message),
       dispatchWxsEffect: (pageId, effect) => this.dispatchWxsEffect(pageId, effect),
       acknowledgeRenders: (tokens) => this.acknowledgeRenders(tokens),
@@ -226,6 +227,18 @@ export class ServiceRenderBridge implements ServiceRenderPort {
     this.bindings.clear(pageId)
     this.pendingTabBarReady.delete(pageId)
     this.logicTree?.unmountPage(pageId)
+  }
+
+  /**
+   * The pageframe mounted the page and finished its first render.
+   *
+   * `ready` still waits for any update the page raised from `onLoad`/`onShow`
+   * (that data must be in the first observable layout), so it rides the normal
+   * completion queue instead of running inline.
+   */
+  flushPageReady(pageId: string): void {
+    if (!this.logicTree) return
+    this.completeAfterRender(pageId, () => this.logicTree?.flushPageReady(pageId))
   }
 
   /**

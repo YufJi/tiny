@@ -64,6 +64,13 @@ export type TreeRenderer = {
   setPageScope?: (scopeName: string) => void
   /** Page-level `usingComponents`, installed before the first mount. */
   setPageUsing?: (using: Record<string, string>) => void
+  /**
+   * Resolve after the backend reflected every update applied so far for the
+   * page. The thread uses it to acknowledge a batch only once the DOM exists
+   * (so `setData` completions can measure layout) and to signal the pageframe
+   * mount back to the service. Hosts without an asynchronous renderer omit it.
+   */
+  whenRendered?: (pageId?: string) => Promise<void> | void
   /** Refresh the service-owned component/view identity hints without replaying DOM patches. */
   setPageFrameHints?: (root: RenderNode) => void
   /** Replace the service-owned component identity list for the pageframe. */
@@ -182,19 +189,69 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
    * Apply one service batch and acknowledge it exactly once. A renderer error
    * is reported and still acknowledged, so a `setData` completion can never be
    * left waiting on a batch that already failed.
+   *
+   * When the host can say when its render pass finished (`whenRendered`), the
+   * acknowledgement waits for it: that is what makes a `setData` completion
+   * observe the new DOM (P0-1) and what defers a page's component `ready`
+   * until the pageframe mounted it (P0-2).
    */
   const applyBatch = (
     pageId: string | undefined,
     method: string,
     ack: unknown,
     apply: () => void,
+    afterRendered?: () => void,
   ): void => {
+    let applied = false
     try {
       apply()
+      applied = true
     } catch (error) {
       reportRenderError(pageId, error, method)
-    } finally {
-      sendAck(pageId, ack)
+    }
+    const tokens = Array.isArray(ack)
+      ? ack.filter((token): token is string => typeof token === 'string')
+      : []
+    const finish = (): void => {
+      if (afterRendered) {
+        try {
+          afterRendered()
+        } catch (error) {
+          reportRenderError(pageId, error, method)
+        }
+      }
+      if (tokens.length > 0) {
+        connection.sendEvent(
+          TREE_PROTOCOL.domain,
+          TREE_PROTOCOL.ack,
+          { ...(pageId ? { pageId } : {}), tokens },
+          pageId ? { pageId } : {},
+        )
+      }
+    }
+    if (!applied) {
+      // The batch failed before it could reach the renderer; nothing will
+      // render, so release the completions now (the render error was reported)
+      // without pretending the pageframe mounted.
+      if (tokens.length > 0) finish()
+      return
+    }
+    if (tokens.length === 0 && !afterRendered) return
+    const waitForRender = options.renderer.whenRendered
+    if (!waitForRender) {
+      finish()
+      return
+    }
+    let settled = false
+    const settle = (): void => {
+      if (settled) return
+      settled = true
+      finish()
+    }
+    try {
+      Promise.resolve(waitForRender(pageId)).then(settle, settle)
+    } catch {
+      settle()
     }
   }
 
@@ -289,6 +346,16 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     }
   })
 
+  /** The pageframe mounted the page and its first render pass is done. */
+  const sendPageReady = (pageId: string): void => {
+    connection.sendEvent(
+      TREE_PROTOCOL.domain,
+      TREE_PROTOCOL.pageReady,
+      { pageId },
+      { pageId },
+    )
+  }
+
   const handleFlow = (message: { payload?: unknown; pageId?: string }): void => {
     const payload = (message.payload ?? {}) as {
       pageId?: string
@@ -313,6 +380,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       componentOwners?: ComponentOwnerInstances[]
     }
     currentPageId = payload.pageId ?? message.pageId ?? currentPageId
+    let mountedPageId: string | undefined
     applyBatch(currentPageId, TREE_PROTOCOL.flow, payload.ack, () => {
       options.renderer.setPagePath?.(payload.pagePath ?? '')
       if (payload.pageScope) options.renderer.setPageScope?.(payload.pageScope)
@@ -376,10 +444,15 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
             })
           }
           tree = undefined
+          mountedPageId = currentPageId
         }
       }
       const styles = [...(payload.styles ?? []), ...(payload.fallbackAppStyles ?? [])]
       if (styles.length > 0) options.renderer.applyStyles?.(styles)
+    }, () => {
+      // The service flushes pending component `ready` callbacks on this
+      // message; it must arrive after the pageframe mount rendered.
+      if (mountedPageId) sendPageReady(mountedPageId)
     })
   }
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.flow, (message) => {

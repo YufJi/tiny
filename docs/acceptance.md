@@ -71,6 +71,9 @@ The browser stage verifies:
 19. The `Reorder` page keeps the tapped element's identity across a keyed `wx:for`
     rotation: after rotating, tapping the same element again reports the same
     `event.target.id`/`dataset` and the new `currentTarget.dataset.index`.
+20. The `Timing` page proves both ordering contracts: `onLoad` observes a
+    component before its `ready` ran, `ready` measures a non-zero width, and a
+    `setData` completion's selector query sees the new width.
 
 The runtime unit suite also holds the tree-protocol payload budget
 (`packages/runtime/tests/tree-payload-budget.test.ts`). It mounts a 2000-row

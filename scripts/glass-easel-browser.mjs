@@ -916,6 +916,33 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       await waitForText('Tiny Glass-easel P0')
     })
 
+    await step('complete setData after render and run ready after the mount render', async () => {
+      currentStep = 'complete setData after render and run ready after the mount render'
+      await tapToPage('Timing', 'Timing')
+      // P0-2: the component ready callback is deferred until the pageframe
+      // mounted and rendered the page, so onLoad still sees readyCount 0.
+      await waitForText('onload-ready: 0')
+      let probeText = ''
+      const probeDeadline = Date.now() + 3000
+      while (Date.now() < probeDeadline) {
+        probeText = await text()
+        const match = /probe-ready: (\d+) rect: (\d+)/.exec(probeText)
+        if (match && Number(match[1]) === 1 && Number(match[2]) > 0) break
+        await page.waitForTimeout(50)
+      }
+      assert.match(
+        probeText,
+        /probe-ready: 1 rect: [1-9]\d*/,
+        'component ready did not observe a rendered layout',
+      )
+      // P0-1: the setData completion issues a selector query that must see the
+      // new width, i.e. the ack waited for the glass render pass.
+      await byText(render, 'Bump', { exact: true }).first().click()
+      await waitForText('timing: width:120')
+      await byText(render, 'Back', { exact: true }).first().click()
+      await waitForText('Tiny Glass-easel P0')
+    })
+
     await step('lock page scroll under catchtouchmove', async () => {
       currentStep = 'lock page scroll under catchtouchmove'
       await byText(render, 'Touch lock', { exact: true }).first().click()

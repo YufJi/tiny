@@ -1,0 +1,10 @@
+<view class="page">
+  <text class="title">Timing</text>
+  <view id="box" class="box" style="width: {{width}}px"></view>
+  <text class="onload-status">onload-ready: {{onLoadReady}}</text>
+  <timing-probe id="probe" bind:ready-rect="onProbeReady" />
+  <text class="probe-status">probe-ready: {{probeReady}} rect: {{probeWidth}}</text>
+  <text class="timing-status">timing: {{status}}</text>
+  <button bindtap="bump">Bump</button>
+  <button bindtap="back">Back</button>
+</view>

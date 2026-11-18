@@ -2,7 +2,12 @@ import { describe, expect, test } from 'vitest'
 import { BridgeConnection, createInMemoryTransportPair } from '@tiny/bridge'
 import { bootTreeThread } from '../src/render/thread'
 import { createRenderConnection } from './helpers/render-connection'
-import { QUERY_CONTROL, type PageFrameMount, type RenderNode } from '../src/tree-protocol/protocol'
+import {
+  QUERY_CONTROL,
+  TREE_PROTOCOL,
+  type PageFrameMount,
+  type RenderNode,
+} from '../src/tree-protocol/protocol'
 
 const tree: RenderNode = {
   type: 'element',
@@ -574,5 +579,56 @@ describe('tree thread', () => {
     // A definition must be installed before the instance that needs it, and
     // the data patch is applied after the identity batch.
     expect(order).toEqual(['definitions', 'delta', 'patch'])
+  })
+
+  test('defers ack and pageReady until the renderer rendered the batch', async () => {
+    const [hostTransport, renderTransport] = createInMemoryTransportPair()
+    const order: string[] = []
+    let release: (() => void) | undefined
+    bootTreeThread({
+      connection: createRenderConnection(renderTransport),
+      renderer: {
+        mountPage: () => order.push('mount'),
+        applyPageDataPatches: () => order.push('patch'),
+        whenRendered: () => new Promise<void>((resolve) => {
+          release = () => resolve()
+        }),
+      },
+    })
+    const host = new BridgeConnection({
+      localRole: 'host',
+      peerRole: 'render',
+      transport: hostTransport,
+      respondToHello: false,
+    })
+    host.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.ack, () => order.push('ack'))
+    host.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.pageReady, () => order.push('pageReady'))
+    await host.handshake()
+
+    host.sendEvent('tree', 'patch', {
+      pageId: 'page-1',
+      pageDataPatches: [{ width: 120 }],
+      ack: ['batch-1'],
+    }, { pageId: 'page-1' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(order).toEqual(['patch'])
+    expect(release).toBeTypeOf('function')
+    release!()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(order).toEqual(['patch', 'ack'])
+
+    release = undefined
+    host.sendEvent('tree', 'flow', {
+      pageId: 'page-1',
+      pagePath: 'pages/index/index',
+      pageFrame: { rootViewId: 'page' },
+      messages: [{ type: 'ready' }],
+    }, { pageId: 'page-1' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(order).toContain('mount')
+    expect(order).not.toContain('pageReady')
+    release!()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(order.at(-1)).toBe('pageReady')
   })
 })

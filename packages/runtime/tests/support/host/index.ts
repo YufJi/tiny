@@ -186,6 +186,11 @@ export function createTestHost(options: RuntimeHostOptions): TestRuntimeHost {
         pageId: message.pageId ?? pageId,
       })
     })
+    connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.pageReady, (message) => {
+      service.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.pageReady, message.payload, {
+        pageId: message.pageId ?? pageId,
+      })
+    })
     connection.onEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, (message) => {
       service.sendEvent(QUERY_CONTROL.domain, QUERY_CONTROL.intersection, message.payload, {
         pageId: message.pageId ?? pageId,

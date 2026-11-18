@@ -644,8 +644,10 @@ export class GlassEaselRuntimeAdapter {
     }
     component.setData(data)
     glassEasel.Element.pretendAttached(component)
-    if (pageId) this.triggerPendingReady(pageId)
-    else this.triggerReady(component)
+    // `ready` for a page's components is deferred: the adapter flushes it from
+    // the pageframe mount acknowledgement (P0-2). A component mounted without a
+    // page id has no frame to wait for.
+    if (!pageId) this.triggerReady(component)
     return component
   }
 

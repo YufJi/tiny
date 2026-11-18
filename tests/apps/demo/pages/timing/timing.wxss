@@ -1,0 +1,21 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.title {
+  font-size: 20px;
+  margin-bottom: 12px;
+}
+
+.box {
+  height: 20px;
+  background: #07c160;
+  margin-bottom: 8px;
+}
+
+.onload-status,
+.timing-status {
+  margin-bottom: 8px;
+}

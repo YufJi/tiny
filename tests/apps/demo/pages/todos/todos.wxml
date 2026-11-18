@@ -13,6 +13,7 @@
     <button bindtap="openTouchLock">Touch lock</button>
     <button bindtap="openWxsRuntime">WXS runtime</button>
     <button bindtap="openReorder">Reorder</button>
+    <button bindtap="openTiming">Timing</button>
     <add-button text="Add" bind:custom="onCustom">Custom slot</add-button>
   </view>
 

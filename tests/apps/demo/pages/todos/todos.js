@@ -69,6 +69,10 @@ Page({
     wx.navigateTo({ url: '../reorder/reorder' })
   },
 
+  openTiming() {
+    wx.navigateTo({ url: '../timing/timing' })
+  },
+
   onCustom(event) {
     this.setData({ customDetail: event.detail.text })
   },

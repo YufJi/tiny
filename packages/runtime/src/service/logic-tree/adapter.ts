@@ -127,6 +127,7 @@ export class LogicTreeAdapter {
   private componentSchemas: MiniProgramComponentSchema[] = []
   private componentDefinitions?: ReadonlyMap<string, NormalizedComponentDefinition>
   private readonly styledPages = new Set<string>()
+  private readonly afterRender?: LogicTreeAdapterOptions['afterRender']
   private readonly measureView?: (viewIds: string[]) => Promise<Record<string, ViewRect>>
   private readonly queryView?: (request: QueryViewRequest & { pageId?: string }) => Promise<QueryViewResult>
   private readonly customTabBarPath?: string
@@ -180,6 +181,7 @@ export class LogicTreeAdapter {
         }
       }
     }
+    this.afterRender = options.afterRender
     this.glass = new GlassEaselRuntimeAdapter({
       backend: this.backend as unknown as glassEasel.GeneralBackendContext,
       manifest: options.manifest,
@@ -279,6 +281,10 @@ export class LogicTreeAdapter {
     if (renderTree) pageTree.recordRenderTree(renderTree)
     const tabBarTree = this.snapshotTabBarTree(pageId)
     if (tabBarTree) pageTree.recordTabBarRenderTree(tabBarTree)
+    // With a render bridge, component `ready` waits for the pageframe's mount
+    // acknowledgement (`tree.ready`), i.e. the first render. A standalone
+    // logic tree has no frame, so it keeps the synchronous path.
+    if (!this.afterRender) this.glass.triggerPendingReady(pageId)
     return renderTree
   }
 
@@ -297,6 +303,11 @@ export class LogicTreeAdapter {
     } finally {
       this.wxsRuntime?.releasePage?.(pageId)
     }
+  }
+
+  /** Run component `ready` callbacks deferred until the pageframe rendered. */
+  flushPageReady(pageId: string): void {
+    this.glass.triggerPendingReady(pageId)
   }
 
   /** Deliver a page lifetime to the page's service-side components. */

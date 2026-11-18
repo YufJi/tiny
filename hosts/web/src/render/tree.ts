@@ -150,6 +150,8 @@ export type GlassRenderTree = {
   rootElement: HTMLElement | null
   mountPage: (request: PageFrameMount) => void
   mountTabBarPage?: (request: PageFrameMount) => void
+  /** Resolve after glass rendered the page's pending updates (and DOM patch). */
+  whenRendered?: (pageId?: string) => Promise<void>
   applyStyles?: (styles: string[]) => void
   inspectTree?: () => unknown
   measure?: (ids: string[]) => Record<string, unknown>
@@ -3292,6 +3294,18 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       return rootElement
     },
     mountPage,
+    whenRendered: (pageId) => new Promise<void>((resolve) => {
+      const target = (pageId ? nodes.get(pageId) : undefined) ?? pageFrameRoot
+      if (!target) {
+        resolve()
+        return
+      }
+      try {
+        glassEasel.triggerRender(target as never, () => resolve())
+      } catch {
+        resolve()
+      }
+    }),
     setPageScope,
     setPageUsing,
     setBehaviorScheme,

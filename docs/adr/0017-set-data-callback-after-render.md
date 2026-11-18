@@ -3,7 +3,9 @@
 ## Status
 
 Accepted. Closes the after-render timing gap tracked in issue #34; refines the
-split-tree data crossing of ADR-0006 and ADR-0010.
+split-tree data crossing of ADR-0006 and ADR-0010. The render-wait contract was
+completed later (P0-1): the tree thread now waits for the renderer's render pass
+before echoing `ack`.
 
 ## Context
 
@@ -29,9 +31,11 @@ observe the service data but not the rendered tree.
 - Add a render-thread **batch acknowledgement** to the tree protocol:
   `TREE_PROTOCOL.ack` (`tree.ack`) with `{ pageId, tokens }`.
 - A `tree.flow` / `tree.patch` message may carry
-  `ack: string[]` tokens. The render thread applies the batch and echoes the
-  tokens exactly once, including when the renderer throws (the failure is
-  reported as `RENDER_PATCH_ERROR`).
+  `ack: string[]` tokens. The render thread applies the batch, waits for the
+  renderer's `whenRendered(pageId)` pass, and only then echoes the tokens
+  exactly once. A renderer error still acknowledges immediately (reported as
+  `RENDER_PATCH_ERROR`); a renderer without `whenRendered` keeps the previous
+  synchronous acknowledgement.
 - `ServiceRenderBridge` owns the completion queue:
   - `ServiceRenderPort.completeAfterRender(pageId, callback)` queues a callback;
   - the next batch for that page carries one token and the pending callbacks are
@@ -60,7 +64,8 @@ observe the service data but not the rendered tree.
 - Batch granularity is the microtask flush: callbacks added by synchronous
   `setData` calls share one acknowledgement and run in call order; a `setData`
   issued from a completion waits for the next batch.
-- Hosts that use `bootTreeThread` get acknowledgement for free. A host with a
-  custom render thread must echo `ack` tokens, or completions stay pending until
-  the page unmounts.
+- Hosts that use `bootTreeThread` get acknowledgement for free. A host renderer
+  should implement `whenRendered` (the browser host flushes glass and resolves
+  after the DOM patch); without it the acknowledgement is sent as soon as the
+  batch was applied, so a completion may still observe the previous DOM.
 - Protocol cost is zero when no completion is queued: no token, no ack message.
