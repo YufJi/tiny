@@ -221,23 +221,22 @@ Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动
 
 ## tree 域：两棵树之间的同步 {#tree-protocol kicker="tree 协议"}
 
-双侧树不共享内存。service 逻辑树生成 component flow、页面数据补丁和组件身份变更；render pageframe 从编译模板求值页面与组件 WXML，并在本地完成 DOM diff。元素树只在首屏 flow 里出现一次，之后的更新是数据-only。事件、查询和相交观测再按组件 id 或元素 locator 回到 service。
+双侧树不共享内存。service 逻辑树生成 component flow、页面数据补丁和组件身份变更；render pageframe 从编译模板求值页面与组件 WXML，并在本地完成 DOM diff。元素树默认不跨桥（`mount-only` 兼容模式除外），更新是数据-only。模板事件把 render 侧解析好的 target/currentTarget 带回 service；查询和相交观测按组件 scope + selector 到 render 执行。
 
 | 消息 | 方向 | 内容 |
 | --- | --- | --- |
 | `tree.flow` | service → render | 首屏 flow：`define`（该页可见组件定义）+ `ready`；payload 带 `componentFlow` 与 `componentOwners`（每个 owner 的有序实例列表），不含元素树。`renderHints: 'mount-only'` 时才额外带 `tree` 快照。可带独立 `tabFrame`、页面样式、fallback app 样式、`pageScope`、`pageUsing`、`behaviorScheme`、`wxsModules`、`pageData` 和 `componentData` |
 | `tree.patch` | service → render | 数据-only 更新：原始 `setData` patch（`pageDataPatches`）、组件 data（`componentData`）和 `componentFlowDelta`（按 owner 的 `add`/`remove`/`order`，新定义走 `define`）。不再携带 `renderHints`、全量 `componentFlow` 或页面 virtual-node `patches`；`treeProtocol.renderHints='always'` 可回滚到旧行为。独立 tabBar 的模板更新走 `tabFrame` |
 | `tree.ack` | render → service | 批次确认：回显 flow/patch 上的 `ack` token；service 用它 settle `setData` completion |
-| `tree.event` | render → service | 组件 id 或元素 locator、可选 `targetId`、name、宿主已归一化的 detail、touches 和 target/currentTarget 几何；service 从最内层 target 节点开始分发，并保留当前 binding 的 currentTarget |
+| `tree.event` | render → service | 兼容路径：共享组件 id、可选 `targetId`、name、宿主已归一化的 detail、touches 和 target/currentTarget 几何；新宿主使用 `tree.templateEvent` 的 render-resolved target，不再按元素 locator 回查 |
 | `tree.templateEvent` | render → service | render 求值的组件模板把绑定的方法调用交回 service |
 | `tree.eventReturn` | service → render | 通用 listener 返回值：`{ eventToken, result }`；token 和 result 由宿主解释，内核不识别 input/keyboard |
-| `tree.wxsBinding` | service → render | 动态 WXS 事件绑定决策 |
 | `tree.wxsEffect` | render → service | WXS `callMethod` / `triggerEvent` 的跨线程副作用 |
 | `tree.hostAction` | render → host | 内置组件的导航等宿主动作 |
 | `tree.hostRequest` | render → host | 内置组件的宿主请求/响应（如 picker、keyboard、nativeView.*） |
 | `tree.ready` | host → service | render bootstrap 完成后请求逻辑树重发首屏 flow |
 | `runtime.inspectTree` / `tree.inspectTree` | host → render | 从渲染树导出 InspectNode |
-| `tree.measure` | service/host → render | 按组件 id 或元素 locator 读取 layout 矩形 |
+| `tree.measure` | service/host → render | 按共享组件/页根 id 读取 layout 矩形 |
 | `query.select` | service → host → render | selector query 在真实 DOM 中查节点，返回 rect/dataset/scroll |
 | `query.intersection` | service → render / render → service | 创建、断开 IntersectionObserver；entry 回到逻辑树 |
 
@@ -324,13 +323,12 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 | tree | `event` | event | render → service | 渲染树事件回传逻辑树 |
 | tree | `templateEvent` | event | render → service | render 求值的组件模板回调 service 方法 |
 | tree | `eventReturn` | event | service → render | 通用 listener 返回值回传；宿主按 opaque token 消费 |
-| tree | `wxsBinding` | event | service → render | 动态 WXS 事件绑定 |
 | tree | `wxsEffect` | event | render → service | WXS `callMethod` / `triggerEvent` |
 | tree | `hostAction` | event | render → host | 内置组件主动导航等宿主动作 |
 | tree | `hostRequest` | call | render → host | 内置组件的宿主请求/响应；`nativeView.*` 用于页面级原生视图挂载/几何同步 |
 | tree | `ready` | event | host → service | 请求首屏 flow |
 | tree | `inspectTree` | control | host/devtool → render | 导出渲染树元素树 |
-| tree | `measure` | control | service → render | 按组件 id / 元素 locator 测量矩形 |
+| tree | `measure` | control | service → render | 按共享组件/页根 id 测量矩形 |
 | query | `select` | control | service → host → render | 在渲染树中查 selector，返回 rect/dataset/scroll |
 | query | `intersection` | control/event | service ↔ render | observe/disconnect 与 IntersectionObserver entry |
 | diagnostic | `diagnostic.log/warn/error/state` | event | service/render → host | 统一转成 RuntimeDiagnostic / UIState |
@@ -351,7 +349,7 @@ domain 和 method 都是字符串，没有集中式的 schema 注册表；下面
 
 | 来源 | 收到 | 宿主处理 | 发出 |
 | --- | --- | --- | --- |
-| service | `tree.flow` / `tree.patch` / `tree.animate` / `tree.wxsBinding` | 按 pageId 找渲染树连接，未就绪时先排队 | render 对应 tree 消息 |
+| service | `tree.flow` / `tree.patch` / `tree.animate` | 按 pageId 找渲染树连接，未就绪时先排队 | render 对应 tree 消息 |
 | render | `tree.event` / `tree.templateEvent` / `tree.wxsEffect` | 补上 pageId 后转发 | service 对应 tree 消息 |
 | render | `tree.ack` | 按 pageId 转发给 service | service `tree.ack` |
 | render | `page.scroll` / `page.reachBottom` / `page.pullDownRefresh` | 补上 pageId 后转发 | service `page` 事件 |

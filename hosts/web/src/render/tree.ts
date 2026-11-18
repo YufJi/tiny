@@ -8,7 +8,6 @@ import {
   formatLocator,
   isLocator,
   parseLocator,
-  wxsBindingKey,
 } from '@tiny/runtime'
 import type {
   ComponentDefinitionPayload,
@@ -31,7 +30,6 @@ import type {
   RenderText,
   PageFrameMount,
   TemplateRegistry,
-  WxsBindingMessage,
   WxsModuleTable,
   WxsRenderEffect,
 } from '@tiny/runtime'
@@ -177,7 +175,6 @@ export type GlassRenderTree = {
   setPagePath?: (pagePath: string) => void
   setWxsModules?: (table: WxsModuleTable) => void
   setWxsEffectSink?: (sink: (effect: WxsRenderEffect) => void) => void
-  setWxsBinding?: (binding: WxsBindingMessage) => void
   /** Refresh the service-owned node/component identity hints after a structural page update. */
   setPageFrameHints?: (root: RenderNode) => void
   /** Replace the service-owned component identity list for the pageframe. */
@@ -704,7 +701,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   const pendingWxsEvents = new Map<string, () => void>()
   const wxsStates = new WeakMap<Element, Record<string, unknown>>()
   const wxsStatesById = new Map<string, Record<string, unknown>>()
-  const dynamicBindingModes = new Map<string, WxsBindingMessage>()
   const wxsTimers = new Set<ReturnType<typeof setTimeout>>()
   const wxsPropSnapshots = new Map<string, Record<string, unknown>>()
   const pageFrameWxsPropSnapshots = new WeakMap<Element, Record<string, unknown>>()
@@ -2290,24 +2286,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       payload: Record<string, unknown>,
       stop: () => void,
     ): void => {
-      const bindingTarget = node.type === 'element' && node.component === true
-        ? node.id!
-        : locatorOfNodeId(node.id!) ?? node.id!
-      const resolved = dynamicBindingModes.get(wxsBindingKey(bindingTarget, binding.name))
-      const handler = resolved?.moduleId && resolved.exportPath
-        ? wxsRuntime.resolve(resolved.moduleId, resolved.exportPath)
-        : undefined
-      if (resolved?.moduleId && resolved.exportPath && handler) {
-        dispatchWxs({
-          name: binding.name,
-          moduleId: resolved.moduleId,
-          exportPath: resolved.exportPath,
-          ...(binding.catch ? { catch: true } : {}),
-          ...(binding.capture ? { capture: true } : {}),
-          ...(binding.mutated ? { mutated: true } : {}),
-        }, node, element, payload, stop)
-        return
-      }
       if (serviceEventDepth > 0) return
       const servicePayload = { ...payload }
       if (servicePayload.target && typeof servicePayload.target === 'object') {
@@ -3352,9 +3330,6 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     },
     applyEventReturn: (request) => {
       applyKeyboardReturn(request.eventToken, request.result)
-    },
-    setWxsBinding: (binding) => {
-      dynamicBindingModes.set(wxsBindingKey(binding.viewId, binding.event), binding)
     },
     setPageFrameHints: (root) => {
       if (!pageFrameRoot || !rootId.value) return

@@ -24,7 +24,6 @@ import {
   type PageFrameMount,
   type RenderTemplateEvent,
   type WxsRenderEffect,
-  type WxsBindingMessage,
 } from '../tree-protocol/protocol'
 import { applyComponentPlaceholders } from './placeholders'
 
@@ -87,7 +86,6 @@ export type TreeRenderer = {
   /** Apply the original `setData` patches instead of a full page snapshot. */
   applyPageDataPatches?: (patches: Array<Record<string, unknown>>) => void
   setComponentData?: (data: Record<string, Record<string, unknown>>) => void
-  setWxsBinding?: (binding: WxsBindingMessage) => void
   /** Built-in components ask the host to act (e.g. `<navigator>` routing). */
   setHostActionSink?: (sink: (action: RenderHostAction) => void) => void
   /** Built-in components ask the host for a value (e.g. `<picker>`). */
@@ -398,19 +396,6 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
     options.renderer.applyEventReturn?.({
       eventToken: payload.eventToken,
       result: payload.result,
-    })
-  })
-  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.wxsBinding, (message) => {
-    const payload = (message.payload ?? {}) as Partial<WxsBindingMessage>
-    if (!payload.viewId || !payload.event) return
-    options.renderer.setWxsBinding?.({
-      viewId: payload.viewId,
-      event: payload.event,
-      ...(payload.moduleId ? { moduleId: payload.moduleId } : {}),
-      ...(payload.exportPath ? { exportPath: payload.exportPath } : {}),
-      ...(payload.catch ? { catch: true } : {}),
-      ...(payload.capture ? { capture: true } : {}),
-      ...(payload.mutated ? { mutated: true } : {}),
     })
   })
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.patch, (message) => {

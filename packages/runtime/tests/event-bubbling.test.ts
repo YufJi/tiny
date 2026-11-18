@@ -97,7 +97,7 @@ async function boot(body: string, pageOptions: Record<string, unknown>) {
     if (payload.targetSelector) expect(targetNode, `target ${payload.targetSelector}`).toBeDefined()
     host.service.sendEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.event, {
       id: node!.viewId,
-      ...(targetNode ? { targetId: targetNode.locator ?? targetNode.viewId } : {}),
+      ...(targetNode ? { targetId: targetNode.viewId } : {}),
       name: payload.name ?? 'tap',
       ...(payload.target ? { target: payload.target } : {}),
       ...(payload.currentTarget ? { currentTarget: payload.currentTarget } : {}),

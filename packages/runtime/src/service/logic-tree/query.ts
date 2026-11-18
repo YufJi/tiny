@@ -5,8 +5,6 @@ import type { LogicBackendContext, LogicBackendElement } from './backend'
 export type QueryNodeSnapshot = {
   /** Logic-layer node identity, present for service-side query results. */
   viewId?: string
-  /** Component-scoped locator of an element (render-side addressing). */
-  locator?: string
   id: string
   dataset: Record<string, unknown>
   left: number
@@ -104,7 +102,6 @@ export function snapshotLogicNode(
   for (const [key, value] of node.dataset) dataset[key] = value
   return {
     viewId: backend.ensureViewId(node),
-    ...(backend.locatorOf(node) ? { locator: backend.locatorOf(node) } : {}),
     id: node.id,
     dataset,
     left: 0,

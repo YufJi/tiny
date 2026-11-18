@@ -47,8 +47,8 @@ export type LogicTreeAdapterOptions = {
   templates: TemplateRegistry
   pageOptions?: ReadonlyMap<string, { methods?: Record<string, (...args: unknown[]) => unknown> }>
   componentDefinitions?: ReadonlyMap<string, NormalizedComponentDefinition>
+  /** Geometry of nodes addressed by their shared component/page id. */
   measureView?: (viewIds: string[]) => Promise<Record<string, ViewRect>>
-  /** Geometry of elements addressed by component-scoped locators. */
   /** Scoped render query for nodes that have no render-side node id. */
   queryView?: (request: QueryViewRequest & { pageId?: string }) => Promise<QueryViewResult>
   loadStyle?: (outputPath: string) => string
@@ -292,7 +292,6 @@ export class LogicTreeAdapter {
     try {
       this.pageTrees.get(pageId)?.clear()
       this.pageTrees.delete(pageId)
-      this.backend.clearPageLocators(pageId)
       this.glass.unmountPage(pageId)
       if (this.activePageId === pageId) this.activePageId = undefined
     } finally {
@@ -533,12 +532,14 @@ export class LogicTreeAdapter {
   }
 
   /**
-   * Render-facing identity: components keep their shared view id, elements are
-   * addressed by a component-scoped locator.
+   * Render-facing identity.
+   *
+   * Element ids stay render-local (R2): the service only ever hands out the
+   * shared id of a component or the page root. Element queries/animations are
+   * addressed by a component scope + selector, never by a cross-thread node id.
    */
   renderIdentity(node: LogicBackendElement): string {
-    if (node.nodeType === 'component') return this.backend.ensureViewId(node)
-    return this.backend.locatorOf(node) ?? this.backend.ensureViewId(node)
+    return this.backend.ensureViewId(node)
   }
 
   /** Ensure a logic node has a stable render view id. */
@@ -1020,9 +1021,8 @@ export class LogicTreeAdapter {
       ? this.backend.findByViewId(payload.targetId)
       : undefined
     const targetGeometry = payload.target
-    // The render thread resolved the target itself (id/dataset/geometry). The
-    // `targetId` locator is only a legacy fallback: after a reorder the
-    // service-side locator map can still describe the previous order.
+    // The render thread resolved the target itself (id/dataset/geometry).
+    // `targetId` is only a legacy fallback for hosts that still send it.
     const renderedTarget = payload.targetNode
     const targetShape = renderedTarget
       ? {

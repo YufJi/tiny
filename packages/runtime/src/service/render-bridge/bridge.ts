@@ -6,7 +6,6 @@ import { cloneJsonSafe } from '../../shared/data'
 import type { StyleLoader, TemplateRegistry } from '../../shared/template'
 import {
   TREE_PROTOCOL,
-  wxsBindingKey,
   type ComponentFlowDelta,
   type RenderNode,
   type TreePatchPayload,
@@ -340,10 +339,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       getPage: (pageId) => this.options.getPage(pageId),
       requestRenderUpdate: (pageId) => this.scheduleTreeUpdate(pageId),
       onBinding: (pageId, binding) => {
-        // Registered with the logic view id; the flush below swaps in the
-        // node's current render identity (locator for elements).
-        this.bindings.register(pageId, wxsBindingKey(binding.viewId, binding.event), binding)
-        this.flushWxsBindings(pageId)
+        this.bindings.register(pageId, binding)
       },
       onDiagnostic: (pageId, code, message, details) => {
         this.connection.sendDiagnostic('warn', { code, message, details }, pageId)
@@ -375,7 +371,6 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       { pageId },
     )
     this.scheduler.clearPageData(pageId)
-    this.flushWxsBindings(pageId)
   }
 
   private scheduleTreeUpdate(pageId: string): void {
@@ -451,7 +446,6 @@ export class ServiceRenderBridge implements ServiceRenderPort {
           this.runCompletion(id, callback)
         ))
       }
-      this.flushWxsBindings(pageId)
       this.flushTabBarReady(pageId)
     } catch (error) {
       this.connection.sendDiagnostic('warn', {
@@ -513,25 +507,6 @@ export class ServiceRenderBridge implements ServiceRenderPort {
         details: error instanceof Error && error.stack ? { stack: error.stack } : {},
       }, pageId || undefined)
     }
-  }
-
-  private flushWxsBindings(pageId: string): void {
-    if (!this.logicTree) return
-    this.bindings.flush(
-      pageId,
-      (logicViewId) => {
-        const node = this.logicTree?.findNodeByViewId(logicViewId)
-        return node ? this.logicTree?.renderIdentity(node) : undefined
-      },
-      (binding) => {
-        this.connection.sendEvent(
-          TREE_PROTOCOL.domain,
-          TREE_PROTOCOL.wxsBinding,
-          binding,
-          { pageId },
-        )
-      },
-    )
   }
 
   private flushTabBarReady(pageId: string): void {

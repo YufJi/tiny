@@ -899,6 +899,23 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       await waitForText('Tiny Glass-easel P0')
     })
 
+    await step('keep the tapped target identity across a keyed reorder', async () => {
+      currentStep = 'keep the tapped target identity across a keyed reorder'
+      await tapToPage('Reorder', 'Reorder')
+      await waitForText('reorder: idle')
+      // The label is the event target; its parent item is the currentTarget.
+      await render.locator('#label-b').click()
+      await waitForText('reorder: label-b:b:1')
+      await byText(render, 'Rotate', { exact: true }).first().click()
+      // Rotate moves B to index 0. The same DOM node (and WXML id) must still
+      // resolve to the same logical node; only currentTarget.dataset.index
+      // changes.
+      await render.locator('#label-b').click()
+      await waitForText('reorder: label-b:b:0')
+      await byText(render, 'Back', { exact: true }).first().click()
+      await waitForText('Tiny Glass-easel P0')
+    })
+
     await step('lock page scroll under catchtouchmove', async () => {
       currentStep = 'lock page scroll under catchtouchmove'
       await byText(render, 'Touch lock', { exact: true }).first().click()

@@ -65,6 +65,10 @@ Page({
     wx.navigateTo({ url: '../wxs-runtime/wxs-runtime' })
   },
 
+  openReorder() {
+    wx.navigateTo({ url: '../reorder/reorder' })
+  },
+
   onCustom(event) {
     this.setData({ customDetail: event.detail.text })
   },
