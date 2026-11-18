@@ -3,7 +3,7 @@ title: '核心已经跑通，'
 highlight: '兼容性还在补齐'
 eyebrow: '现状'
 lede: >-
-  内核已经和宿主解耦，双侧树、组件语义、样式隔离、tabBar、多应用调试器都已就位；接下来主要是补宿主 API、组件覆盖、页面形态、原生渲染树和性能基线。下面的判断都按当前代码和测试来，不按计划来。
+  内核已经和宿主解耦，双侧树、组件语义、样式隔离、tabBar、页面 chrome、多应用调试器和 iOS 原生宿主都已就位；接下来主要是补宿主 API、原生组件、跨会话冷启动恢复和性能基线。下面的判断都按当前代码和测试来，不按计划来。
 pills:
   - ['内核不依赖宿主', 'good']
   - ['组件语义', 'good']
@@ -42,7 +42,7 @@ order: 9
 | 诊断 | :pill[可用]{tone="good"} | 编译、transport、service、render、host 五类诊断统一收集；组件语义新增了 observer、relation、behavior 相关诊断。 |
 | Devtool | :pill[运行时级+]{tone="good"} | 应用列表、点击启动、最近 3 个应用保活、返回列表、设备框、宿主导航和 tabBar、每页 render 帧、Console/Lifecycle/Elements、Reload/Close app；Reload 会保存并恢复页面栈、data、savedExitState/exitState，整页刷新会合并最新快照；页面栈默认上限 10，宿主可配置。它仍不是完整的微信开发者工具。 |
 | 性能与稳定 | :pill[未量化]{tone="warn"} | 启动、首屏、setData、内存和长时运行都没有基准，也没有压力测试。 |
-| 测试 | :pill[核心链路]{tone="good"} | 532 个单元测试、74 个浏览器步骤、9 个测试小程序，以及 iOS 宿主 9 个 fixture 的模拟器 smoke；tree flow/patch、pageframe WXML、component identity、locator 寻址、WXS 和 trait behaviors 都有单元与浏览器覆盖；`wechat-parity` 会把 Tiny 与微信 pageframe 的十六个检查点做 1:1 trace 对比，包含组件 property 批量更新、嵌套 slot、`wx:if`、keyed reorder/`moved`，以及 relation linked/unlinked/linkFailed 顺序。 |
+| 测试 | :pill[核心链路]{tone="good"} | 583 个单元测试、80 个浏览器步骤、9 个测试小程序，以及 iOS 宿主 9 个 fixture 的模拟器 smoke；tree flow/patch、pageframe WXML、component identity、locator 寻址、WXS 和 trait behaviors 都有单元与浏览器覆盖；`wechat-parity` 会把 Tiny 与微信 pageframe 的十六个检查点做 1:1 trace 对比，包含组件 property 批量更新、嵌套 slot、`wx:if`、keyed reorder/`moved`，以及 relation linked/unlinked/linkFailed 顺序。 |
 
 ## 现在最影响使用的问题 {#gaps kicker="主要缺口"}
 
@@ -50,7 +50,7 @@ order: 9
 
 ::::cards
 :::card{tag="API" tone="warn" title="宿主 API 还不够全"}
-还缺 upload/download、真实登录/账号、媒体、文件系统、位置和 WebSocket。storage 已由宿主持久化，浏览器宿主已接 toast/modal/loading/actionSheet；selector query、`wx.createIntersectionObserver` 和页面/组件级 `this.*` 入口都已接通。
+还缺 upload/download、真实登录/账号、媒体、文件系统、位置和 WebSocket。storage 由宿主内存保存（刷新即丢），浏览器宿主已接 toast/modal/loading/actionSheet；selector query、`wx.createIntersectionObserver` 和页面/组件级 `this.*` 入口都已接通。
 
 未实现的 API 会返回 undefined 并产生 UNSUPPORTED_API 警告，不会直接抛错。
 :::
@@ -251,7 +251,7 @@ host-web、host-web-components、注入能力和接入步骤。
 :::
 
 :::card{tag="测试" title="以测试为准"}
-532 个单元测试和 74 个浏览器步骤；WXS 专项覆盖事件、descriptor、change:prop、mut-bind、动态切换、双页模块状态隔离和 render-local handler；微信对照覆盖 render-owned 页面模板、页面事件回传、组件 WXS 计数、返回复用、reLaunch，以及嵌套 slot / `wx:if` 下的 lifecycle 与 relation 顺序。iOS 宿主另有 `pnpm ios:sim`，逐 fixture 跑真实 WKWebView + JSCore。
+583 个单元测试和 80 个浏览器步骤；WXS 专项覆盖事件、descriptor、change:prop、mut-bind、动态切换、双页模块状态隔离和 render-local handler；微信对照覆盖 render-owned 页面模板、页面事件回传、组件 WXS 计数、返回复用、reLaunch，以及嵌套 slot / `wx:if` 下的 lifecycle 与 relation 顺序。iOS 宿主另有 `pnpm ios:sim`，逐 fixture 跑真实 WKWebView + JSCore。
 
 [测试与验收 →](#/testing)
 :::

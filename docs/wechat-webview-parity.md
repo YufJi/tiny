@@ -1,8 +1,8 @@
 # 微信 WebView 版功能对齐度分析
 
-> **快照**：2026-11-12（第四十四次同步） · **兼容性目标**：微信开发者工具 / 基础库 **3.17.5**，渲染方式 **WebView**，组件框架 **glass-easel**（不含 Skyline / XR-FRAME / 扩展组件库）
+> **快照**：2026-11-18（第四十五次同步） · **兼容性目标**：微信开发者工具 / 基础库 **3.17.5**，渲染方式 **WebView**，组件框架 **glass-easel**（不含 Skyline / XR-FRAME / 扩展组件库）
 >
-> **评分状态**：最近一次完整评分仍基于历史 2.33.0 口径，约 **58.3%（57–59%）**；按 3.17.5 重算前不视为当前目标版本分数。页面启动率 96.8%（121/125）；生产可替换 < 20%
+> **评分状态**：仍沿用历史 2.33.0 的分母做纵向比较，本轮按当前能力重算约 **61.1%（60–62%）**；3.17.5 的完整分母尚未重算，因此不把这 61.1% 当作目标版本的精确完成度。页面启动率 96.8%（121/125）；生产可替换 < 20%
 >
 > **维护**：功能完成后更新本文的评分表、覆盖表、实测数据和变更记录
 
@@ -10,15 +10,15 @@
 
 ## 1. 结论摘要
 
-- 后续所有对齐统一以微信 **3.17.5** 为目标版本；文中 2.33.0 组件/API 分母和 **58.34%** 只保留为历史评分，待按 3.17.5 重算。
-- 能力结构仍然偏科：**编译/渲染约 99%，框架约 99%，内置组件约 65%，平台 API 约 14%，页面形态约 45%**。
+- 后续所有对齐统一以微信 **3.17.5** 为目标版本；文中 2.33.0 的组件/API 分母仍用于纵向比较，**61.13%** 是按当前能力重算的历史口径分数，3.17.5 完整分母待重算。
+- 能力结构仍然偏科：**编译/渲染约 99%，框架约 99%，内置组件约 66%，平台 API 约 14.5%，页面形态约 58%**。
 - 自定义组件高级语义已补齐：`behaviors`、`observers`、`relations`、`externalClasses`、`styleIsolation`、`selectComponent`、`generics`（含页面级 `generic:x`）、`definitionFilter`、`pureDataPattern`、trait behaviors 均已落地，Component-as-page 也接入了同一套核心语义；6 个 `wx://` behavior 在 service 侧是占位 marker（与 2.33.0 一致），可观察语义放在渲染侧或框架里。剩余缺口主要是 chaining API、app.json 运行时字段和 11 个宿主导向 behavior。
 - 内置组件已完成宿主迁移、P0 视觉重写和 P1 内部结构收口：2.33.0 目标的 **39 个标签全部落地**（含 grid-view；20 个平台/开放能力组件按基线不做），采用 Flat DOM + scoped CSS 隔离公开宿主与私有内部实现；checkbox/radio/switch/slider/icon/image/picker/picker-view 已按 2.33.0 参考实现重写；input/textarea/button/form 完成 wrapper/分支/语义补强，scroll-view 接受 native 滚动近似；video/audio/web-view 是浏览器近似实现。
 - 仓库内置的微信官方 demo 子集（2023-02 基线，125 页）中，**121 页能启动（96.8%）**，116 页有可见文本；剩余 4 个失败页全部缺平台 API（音频/广告/后台预取），不再是编译或运行时语义问题；启动率仍是“能挂载”，不是“功能对齐”。
-- 双侧树已切到 render-owned pageframe：页面和组件 WXML 由 pageframe 执行，service 逻辑树从同一份模板实例化组件、维护 data/observer/relations；只有组件和页面根共享 id，元素由渲染侧分配本地 id，补丁/事件/查询/动画统一用组件作用域 locator（`owner#index.path`）寻址。service-owned component identity flow 和 `component-instances` 结构补丁负责对齐嵌套组件，首屏 flow 是 `define` + `tree` + `ready`。
+- 双侧树已切到 render-owned pageframe：页面和组件 WXML 由 pageframe 执行，service 逻辑树从同一份模板实例化组件、维护 data/observer/relations；只有组件和页面根共享 id，元素由渲染侧分配本地 id，补丁/事件/查询/动画统一用组件作用域 locator（`owner#index.path`）寻址。service-owned component identity flow 和 `component-instances` 结构补丁负责对齐嵌套组件，首屏 flow 是 `define` + `tree` + `ready`；微信 3.17.5 对拍已覆盖 16 个检查点（property 批量更新、嵌套 slot、`wx:if`、keyed reorder/`moved`、lifecycle、relation 顺序等）。
 - 路由补齐 `redirectTo` / `reLaunch`，页面生命周期补齐下拉刷新、分享和 `onSaveExitState`，应用生命周期补齐 `onError` / `onPageNotFound` / `onUnhandledRejection` / `onThemeChange`。
-- 普通业务小程序最依赖的 `wx.login`、`wx.requestPayment`、媒体/文件/定位等平台 API 仍未实现；内置导航栏/tabBar 已在 devtool 宿主落地并接入 `switchTab`，自定义 tabBar 通过独立的页面级 `tabFrame` pageframe root 支持，分享菜单 UI 仍缺。
-- 一句话：**组件语义、路由和生命周期这条线已经基本补齐，平台 API 和页面形态仍是决定“能否替换微信运行时”的主要短板。**
+- 普通业务小程序最依赖的 `wx.login`、`wx.requestPayment`、媒体/文件/定位等平台 API 仍未实现；内置导航栏/tabBar 已在 devtool 宿主落地并接入 `switchTab`，自定义 tabBar 改为独立页级 `tabFrame` root（`getTabBar()` / `getTabBar(callback)`），分享面板和 `showShareMenu`/`hideShareMenu` 已接。
+- 一句话：**组件语义、路由、双树 pageframe 和页面 chrome 已经基本补齐；平台 API、原生组件和跨会话冷启动恢复仍是决定“能否替换微信运行时”的主要短板。**
 
 仓库自己的 [Status 页](./site/status.md) 也给出了相同定性判断（“能跑真实示例，还不是完整微信兼容”），本文把它量化，并保留可复测的口径。
 
@@ -64,7 +64,7 @@ WebView renderer 和 glass-easel component framework 为准。
 
 - **完成度**：该维度内“已实现且有代码证据的条目 / 微信 WebView 文档条目”，或按关键能力清单打分。
 - **加权得分**：`Σ(权重 × 完成度)`。
-- **区间**：当前权重下约 52.3%；调整权重会在 51–54% 之间浮动（把 API 权重降到 15%、框架权重升到 20% 约 53%），但不会到 60%。
+- **区间**：当前权重下约 61.1%；调整权重会在 60–62% 之间浮动（把 API 权重降到 15%、框架权重升到 20% 约 61.5%），仍受平台 API 和原生组件缺口约束。
 - 所有百分比都是**工程估算**，用于判断量级和优先级，不是精确指标。
 
 ### 2.4 对齐原则
@@ -90,14 +90,14 @@ WebView renderer 和 glass-easel component framework 为准。
 | --- | ---: | ---: | ---: | --- |
 | 编译/构建 | 10% | 99% | 9.90 | WXML/WXSS/WXS 完整；共享 WXS runtime 与 AST transform 已接；app.wxss 规则可作用到页面与内置宿主；package.json → `miniprogram_npm` 的 npm 构建（含 `miniprogram` 字段、传递依赖、预构建树优先）已接；`project.config.json` 支持 `miniprogramRoot`、`compileType` 校验和 `packOptions.ignore`；app.json 校验并用 manifest 携带 `subPackages` 元数据；分包按需拆成 `service.<pkg>.js`，entry 之间用 esbuild code splitting 共享 `chunks/`（跨包模块单实例）；可选 TS 语义检查（tsconfig 自动启用）；`preloadRule`（含 network）归一化进 manifest，`componentPlaceholder` 校验并落 manifest；`theme.json`/`themeLocation` 读取校验、`@变量` 按 light/dark 解析、WXSS `var(--x)` 注入；仍无增量构建 |
 | 框架运行时 | 18% | 99% | 17.82 | 14/14 页面生命周期、7/7 应用生命周期、5/5 路由；render-owned pageframe、service-owned component identity、元素 locator 寻址、页面级 `generic:x`、6 个 `wx://` behavior 占位对齐；trait behaviors、`Behavior.trait()`、`implement()`、trait relation target、`hasBehavior`/`traitBehavior` 已接；`mut-bind` 与嵌套 `event.target`（含组件 shadow）已对齐；`this.animate`/`clearAnimate`、`wx.createIntersectionObserver`、事件合成层与 `target/currentTarget` 几何落地；`pageLifetimes.resize` 与页面 `onResize` 同步下发；分包按需加载（启动/导航前 ensure + 组件定义增量刷新）与 `preloadRule` 预取（`wifi` 需宿主网络事实）；tab 页缓存、group/label/touchtrack/scroller 基础保持；`componentPlaceholder` + glass-easel 占位替换完成异步组件 chunk（主包页面先渲染占位，分包到达后自动替换）；独立分包入口跳过主包 App 且不加载主包 `app.wxss`；chaining API 仍未接 |
-| 内置组件 | 17% | 65% | 11.05 | 39/60 标签（2.33.0 目标的 39 个标签全部落地，20 个平台/开放能力组件按基线不做）；P0 视觉完成，P1 内部结构大幅收口；事件合成层与 scroll-view 横向/enable-flex 修复落地；`navigator` 走 host action；canvas 2D/WebGL 已接；已统计属性 120/146、事件 44/46 |
+| 内置组件 | 17% | 66% | 11.22 | 39/60 标签（2.33.0 目标的 39 个标签全部落地，20 个平台/开放能力组件按基线不做）；P0 视觉完成，P1 内部结构大幅收口；button 默认值与样式、scroll-view refresher/retry、input 原生宿主和键盘配件对齐；事件合成层与 scroll-view 横向/enable-flex 修复落地；`navigator` 走 host action；canvas 2D/WebGL 已接；已统计属性 120/146、事件 44/46 |
 | wx API | 20% | 14.5% | 2.91 | 73/502；request/async storage/modal/loading/网络/剪贴板/主题/profile/tabBar/switchTab/redirectTo/reLaunch/下拉刷新/IntersectionObserver（含 `wx.createIntersectionObserver`）等已接或桩 |
-| 页面形态 | 12% | 45% | 5.40 | devtool 宿主已实现导航栏/tabBar/页面滚动/触底/tab 页缓存，导航栏运行时标题/颜色/loading 已接，分享菜单会调用页面回调，navigateTo/navigateBack 有 forward/back 转场，下拉刷新指示器受 `enablePullDownRefresh` 控制、`stopPullDownRefresh` 立即收起；devtool 刷新后按路径 + query 重建页面栈（不恢复页面 data）；`tabBar.custom` 使用独立页级 `tabFrame` 并支持 `getTabBar()`；分享菜单可见性受 `showShareMenu`/`hideShareMenu` 控制；iOS 宿主补上原生导航栏/tabBar 和页面 chrome |
+| 页面形态 | 12% | 58% | 6.96 | devtool 宿主已实现导航栏/tabBar/页面滚动/触底/tab 页缓存，导航栏运行时标题/颜色/loading 已接，分享面板、`showShareMenu`/`hideShareMenu`、navigateTo/navigateBack 转场、下拉刷新指示器均已接；devtool Reload 保存并恢复页面栈、data、`savedExitState`/`exitState`，普通刷新合并最新快照；`tabBar.custom` 使用独立页级 `tabFrame` root 并支持 `getTabBar()` / `getTabBar(callback)`；iOS 宿主补上原生导航栏/tabBar、push/pop 动画和左边缘返回；cold-start 退出状态落盘、原生组件仍缺 |
 | 样式/渲染 | 8% | 76% | 6.08 | WXSS/rpx/作用域强；app.wxss tag/class 规则作用到页面与共享组件；canvas 2D/WebGL/RAF 已接，导出 API 仍缺 |
-| 宿主/平台 | 8% | 18% | 1.44 | 浏览器 + iOS 原生宿主（JavaScriptCore service + WKWebView render）；仍无原生网络/登录/支付/分享 |
-| 开发工具 | 4% | 47% | 1.88 | Vite 构建、应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar、移动端访问提示；不是完整微信开发者工具 |
-| 质量/验证 | 3% | 62% | 1.86 | 532 单测 + 74 步浏览器验收 + 125 页探针（121 启动 / 116 可见文本）+ iOS 9 fixture 模拟器 smoke + 真机签名构建/安装；覆盖 npm 构建、project.config/app.json 校验、TS 诊断、页面栈/data/exitState 恢复、微信 pageframe 十六检查点 1:1 trace；仍无性能/安全测试 |
-| **合计** | **100%** | — | **58.34%** | |
+| 宿主/平台 | 8% | 25% | 2.00 | 浏览器 + iOS 原生宿主（JavaScriptCore service + WKWebView render），iOS 已接原生导航栏/tabBar、3 会话 LRU、input/textarea 原生宿主和键盘配件、host events；仍无原生网络/登录/支付/分享 |
+| 开发工具 | 4% | 55% | 2.20 | 抽离可复用的 host-driven simulator；应用列表/3 应用保活、每页 render 帧、生命周期时间线、宿主导航/tabBar、旋转与键盘高度事件、页面栈/data/exitState 恢复；仍不是完整微信开发者工具 |
+| 质量/验证 | 3% | 68% | 2.04 | 583 单测 + 80 步浏览器验收 + 125 页探针（121 启动 / 116 可见文本）+ iOS 9 fixture 模拟器 smoke + 真机签名构建/安装；覆盖 npm 构建、project.config/app.json 校验、TS 诊断、fixture 平台约束、页面栈/data/exitState 恢复、微信 pageframe 十六检查点 1:1 trace；仍无性能/安全测试 |
+| **合计** | **100%** | — | **61.13%** | |
 
 ### 条目覆盖率速览
 
@@ -231,7 +231,7 @@ WebView renderer 和 glass-easel component framework 为准。
 | onResize | ✅ 宿主窗口快照变化时触发（devtool 导航栏/内容区变化） |
 | onTabItemTap | ✅ switchTab / 点击 tabBar 时触发 |
 | onPullDownRefresh | ✅ 浏览器宿主下拉手势 + `wx.startPullDownRefresh` |
-| onShareAppMessage / onShareTimeline / onAddToFavorites | ✅ 页面回调与宿主 `page.share` 通道；分享菜单 UI 属于页面形态缺口 |
+| onShareAppMessage / onShareTimeline / onAddToFavorites | ✅ 页面回调与宿主 `page.share` 通道；devtool 分享面板和 `showShareMenu`/`hideShareMenu` 已接 |
 | onSaveExitState | ✅ 页面隐藏/显式保存时回调并保留返回值 |
 
 应用生命周期 **7 / 7**：
@@ -344,7 +344,7 @@ Shadow DOM：
 | 页面栈恢复 | ⚠️ devtool Reload 会保存并恢复页面栈、data、`savedExitState`/`exitState`，首屏 `onLoad` 可读 `this.exitState`；普通刷新会合并最新快照。跨会话/原生冷启动的落盘策略仍由宿主决定 |
 | 原生组件（video/map/camera/live-player 等） | ❌ |
 | 浏览器宿主 | ✅ |
-| 原生/JSCore 宿主 | ❌ |
+| 原生/JSCore 宿主 | ✅（MVP）iOS：JavaScriptCore service + 每页 WKWebView render，原生导航栏/tabBar、3 会话 LRU、input/textarea 宿主和键盘配件；WebGL/同步读回未接 |
 | iframe sandbox / origin 校验 | ❌ |
 | 能力协商（capabilities） | ❌ 基本未使用 |
 
@@ -354,12 +354,12 @@ Shadow DOM：
 
 ### 5.1 验收门禁
 
-2026-11-10 本地跑 `pnpm accept:glass-easel`，全部通过：
+2026-11-18 本地跑 `pnpm accept:glass-easel`，全部通过（45.9s）：
 
-- 8 个编译器/运行时/宿主目标构建
-- **528 个单元测试**（runtime、host-web-components、template-compiler、stylesheet-compiler、cli、wxs-runtime、bridge、api、manifest、css-units、devtool）
+- 编译器/运行时/宿主目标构建（含 fixture 平台约束检查）
+- **583 个单元测试**（runtime、host-web-components、template-compiler、stylesheet-compiler、cli、wxs-runtime、bridge、api、manifest、css-units、devtool、simulator）
 - 5 段浏览器验收：P0 demo、mini、Taro 3、微信 demo 子集、运行时调试器
-- **74 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent、真实滚动触发的 onPageScroll，WeChat demo 覆盖 swiper autoplay 开关、radio 点击与 WeUI 勾选结构、navigator 点击跳转、WXS 拖拽，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
+- **80 个浏览器步骤**全部通过；P0 覆盖组件语义/样式隔离/button/relations/selectComponent、真实滚动触发的 onPageScroll，WeChat demo 覆盖 swiper autoplay 开关、radio 点击与 WeUI 勾选结构、navigator 点击跳转、WXS 拖拽，devtool 覆盖列表/保活/LRU/tabBar/页面栈上限/每页 render 帧，canvas 覆盖 2D/WebGL/legacy/ECharts
 - 2026-11-11 用微信 3.17.5 自动化 fixture 对照 WXS scope：页面模板按页隔离；同页两个组件实例共用同一模块实例，B 页和 A 页重入各自新建模块实例。`wcc` 生成码的 `f_ = __WXML_GLOBAL__.modules` 与 `nv_require` 缓存给出同一结论；Tiny 的 service 页级 runtime、render 每页 runtime 和事件状态回放都按这一边界实现
 - 同一对照组里，微信 WXS 事件 handler 把模块变量从 `peek:0` 增到 `peek:1` 后，页面表达式在同一页重渲染时读到 `peek:1`；Tiny 的 render pageframe handler 只执行一次，pageframe 重渲染读取同一模块实例。跨树 `tree.wxsHandler` 回放已移除；service 逻辑模板快照不参与最终渲染，保留独立表达式 runtime 与微信 service 的 compiled template 结构一致
 - 门禁覆盖的 5 段流程无 console/page error（125 页探针的 pageerror 见 5.2）
@@ -377,7 +377,7 @@ Shadow DOM：
 | 页面级报错/崩溃 | 4 页（全部为平台能力缺口） |
 | console error | 2（均来自 web-view 嵌入外部文档站点的 `frame-ancestors` CSP 拦截，与运行时无关） |
 
-**探针方法**：`pnpm parity:probe`（已固化为脚本，替代此前的手工步骤）。
+**探针方法**：`pnpm parity:probe`（已固化为脚本，替代此前的手工步骤）。2026-11-18 复跑结果保持不变：121/125 启动、116 可见、4 个平台 API 失败、2 个 web-view CSP console error。
 
 1. `pnpm compile:wechat-demo` 生成产物到 `tests/host/generated/apps/wechat-demo/generated`（脚本自动执行；`TINY_PROBE_BASE_URL` 可复用已启动的宿主，跳过编译与启服）。
 2. 在 5198 端口启动 `tests/host` Vite 服务（`TINY_PROBE_PORT` 可改）。
@@ -413,15 +413,15 @@ getMenuButtonBoundingClientRect / getPerformance
 
 其中 `login` 只是宿主 stub code，`openSetting/authorize` 还没有真实权限模型；`createCanvasContext` 已接 OffscreenCanvas handoff；`createSelectorQuery` 已支持页面/组件作用域、节点 rect/dataset 和 canvas node；`createIntersectionObserver` 的页面/组件 `this.*` 与 `wx.*` 入口都已接通 service→render（`wx.createIntersectionObserver(component?, options?)` 会解析到同一个 page/component 作用域的 observer）；`createAnimation` 只映射最终态；`getFileSystemManager` 只有 fail stub。真正“能用”的核心 API 约 20–24 个。
 
-### 5.4 为什么“96.8% 启动”和“52.3% 对齐”不矛盾
+### 5.4 为什么“96.8% 启动”和“61.1% 对齐”不矛盾
 
 | 口径 | 回答的问题 | 结果 |
 | --- | --- | --- |
 | 启动率 | 页面能不能挂载？ | 96.8% |
-| 功能对齐 | 页面上的功能是否按微信语义工作？ | ~52.3% |
+| 功能对齐 | 页面上的功能是否按微信语义工作？ | ~61.1% |
 | 生产可替换 | 普通业务小程序能否直接上线？ | < 20% |
 
-启动率高，是因为引擎“尽量不崩”；功能对齐仍只有约 52.3%，是因为 API、页面形态和剩余组件属性/事件仍有大量缺口；组件语义、路由和生命周期补齐只把框架维度的短板抬了一部分。
+启动率高，是因为引擎“尽量不崩”；功能对齐仍只有约 61.1%，是因为平台 API、原生组件和剩余组件属性/事件仍有大量缺口；组件语义、路由、双树 pageframe 和页面 chrome 补齐只把框架与页面维度的短板抬了一部分。
 
 ---
 
@@ -506,7 +506,7 @@ getMenuButtonBoundingClientRect / getPerformance
 | --- | --- | --- |
 | `wx.uploadFile` / `downloadFile` | `request` 已接 fetch，但上传/下载缺失 | 基于宿主网络桥补 upload/download |
 | storage 持久化 + batch | 异步/remove/clear/info 已接，但只存在宿主内存快照，刷新即丢 | 持久化到 localStorage/IndexedDB，补 batch |
-| 登录/支付/分享 UI | 商业化能力缺失 | P0 末或 P1 初 |
+| 登录/支付 | 商业化能力缺失 | P0 末或 P1 初 |
 
 ### P1：组件与页面语义
 
@@ -515,19 +515,19 @@ getMenuButtonBoundingClientRect / getPerformance
 | 缺口 | 影响 |
 | --- | --- |
 | `chaining API` | `BehaviorBuilder` 的完整链式扩展仍不可用 |
-| `wx.createIntersectionObserver(component)` | 页面/组件 `this.*` 已接；页面 API 的 `wx.*` 入口仍缺 |
+
 | scroll-view/input/swiper/button 属性与事件补全 | 已实现组件“形似神不似” |
 | `canvasToTempFilePath` / `wx.createOffscreenCanvas` / node 事件 | selector-query 2D/WebGL 动画、图片与触摸已可用；导出、独立离屏画布与 node 事件仍缺 |
 | animation 多 step / 回调 | 复杂动画不可用 |
 | 预下载策略 | `preloadRule`、独立分包入口与异步组件 chunk 已接；按网络/时机的预下载策略仍缺 |
 | npm 安装 | 构建已支持 `node_modules` → `miniprogram_npm`；仍不执行 `npm install`，依赖需由用户/CI 预先安装 |
-| 内置组件默认样式对齐 | 视觉不一致 |
+| 内置组件默认样式剩余项 | button/scroll-view/input 已对齐；剩余长尾属性/视觉仍不完全一致 |
 
 ### P2：平台能力与生产化
 
 | 缺口 | 影响 |
 | --- | --- |
-| 原生/JSCore 宿主 | 只能在浏览器里跑 |
+| 生产级原生宿主 | iOS MVP 已跑通；Android、原生网络/媒体能力和上架级稳定性仍缺 |
 | 原生网络桥、媒体、地图、视频、文件、Worker、订阅消息/客服等平台扩展 | 平台能力缺失 |
 | 性能基线（启动/首屏/setData/内存/长时运行） | 无法回归 |
 | 视觉回归、安全测试、原生测试 | 生产质量不可控 |
@@ -541,11 +541,11 @@ getMenuButtonBoundingClientRect / getPerformance
 
 | 阶段 | 补齐内容 | 预计完整度 |
 | --- | --- | --- |
-| **P0：能跑常见业务** | 分享菜单 UI、真实登录/支付、上传/下载；navigator、redirectTo/reLaunch、下拉刷新、picker/textarea/form 已补 | **~52–55%** |
+| **P0：能跑常见业务** | 真实登录/支付、上传/下载；navigator、redirectTo/reLaunch、下拉刷新、分享面板、picker/textarea/form 已补 | **~61%** |
 | **P1：组件与页面语义** | chaining；补全常用组件属性事件；canvas 2D/交互；animation 多 step；预下载策略 | **~65–70%** |
 | **P2：平台能力与生产化** | 原生宿主、网络桥、登录/支付/分享、媒体/地图/视频、文件系统、Worker；性能/视觉/安全基线 | **~80%+** |
 
-**最短路径**：组件语义、路由、生命周期和页面内导航已补齐，下一步优先补分享菜单 UI 与真实平台 API；页面 chrome 仍只在 devtool 宿主，测试/生产宿主需要复用同一套实现。继续打磨编译器的收益已经很小。
+**最短路径**：组件语义、路由、生命周期、双树 pageframe 和页面 chrome 已补齐；下一步优先补真实平台 API、原生组件和跨会话冷启动恢复。浏览器 devtool 与 iOS 已复用同一套页面 chrome 语义，继续打磨编译器的收益已经很小。
 
 ---
 
@@ -592,8 +592,9 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 
 | 日期 | 变更 | 完整度 |
 | --- | --- | --- |
-| 2026-11-12 | 事件与 trait 收口：`mut-bind` 将 `MutLevel` 传入 render listener；`tree.event`/`tree.templateEvent` 携带最内层 target locator，覆盖页级与组件 shadow；`Behavior.trait()`、`implement()`、trait relation target、`hasBehavior`/`traitBehavior` 接入 service 逻辑树。532 单测；P0 浏览器验收通过 | **待重新评分** |
-| 2026-11-12 | WXS descriptor 与 3.17.5 对齐：移除官方不存在的 `getData()` 扩展，fixture 改用 `getDataset()`；530 单测和五段浏览器门禁通过 | **待重新评分** |
+| 2026-11-18 | 第四十五次校准：双树 pageframe 按微信 3.17.5 对拍 16 个检查点；trait/mut-bind 收口；button/scroll-view/input 组件对齐；devtool 抽离 host-driven simulator；页面栈/data/`savedExitState`/`exitState` 恢复；自定义 tabBar 改为独立页级 `tabFrame`；iOS 原生页面 chrome、3 会话 LRU、input/keyboard 宿主。583 单测 / 80 步 / 9 fixture；页面形态 45→58、宿主 18→25、开发工具 47→55、质量 62→68，总分 58.34→61.13 | **61.13%** |
+| 2026-11-12 | 事件与 trait 收口：`mut-bind` 将 `MutLevel` 传入 render listener；`tree.event`/`tree.templateEvent` 携带最内层 target locator，覆盖页级与组件 shadow；`Behavior.trait()`、`implement()`、trait relation target、`hasBehavior`/`traitBehavior` 接入 service 逻辑树。532 单测；P0 浏览器验收通过 | **61.13%（第 45 次统一校准）** |
+| 2026-11-12 | WXS descriptor 与 3.17.5 对齐：移除官方不存在的 `getData()` 扩展，fixture 改用 `getDataset()`；530 单测和五段浏览器门禁通过 | **61.13%（第 45 次统一校准）** |
 | 2026-10-24 | 初始快照：WebView 基准、117 页探针、加权评分 | **31.3%** |
 | 2026-10-24 | 第二次同步：补齐自定义组件高级语义（behaviors/observers/relations/externalClasses/styleIsolation/selectComponent）；框架 42→58、样式 62→68；115 单测 + 45 浏览器步骤 | **34.77%** |
 | 2026-10-24 | 第三次同步：Component-as-page 核心语义接入（query properties、methods 生命周期、behaviors/observers/relations/styleIsolation）；框架 58→60；116 单测 | **35.13%** |
@@ -653,11 +654,11 @@ pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --por
 | 2026-11-10 | 第四十二次同步：页面栈恢复补 query——runtime state 的 page 详情携带 query，devtool 保存 `{path,query}` 并在刷新后按完整路由重建；验收断言 `?from=restore` 恢复。497 单测 / 74 步；页面形态 44→45，总分 58.22→58.34 | **58.34%** |
 | 2026-11-10 | 第四十一次同步：分享菜单可见性——`wx.showShareMenu`/`hideShareMenu` 经 host API 同步 chrome 菜单项，`updateShareMenu` 继续透传；新增 devtools 验收。497 单测 / 74 步；分数不变 | **58.22%** |
 | 2026-11-10 | 第四十次同步：自定义 tabBar——`tabBar.custom` 发现 `custom-tab-bar/index`，注入 tab 页模板并注册为页面组件；`this.getTabBar()` 返回页面内实例；`wx.switchTab` 切换；新增 custom-tab fixture 和 devtools 验收。497 单测 / 73 步；页面形态 40→44，总分 57.74→58.22 | **58.22%** |
-| 2026-11-11 | 双树页级收口：`PageTreeManager` 持有页根、component data 基线和页内组件实例表；组件实例编号按页重置；custom tabBar 改为独立页级 `tabRoot`，flow 增加 `tabRoot`，patch 增加 `tabPatches`，编译器不再向 tab 页模板注入 `<custom-tab-bar />`；`getTabBar(callback)` 支持延迟解析。511 单测；完整 P0 浏览器门禁通过 | **待重新评分** |
-| 2026-11-11 | 页面恢复收口：HostCore/WebHost 新增 `initialExitState`，首屏 `onLoad` 可读 `this.exitState`；`onSaveExitState` 改为在 `onHide` 后保存；`snapshotState`/`restoreState` 携带 `savedExitState` 与 `exitState`；devtool Reload 持久化整栈 data，普通刷新按页面身份合并快照，避免 runtime state 覆盖保存值；新增启动页 exitState 与刷新回归。521 单测；完整 P0 浏览器门禁通过 | **待重新评分** |
-| 2026-11-11 | 组件定义页级收口：`PageComponentManager` 改为按页面 `usingComponents` 的传递闭包（含 generic 默认组件）维护可见 schema；首屏 flow 只发送该页可见的 `define`，lazy 组件只进入声明它的页面，不再把全局 definition 表广播给所有页面。522 单测；完整 P0 浏览器门禁通过 | **待重新评分** |
-| 2026-11-11 | WXS 页级状态收口：依据 `wcc -d -ds` 的 `__WXML_GLOBAL__.modules`/`nv_require` 实现，service 和 render 都按 page tree 维护模块表，页面模板、组件模板和同页组件实例共享，页面卸载释放；模板每次求值从当前页 runtime 取 exports。随后验证并移除了 `tree.wxsHandler` 跨树回放（包括 `input`/`textarea` WXS `bindinput`）。新增双页、同页更新、组件实例、重入和 render-local handler 回归。530 单测；完整 P0 浏览器门禁通过 | **待重新评分** |
-| 2026-11-11 | 双树 pageframe 收口：页面/组件 WXML 由 render pageframe 执行；service 生成组件创建身份，宿主 shadow tree 内的模板子组件变化以 `component-instances` 结构补丁同步，禁止按 DOM 顺序猜身份；component `ready` 按 shadow descendants → host → light/slot descendants 触发，并覆盖动态重入。微信 3.17.5 CLI 对拍增加双组件 property 更新、嵌套 slot、宿主模板子组件、`wx:if` 创建/销毁、keyed reorder/`moved`、lifecycle，以及 relation linked/unlinked/linkFailed 顺序，十六检查点 1:1。browser/devtool/iOS 全部固定走 pageframe，iOS 9 fixture smoke 通过；530 单测；完整 P0 浏览器门禁通过 | **待重新评分** |
+| 2026-11-11 | 双树页级收口：`PageTreeManager` 持有页根、component data 基线和页内组件实例表；组件实例编号按页重置；custom tabBar 改为独立页级 `tabRoot`，flow 增加 `tabRoot`，patch 增加 `tabPatches`，编译器不再向 tab 页模板注入 `<custom-tab-bar />`；`getTabBar(callback)` 支持延迟解析。511 单测；完整 P0 浏览器门禁通过 | **61.13%（第 45 次统一校准）** |
+| 2026-11-11 | 页面恢复收口：HostCore/WebHost 新增 `initialExitState`，首屏 `onLoad` 可读 `this.exitState`；`onSaveExitState` 改为在 `onHide` 后保存；`snapshotState`/`restoreState` 携带 `savedExitState` 与 `exitState`；devtool Reload 持久化整栈 data，普通刷新按页面身份合并快照，避免 runtime state 覆盖保存值；新增启动页 exitState 与刷新回归。521 单测；完整 P0 浏览器门禁通过 | **61.13%（第 45 次统一校准）** |
+| 2026-11-11 | 组件定义页级收口：`PageComponentManager` 改为按页面 `usingComponents` 的传递闭包（含 generic 默认组件）维护可见 schema；首屏 flow 只发送该页可见的 `define`，lazy 组件只进入声明它的页面，不再把全局 definition 表广播给所有页面。522 单测；完整 P0 浏览器门禁通过 | **61.13%（第 45 次统一校准）** |
+| 2026-11-11 | WXS 页级状态收口：依据 `wcc -d -ds` 的 `__WXML_GLOBAL__.modules`/`nv_require` 实现，service 和 render 都按 page tree 维护模块表，页面模板、组件模板和同页组件实例共享，页面卸载释放；模板每次求值从当前页 runtime 取 exports。随后验证并移除了 `tree.wxsHandler` 跨树回放（包括 `input`/`textarea` WXS `bindinput`）。新增双页、同页更新、组件实例、重入和 render-local handler 回归。530 单测；完整 P0 浏览器门禁通过 | **61.13%（第 45 次统一校准）** |
+| 2026-11-11 | 双树 pageframe 收口：页面/组件 WXML 由 render pageframe 执行；service 生成组件创建身份，宿主 shadow tree 内的模板子组件变化以 `component-instances` 结构补丁同步，禁止按 DOM 顺序猜身份；component `ready` 按 shadow descendants → host → light/slot descendants 触发，并覆盖动态重入。微信 3.17.5 CLI 对拍增加双组件 property 更新、嵌套 slot、宿主模板子组件、`wx:if` 创建/销毁、keyed reorder/`moved`、lifecycle，以及 relation linked/unlinked/linkFailed 顺序，十六检查点 1:1。browser/devtool/iOS 全部固定走 pageframe，iOS 9 fixture smoke 通过；530 单测；完整 P0 浏览器门禁通过 | **61.13%（第 45 次统一校准）** |
 | 2026-11-10 | 第三十九次同步：devtool 页面栈恢复——按 app 保存 pageStack 路径到 sessionStorage，带 `restore=1` 的刷新在 launch 时重建栈（最多到 maxPageStack），关闭应用清理；验收覆盖刷新后回到 add-todo 且栈长度 2。497 单测 / 72 步；页面形态 38→40，总分 57.50→57.74 | **57.74%** |
 | 2026-11-10 | 第三十八次同步：页面形态配置下沉到宿主——`pageBehaviorOf(manifest,pagePath)` 解析 `enablePullDownRefresh`/`onReachBottomDistance`，通过 render iframe URL 传入，service/kernel 不再读取页面形态配置；下拉手势按配置启用，触底距离默认 50，`stopPullDownRefresh` 发 host diagnostic 立即收起指示器；转场改 opacity 避免 iframe 坐标错位。497 单测 / 71 步；页面形态 36→38，总分 57.26→57.50 | **57.50%** |
 | 2026-11-10 | 第三十七次同步：devtool 页面转场——按 page stack 深度区分 navigateTo/navigateBack/replace，给每页 iframe 加 push/pop/fade 动画，验收断言 `data-transition=forward|back`。497 单测 / 70 步；页面形态 34→36，总分 57.02→57.26 | **57.26%** |
