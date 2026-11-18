@@ -28,12 +28,6 @@ export class RenderUpdateScheduler {
     else this.pendingPageDataPatches.set(pageId, [cloned])
   }
 
-  dropLastPageData(pageId: string): void {
-    const pending = this.pendingPageDataPatches.get(pageId)
-    pending?.pop()
-    if (pending?.length === 0) this.pendingPageDataPatches.delete(pageId)
-  }
-
   pageDataPatches(pageId: string): Array<Record<string, unknown>> | undefined {
     return this.pendingPageDataPatches.get(pageId)
   }

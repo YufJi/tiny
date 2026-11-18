@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Phases A, B and C are implemented. The browser test host, debugger and iOS
+Accepted. Phases A, B, C and E are implemented. The browser test host, debugger and iOS
 render WKWebView all mount through the pageframe, and the runtime's cross-thread
 integration harness also defaults to pageframe. `TreeRenderer` requires
 `mountPage`; the legacy `tree.snapshot` event, service-side pageframe switch and
@@ -70,16 +70,27 @@ The migration is staged to keep the gate green:
   Component `ready` follows WeChat's creation walk: shadow descendants, the
   host, then light/slot descendants. Dynamically created components receive
   their own `ready` after the update is acknowledged.
-- **Phase C (implemented)**: page `setData` crosses as its original data patches,
-  not a full page snapshot. Render-local diff is the acknowledgement. Page WXML
-  props are applied before the remaining per-instance component-data patch, so
-  a parent prop update is not evaluated twice. Component data is sent as
-  per-instance field patches, not a full component-data map. Structural updates
-  carry `renderHints` and
-  `componentFlow` for identity/index alignment; they never carry page
-  virtual-node patches. WXS `bindinput` on `input`/`textarea` is render-local,
-  matching WeChat's pageframe dispatch; only plain JS `bindinput` uses the
-  service event path.
+- **Phase C (implemented, superseded by Phase E for structural updates)**: page
+  `setData` crosses as its original data patches, not a full page snapshot.
+  Render-local diff is the acknowledgement. Page WXML props are applied before
+  the remaining per-instance component-data patch, so a parent prop update is
+  not evaluated twice. Component data is sent as per-instance field patches,
+  not a full component-data map. WXS `bindinput` on `input`/`textarea` is
+  render-local, matching WeChat's pageframe dispatch; only plain JS `bindinput`
+  uses the service event path.
+- **Phase E (implemented, R1)**: updates are data-only. `tree.flow` still
+  carries the initial projection (`define` + `tree` + `ready`), but a
+  `tree.patch` no longer carries the element tree or the full component list.
+  It carries the original `setData` patch, per-instance component data, and a
+  `componentFlowDelta` addressed per owner (page root or component host):
+  `add` (id/path/index), `remove`, optional `order`, plus `define` for
+  definitions the render side has not installed. A data-only update has no
+  component delta at all. The page root's glass `setData` wrapper records the
+  patch, because page handlers call glass directly and never pass through
+  `MiniProgramPageInstance.setData`.
+  `treeProtocol.renderHints = 'always'` restores the Phase C behaviour as a
+  rollback switch and as the byte-budget baseline; `'mount-only'` is the
+  default.
 - **Phase D (closed by WeChat 3.17.5 source)**: the cross-tree
   `tree.wxsHandler` replay has been removed; WXS handlers, including
   `input`/`textarea` `bindinput`, execute only in the pageframe. Service
@@ -120,9 +131,33 @@ traces are identical. The P0 browser gate additionally covers slot-child
 component binding under `wx:if`, relation link/unlink/linkFailed, component-data updates,
 and the full service/render lifecycle.
 
+### Update payload budget (R1)
+
+`packages/runtime/tests/tree-payload-budget.test.ts` mounts a 2000-row page
+(4001 render nodes) and measures `tree.flow`/`tree.patch` JSON length through
+`treeProtocol.onPayload`:
+
+| Batch | Payload |
+| --- | --- |
+| mount flow (`tree` + `define` + page data) | 415,647 |
+| one row text update (`setData` patch) | 93 |
+| one component created by `wx:if` (delta + `define`) | 247 |
+| same component creation with `renderHints: 'always'` | 357,746 |
+
+The gate assertion is "an update is under 5% of the mount payload"; the
+data-only and one-component structural batches are both under 0.1%.
+
 ## Consequences
 
 The service-side WXS expression runtime is a logic-tree projection input; it is
 no longer used to replay render event handlers. Pageframe remains the final
 WXML/DOM owner. New runtime work should preserve this split rather than trying
 to remove service template instantiation outright.
+
+Mount still carries the element projection once (Phase B of R1, "never", is not
+done). Removing it needs a mount payload that carries only `componentFlow` plus
+the per-owner instance lists, a built-in prop fallback that reads the props
+captured during template evaluation, live-glass element locator resolution, and
+a replacement for the service-listener lookup on elements. R2's stable
+render-local element ids supply the identity half. Until then the mount snapshot
+is the single source those fallbacks read.

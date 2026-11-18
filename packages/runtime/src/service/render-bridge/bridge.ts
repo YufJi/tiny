@@ -7,6 +7,9 @@ import type { StyleLoader, TemplateRegistry } from '../../shared/template'
 import {
   TREE_PROTOCOL,
   wxsBindingKey,
+  type ComponentFlowDelta,
+  type RenderNode,
+  type TreePatchPayload,
 } from '../../tree-protocol/protocol'
 import { LogicTreeAdapter } from '../logic-tree/adapter'
 import type { LogicFrameworkContext } from '../logic-tree/glass/adapter'
@@ -32,6 +35,40 @@ export type { ServicePageComponent } from './projection'
 /** Page-scoped framework hooks forwarded to the logic tree. */
 export type ServiceLogicFrameworkContext = LogicFrameworkContext
 
+/**
+ * Cross-thread tree protocol options.
+ *
+ * `mount-only` is the data-only default: the mount flow carries the
+ * service-owned element projection once, and every update carries only data
+ * plus the component identities that changed. `always` restores the previous
+ * behaviour (structural updates re-send the element tree) and exists as a
+ * rollback switch and as the byte-benchmark baseline.
+ */
+export type TreeProtocolOptions = {
+  renderHints?: 'always' | 'mount-only'
+  /**
+   * Observability hook: size of every `tree.flow` / `tree.patch` payload.
+   *
+   * `bytes` is the JSON text length (characters, not UTF-8 bytes) of the whole
+   * payload, so the parts can be compared with each other and with the mount
+   * baseline. Off by default; enabling it costs one stringify per batch.
+   */
+  onPayload?: (info: TreePayloadInfo) => void
+}
+
+export type TreePayloadInfo = {
+  kind: 'flow' | 'patch'
+  pageId: string
+  bytes: number
+  /** Service element tree (`renderHints`), zero in the data-only mode. */
+  hintsBytes: number
+  /** Full page data plus original `setData` patches. */
+  pageDataBytes: number
+  componentDataBytes: number
+  /** Full component identity list or incremental component flow delta. */
+  componentFlowBytes: number
+}
+
 export type ServiceRenderBridgeOptions = RenderProjectionOptions & {
   connection: BridgeConnection
   loadTemplates: () => Promise<TemplateRegistry> | TemplateRegistry
@@ -43,6 +80,8 @@ export type ServiceRenderBridgeOptions = RenderProjectionOptions & {
   onError: (message: string) => void
   /** Page-scoped WXS runtime shared with generated service templates. */
   wxsRuntime?: WxsRuntime
+  /** Element-projection mode; defaults to `mount-only`. */
+  treeProtocol?: TreeProtocolOptions
 }
 
 /**
@@ -110,6 +149,11 @@ export class ServiceRenderBridge implements ServiceRenderPort {
         ? { frameworkContext: this.options.frameworkContext }
         : {}),
       onDataChange: (pageId) => this.scheduleTreeUpdate(pageId),
+      // Page handlers call glass's `setData` directly, so the page root's
+      // setData wrapper is the only place that still sees the original patch.
+      // Recording it here is what turns `setData` into a data patch instead of
+      // a full-page snapshot (or a structural tree resend).
+      onPageDataPatch: (pageId, patch) => this.scheduler.recordPageData(pageId, patch),
       onCustomEvent: (pageId, componentId, name, detail, eventOptions) => {
         // JS listeners already ran in the logic tree. Only forward events that
         // actually have a WXS binding on this page: forwarding every
@@ -221,11 +265,14 @@ export class ServiceRenderBridge implements ServiceRenderPort {
   syncPageData(pageId: string, patch: Record<string, unknown>): void {
     if (!this.logicTree || !this.mountedPages.has(pageId)) return
     try {
-      this.scheduler.recordPageData(pageId, patch)
+      // `applyPageData` goes through the page root's glass `setData`, whose
+      // wrapper records the patch; recording it here too would double it.
       this.logicTree.applyPageData(pageId, patch)
       this.scheduleTreeUpdate(pageId)
     } catch (error) {
-      this.scheduler.dropLastPageData(pageId)
+      // The glass `setData` wrapper records a patch only after glass accepted
+      // it, so a failure here left nothing behind; dropping "the last patch"
+      // would discard an earlier valid patch from the same tick.
       this.connection.sendDiagnostic('warn', {
         code: DIAGNOSTIC_CODES.LOGIC_TREE_ERROR,
         message: error instanceof Error ? error.message : String(error),
@@ -315,6 +362,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       page?.data,
     )
     if (!payload) return
+    this.reportTreePayload('flow', pageId, payload)
     this.connection.sendEvent(
       TREE_PROTOCOL.domain,
       TREE_PROTOCOL.flow,
@@ -333,7 +381,24 @@ export class ServiceRenderBridge implements ServiceRenderPort {
   private flushPage(pageId: string): void {
     if (!this.logicTree || !this.mountedPages.has(pageId)) return
     try {
-      const { patches, snapshot } = this.logicTree.updateRenderTree(pageId)
+      const hintsMode = this.options.treeProtocol?.renderHints ?? 'mount-only'
+      // One snapshot advance per batch, whichever projection the mode needs.
+      let structural = false
+      let hints: RenderNode | undefined
+      let delta: ComponentFlowDelta | undefined
+      if (hintsMode === 'always') {
+        const update = this.logicTree.updateRenderTree(pageId)
+        structural = update.patches.some((patch) => (
+          patch.type === 'insert'
+          || patch.type === 'remove'
+          || patch.type === 'replace'
+          || patch.type === 'reorder'
+          || patch.type === 'component-instances'
+        ))
+        if (structural) hints = update.snapshot
+      } else {
+        delta = this.logicTree.updateComponentFlow(pageId).delta
+      }
       const tabBar = this.logicTree.updateTabBarTree(pageId)
       // Component data is a per-instance patch; a data-only update must still
       // cross the bridge even when the structure did not change.
@@ -348,7 +413,9 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       const pageDataPatches = this.scheduler.pageDataPatches(pageId)
       const hasPageDataPatches = Boolean(pageDataPatches && pageDataPatches.length > 0)
       if (
-        patches.length > 0
+        structural
+        || Boolean(hints)
+        || Boolean(delta)
         || hasComponentData
         || tabBar.patches.length > 0
         || Boolean(tabFrame)
@@ -356,23 +423,16 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       ) {
         const page = this.options.getPage(pageId)
         const ack = this.scheduler.takeCompletionBatch(pageId)
-        const structural = patches.some((patch) => (
-          patch.type === 'insert'
-          || patch.type === 'remove'
-          || patch.type === 'replace'
-          || patch.type === 'reorder'
-          || patch.type === 'component-instances'
-        ))
-        const payload = this.projection.buildPatch(
-          pageId,
-          snapshot,
-          structural,
+        const payload: TreePatchPayload = this.projection.buildPatch(pageId, {
+          ...(hints ? { hints } : {}),
+          ...(delta ? { delta } : {}),
           componentData,
-          tabFrame,
-          page?.data,
-          pageDataPatches,
-          ack,
-        )
+          ...(tabFrame ? { tabFrame } : {}),
+          ...(page?.data ? { pageData: page.data } : {}),
+          ...(pageDataPatches ? { pageDataPatches } : {}),
+          ...(ack ? { ack } : {}),
+        })
+        this.reportTreePayload('patch', pageId, payload)
         this.connection.sendEvent(
           TREE_PROTOCOL.domain,
           TREE_PROTOCOL.patch,
@@ -399,6 +459,33 @@ export class ServiceRenderBridge implements ServiceRenderPort {
         this.runCompletion(id, callback)
       ))
     }
+  }
+
+  /** Optional payload-size telemetry (benchmarks, devtool diagnostics). */
+  private reportTreePayload(
+    kind: 'flow' | 'patch',
+    pageId: string,
+    payload: Record<string, unknown>,
+  ): void {
+    const report = this.options.treeProtocol?.onPayload
+    if (!report) return
+    const size = (value: unknown): number => {
+      if (value === undefined) return 0
+      try {
+        return JSON.stringify(value)?.length ?? 0
+      } catch {
+        return 0
+      }
+    }
+    report({
+      kind,
+      pageId,
+      bytes: size(payload),
+      hintsBytes: size(payload.renderHints),
+      pageDataBytes: size(payload.pageData) + size(payload.pageDataPatches),
+      componentDataBytes: size(payload.componentData),
+      componentFlowBytes: size(payload.componentFlow) + size(payload.componentFlowDelta),
+    })
   }
 
   /** The render thread reflected one or more batches. */

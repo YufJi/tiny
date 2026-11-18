@@ -1,6 +1,7 @@
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import { DIAGNOSTIC_CODES, type Manifest, type PageArtifact } from '@tiny/manifest'
 import type {
+  ComponentFlowDelta,
   RenderAnimationRequest,
   RenderClearAnimationRequest,
   RenderEventGeometry,
@@ -8,6 +9,7 @@ import type {
   RenderPatch,
 } from '../../tree-protocol/protocol'
 import { diffRenderTree } from '../../tree-protocol/diff'
+import { diffComponentOwners } from '../../tree-protocol/flow'
 import type { AssetUrlResolver, ProtocolRelativeUrlResolver } from '../../shared/assets'
 import { normalizeAnimationFrames, animationTimingOptions } from '../../tree-protocol/animation'
 import * as glassEasel from 'glass-easel'
@@ -58,6 +60,8 @@ export type LogicTreeAdapterOptions = {
   /** Runtime page kind, derived from the actual registration. */
   isComponentPage?: (path: string) => boolean
   onDataChange?: (pageId: string) => void
+  /** Raw `setData` patch a page root applied, before the render batch. */
+  onPageDataPatch?: (pageId: string, patch: Record<string, unknown>) => void
   onDiagnostic?: (diagnostic: import('../../shared/diagnostics').RuntimeDiagnostic) => void
   /** Report a handler/observer error raised inside glass-easel. */
   onError?: (pageId: string | undefined, message: string, details?: unknown) => void
@@ -194,6 +198,7 @@ export class LogicTreeAdapter {
       logicQueryFactory: (component) => this.createSelectorQueryFor(component),
       componentHandleFactory: (component) => this.componentHandle(component),
       onLogicDataChange: options.onDataChange,
+      ...(options.onPageDataPatch ? { onPageDataPatch: options.onPageDataPatch } : {}),
       ...(options.afterRender ? { afterRender: options.afterRender } : {}),
       logicTouchState: () => this.getActiveTouches(),
       logicIntersectionFactory: (component, observerOptions) => (
@@ -634,6 +639,27 @@ export class LogicTreeAdapter {
     if (!snapshot) throw new Error(`logic page is not mounted: ${pageId}`)
     const previous = pageTree.advanceRenderTree(snapshot)
     return { snapshot, patches: previous ? diffRenderTree(previous, snapshot) : [] }
+  }
+
+  /**
+   * Advance the render snapshot and project only the component identities that
+   * changed since the previous batch.
+   *
+   * This is the hot path for `setData`: the pageframe re-evaluates its own
+   * template from the data patch, so the service only owes it (a) the data and
+   * (b) the identity of any component the pageframe is about to create or
+   * destroy. The element tree itself never crosses the bridge.
+   */
+  updateComponentFlow(pageId: string): {
+    snapshot: RenderNode
+    delta: ComponentFlowDelta | undefined
+  } {
+    const pageTree = this.pageTrees.get(pageId)
+    if (!pageTree) throw new Error(`logic page is not mounted: ${pageId}`)
+    const snapshot = this.snapshotRenderTree(pageId)
+    if (!snapshot) throw new Error(`logic page is not mounted: ${pageId}`)
+    const previous = pageTree.advanceRenderTree(snapshot)
+    return { snapshot, delta: diffComponentOwners(previous, snapshot) }
   }
 
   /** Diff the independent tabBar root against its previous snapshot. */

@@ -12,6 +12,7 @@ import {
 } from '@tiny/runtime'
 import type {
   ComponentDefinitionPayload,
+  ComponentFlowDelta,
   CustomEventMessage,
   RenderAnimationRequest,
   RenderClearAnimationRequest,
@@ -181,6 +182,11 @@ export type GlassRenderTree = {
   setPageFrameHints?: (root: RenderNode) => void
   /** Replace the service-owned component identity list for the pageframe. */
   setPageFrameComponents?: (components: RenderComponentIdentity[]) => void
+  /**
+   * Incremental component-identity batch. The pageframe's element tree is
+   * render-owned, so this only binds/unbinds component instances.
+   */
+  applyComponentFlowDelta?: (delta: ComponentFlowDelta) => void
   /** Dispatch a service-triggered custom event so WXS handlers can run. */
   dispatchCustomEvent?: (request: CustomEventMessage) => void
   /** Apply an opaque listener return correlated by the render-side token. */
@@ -644,6 +650,16 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   let pageFramePageId = ''
   let pageFramePagePath = ''
   let pageFrameComponents: RenderComponentIdentity[] = []
+  /**
+   * Component instances grouped by their owner (page root or a component host).
+   *
+   * The page tree is maintained incrementally from `componentFlowDelta`; a
+   * component's own list holds its full render-descendant set, which is what
+   * `bindFor` matches positionally. The tab tree keeps using its mount hints
+   * (`tabFrameComponents` + tab node ids) because it is one independent
+   * pageframe that re-mounts on change.
+   */
+  const componentInstancesByOwner = new Map<string, RenderComponentIdentity[]>()
   let pagePlaceholders: Record<string, string> = {}
   let pageFrameUnresolvedUsing = new Set<string>()
   const sameDataPatch = (
@@ -676,6 +692,113 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   }
   /** Parents whose instance list already produced a desync diagnostic. */
   const desyncReported = new Set<string>()
+
+  /**
+   * Drop every render-side trace of one component instance (and, recursively,
+   * of the instances it owned). The glass tree destroys the actual component
+   * during its own template diff; this only clears the identity bookkeeping.
+   */
+  const forgetComponentInstance = (id: string): void => {
+    for (const cleanup of eventCleanups.get(id) ?? []) cleanup()
+    eventCleanups.delete(id)
+    nodes.delete(id)
+    currentTree.delete(id)
+    externalByNode.delete(id)
+    pendingClasses.delete(id)
+    pendingWxsEvents.delete(id)
+    wxsPropSnapshots.delete(id)
+    desyncReported.delete(id)
+    delete componentData[id]
+    const nested = componentInstancesByOwner.get(id)
+    componentInstancesByOwner.delete(id)
+    for (const child of nested ?? []) forgetComponentInstance(child.id)
+  }
+
+  /**
+   * Rebuild the page-tree owner lists from the mount hints.
+   *
+   * Tab-node owners are preserved: `indexPageFrameHints` keeps tab entries in
+   * `currentTree`, and the tab tree has its own mount/hints lifecycle.
+   */
+  const indexPageComponentOwners = (rootId: string): void => {
+    for (const ownerId of [...componentInstancesByOwner.keys()]) {
+      if (tabBarNodeIds.has(ownerId)) continue
+      componentInstancesByOwner.delete(ownerId)
+    }
+    if (pageFrameComponents.length > 0) {
+      componentInstancesByOwner.set(rootId, [...pageFrameComponents])
+    } else {
+      const pageRoot = currentTree.get(rootId)
+      if (pageRoot?.type === 'element') {
+        const instances: RenderComponentIdentity[] = []
+        const visit = (node: RenderNode): void => {
+          if (node.type !== 'element') return
+          if (node.component === true && node.componentPath && node.id) {
+            instances.push({ id: node.id, path: node.componentPath })
+          }
+          for (const child of node.children ?? []) visit(child)
+        }
+        for (const child of pageRoot.children ?? []) visit(child)
+        if (instances.length > 0) componentInstancesByOwner.set(rootId, instances)
+      }
+    }
+    for (const [id, node] of currentTree) {
+      if (tabBarNodeIds.has(id)) continue
+      if (node.type === 'element' && node.component === true && node.componentInstances?.length) {
+        componentInstancesByOwner.set(id, node.componentInstances.map((instance) => ({
+          id: instance.id,
+          path: instance.path,
+        })))
+      }
+    }
+  }
+
+  /**
+   * Apply one incremental component-identity batch.
+   *
+   * Hosts receive `add`/`remove`/`order` per owner; an append is a single
+   * entry regardless of how many instances the page already has. Binding runs
+   * later in `bindNestedComponentInstances`, after the data patch made the
+   * render tree create the matching components.
+   */
+  const applyComponentFlowDelta = (delta: ComponentFlowDelta): void => {
+    for (const owner of delta.owners ?? []) {
+      let next = componentInstancesByOwner.get(owner.id)?.slice() ?? []
+      if (owner.remove?.length) {
+        const removed = new Set(owner.remove)
+        for (const id of removed) forgetComponentInstance(id)
+        next = next.filter((instance) => !removed.has(instance.id))
+      }
+      if (owner.add?.length) {
+        for (const instance of [...owner.add].sort((a, b) => a.index - b.index)) {
+          const at = Math.max(0, Math.min(instance.index, next.length))
+          next.splice(at, 0, { id: instance.id, path: instance.path })
+        }
+      }
+      if (owner.order?.length) {
+        const byId = new Map(next.map((instance) => [instance.id, instance]))
+        const ordered: RenderComponentIdentity[] = []
+        for (const id of owner.order) {
+          const instance = byId.get(id)
+          if (!instance) continue
+          ordered.push(instance)
+          byId.delete(id)
+        }
+        // Anything the service did not order is stale; keep it appended so a
+        // later batch can still remove it explicitly.
+        for (const instance of byId.values()) ordered.push(instance)
+        next = ordered
+      }
+      if (next.length === 0 && owner.id !== rootId.value) {
+        // A component-owner list that became empty: the owner itself may have
+        // been destroyed by its parent's remove, which already forgot it.
+        componentInstancesByOwner.delete(owner.id)
+      } else {
+        componentInstancesByOwner.set(owner.id, next)
+      }
+    }
+  }
+
   /**
    * Match the component instances the render thread created while evaluating a
    * template to the view ids the logic tree assigned to them, so per-instance
@@ -787,8 +910,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       }
     }
     if (pageFrameRoot) {
-      if (pageFrameComponents.length > 0) {
-        bindFor(rootId.value, pageFrameComponents)
+      const pageInstances = componentInstancesByOwner.get(rootId.value) ?? pageFrameComponents
+      if (pageInstances.length > 0) {
+        bindFor(rootId.value, pageInstances)
       } else {
         const pageRoot = currentTree.get(rootId.value)
         if (pageRoot?.type !== 'element') return
@@ -807,7 +931,14 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     if (tabFrameRootId && tabFrameComponents.length > 0) {
       bindFor(tabFrameRootId, tabFrameComponents)
     }
+    for (const [ownerId, instances] of componentInstancesByOwner) {
+      if (ownerId === rootId.value || ownerId === tabFrameRootId) continue
+      if (instances.length === 0) continue
+      bindFor(ownerId, instances)
+    }
     for (const [id, node] of currentTree) {
+      // Tab-frame components still arrive with their mount hints.
+      if (!tabBarNodeIds.has(id)) continue
       if (node.type !== 'element' || !node.componentInstances) continue
       bindFor(id, node.componentInstances)
     }
@@ -2841,6 +2972,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       eventCleanups.delete(id)
       nodes.delete(id)
       currentTree.delete(id)
+      componentInstancesByOwner.delete(id)
     }
     tabBarNodeIds.clear()
     ;(tabBarRoot as unknown as { destroy?: () => void } | undefined)?.destroy?.()
@@ -2946,6 +3078,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         pageFrameComponents = [...(request.componentFlow ?? pageFrameComponents)]
         if (request.placeholders) pagePlaceholders = request.placeholders
         indexHints(request.renderHints)
+        indexPageComponentOwners(rootViewId)
         const next = { ...request.data }
         if (!sameDataPatch(pageData, next)) {
           pageData = next
@@ -2977,6 +3110,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     nodes.clear()
     currentTree.clear()
     indexHints(request.renderHints)
+    indexPageComponentOwners(rootViewId)
     const definition = space.defineComponent({
       is: request.pagePath,
       options: {
@@ -3084,10 +3218,13 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     setPageFrameHints: (root) => {
       if (!pageFrameRoot || !rootId.value) return
       indexPageFrameHints(root, rootId.value, pageFramePagePath)
+      indexPageComponentOwners(rootId.value)
     },
     setPageFrameComponents: (components) => {
       pageFrameComponents = [...components]
+      if (rootId.value) componentInstancesByOwner.set(rootId.value, [...pageFrameComponents])
     },
+    applyComponentFlowDelta,
     setPageData: (data) => {
       const next = { ...data }
       const changed = !sameDataPatch(pageData, next)
@@ -3479,6 +3616,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       pageFramePageId = ''
       pageFramePagePath = ''
       pageFrameComponents = []
+      componentInstancesByOwner.clear()
       clearPageFrameTouchMoveGuards()
       for (const cleanups of eventCleanups.values()) {
         for (const cleanup of cleanups) cleanup()
@@ -3562,6 +3700,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       eventCleanups.clear()
       nodes.clear()
       currentTree.clear()
+      componentInstancesByOwner.clear()
       externalByNode.clear()
       pendingClasses.clear()
       pendingWxsEvents.clear()

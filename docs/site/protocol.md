@@ -221,12 +221,12 @@ Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动
 
 ## tree 域：两棵树之间的同步 {#tree-protocol kicker="tree 协议"}
 
-双侧树不共享内存。service 逻辑树生成 component flow、页面数据补丁和组件身份 hints；render pageframe 从编译模板求值页面与组件 WXML，并在本地完成 DOM diff。事件、查询和相交观测再按组件 id 或元素 locator 回到 service。
+双侧树不共享内存。service 逻辑树生成 component flow、页面数据补丁和组件身份变更；render pageframe 从编译模板求值页面与组件 WXML，并在本地完成 DOM diff。元素树只在首屏 flow 里出现一次，之后的更新是数据-only。事件、查询和相交观测再按组件 id 或元素 locator 回到 service。
 
 | 消息 | 方向 | 内容 |
 | --- | --- | --- |
 | `tree.flow` | service → render | 首屏 flow：`define`（该页可见组件定义）、`tree`（整棵页面渲染快照）、`ready`；payload 另带 `componentFlow` 组件身份流，并可带独立 `tabFrame`、页面样式、fallback app 样式、`pageScope`、`pageUsing`、`behaviorScheme`、`wxsModules`、`pageData` 和 `componentData` |
-| `tree.patch` | service → render | pageframe 只发 `pageDataPatches` / `componentData`，结构变化时附带 `renderHints` 和 `componentFlow`；不再携带页面 virtual-node `patches`。独立 tabBar 的模板更新走 `tabFrame` |
+| `tree.patch` | service → render | 数据-only 更新：原始 `setData` patch（`pageDataPatches`）、组件 data（`componentData`）和 `componentFlowDelta`（按 owner 的 `add`/`remove`/`order`，新定义走 `define`）。不再携带 `renderHints`、全量 `componentFlow` 或页面 virtual-node `patches`；`treeProtocol.renderHints='always'` 可回滚到旧行为。独立 tabBar 的模板更新走 `tabFrame` |
 | `tree.ack` | render → service | 批次确认：回显 flow/patch 上的 `ack` token；service 用它 settle `setData` completion |
 | `tree.event` | render → service | 组件 id 或元素 locator、可选 `targetId`、name、宿主已归一化的 detail、touches 和 target/currentTarget 几何；service 从最内层 target 节点开始分发，并保留当前 binding 的 currentTarget |
 | `tree.templateEvent` | render → service | render 求值的组件模板把绑定的方法调用交回 service |
@@ -270,20 +270,27 @@ mask, zIndex, visible, style, props }`；`mask` 是未被 DOM 浮层遮挡的矩
 }
 ```
 
-后续页面更新发送原始数据补丁、组件数据补丁和身份 hints；页面模板由 pageframe 自行求值：
+后续页面更新只发原始数据补丁、组件数据补丁和组件身份增量；页面模板由 pageframe 自行求值：
 
 ```js
 {
   pageDataPatches: [{ title: '新的标题' }],
   componentData: { 'card-1': { label: '新的标题' } },
-  // 仅结构变化时出现
-  renderHints: { type: 'element', id: 'page-1', tag: 'page', children: [ ... ] },
-  componentFlow: [{ id: 'card-1', path: 'components/card/card' }],
+  // 仅组件身份变化时出现：按 owner（页面根或组件宿主）给 add/remove
+  componentFlowDelta: {
+    define: [{ path: 'components/card/card', ... }],      // render 尚未安装的定义
+    owners: [
+      { id: 'page-1', add: [{ id: 'card-2', path: 'components/card/card', index: 1 }] },
+      { id: 'card-1', remove: ['badge-1'] },
+    ],
+  },
 }
 ```
 
+`add` 的 `index` 是实例在该 owner 下一版列表中的位置（先处理 `remove`）；存活实例整体重排时用 `order` 给出完整 id 顺序。纯数据更新没有 `componentFlowDelta`。
+
 :::callout{title="patch 按页面合批"}
-service 在一个 microtask 内合并同一页面的更新，再发一条 `tree.patch`。pageframe 先应用页面 data 补丁，再应用剩余的组件实例 data 补丁；结构变化只刷新身份 hints，不重放页面 DOM patch。自定义 tabBar 的独立根由 `tabFrame` 挂载，后续 data/身份变化也通过 `tabFrame` 更新，页面根和 tab 根共享同一个渲染批次。带 `setData` completion 的批次额外携带 `ack` token，渲染树应用后回 `tree.ack`（失败也回，先发 `RENDER_PATCH_ERROR` 诊断），service 收到确认才执行回调。
+service 在一个 microtask 内合并同一页面的更新，再发一条 `tree.patch`。pageframe 先应用组件身份增量，再应用页面 data 补丁，最后应用剩余的组件实例 data 补丁；结构性 DOM 变化完全由 pageframe 本地 diff 完成，不重放页面 DOM patch。自定义 tabBar 的独立根由 `tabFrame` 挂载，后续 data/身份变化也通过 `tabFrame` 更新，页面根和 tab 根共享同一个渲染批次。带 `setData` completion 的批次额外携带 `ack` token，渲染树应用后回 `tree.ack`（失败也回，先发 `RENDER_PATCH_ERROR` 诊断），service 收到确认才执行回调。
 :::
 
 ## v1 现在有哪些消息 {#catalog kicker="消息列表"}

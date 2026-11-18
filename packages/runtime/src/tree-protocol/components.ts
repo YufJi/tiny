@@ -1,4 +1,4 @@
-import type { RenderComponentIdentity, RenderNode } from './nodes'
+import type { RenderComponentIdentity, RenderNode, RenderNodeId } from './nodes'
 
 /** One pageframe-owned root: the page itself or its independent custom tabBar. */
 export type PageFrameMount = {
@@ -51,4 +51,67 @@ export type ComponentDefinitionPayload = {
   styleScope?: string
   generics?: Record<string, { default?: string } | true>
   options?: Record<string, unknown>
+}
+
+/** One component instance the render pageframe created for an owner. */
+export type ComponentInstanceRef = {
+  id: RenderNodeId
+  path: string
+}
+
+/**
+ * Incremental component-identity flow for one owner.
+ *
+ * The owner is the page root or a component host: every owner binds its own
+ * component descendants positionally (the render side consumes the list in
+ * document order, the same way WeChat's view thread consumes
+ * `FLOW_CREATE_NODE`). Updates therefore only carry what changed for a given
+ * owner instead of the whole page's element tree.
+ */
+export type ComponentOwnerDelta = {
+  /** Owner id: the page root id or a component's shared id. */
+  id: string
+  /** New instances, addressed by their index in the owner's next list. */
+  add?: Array<ComponentInstanceRef & { index: number }>
+  /** Destroyed instance ids (their own owner lists disappear with them). */
+  remove?: RenderNodeId[]
+  /**
+   * Full id order when surviving instances changed relative order (for
+   * example a keyed `wx:for` rotation). `add`/`remove` still apply first.
+   */
+  order?: RenderNodeId[]
+}
+
+/**
+ * Service-to-render component flow delta.
+ *
+ * `define` carries definitions the render thread has not seen for this page;
+ * `owners` carries the per-owner instance changes. A data-only update has no
+ * delta at all, which is the normal steady state.
+ */
+export type ComponentFlowDelta = {
+  define?: ComponentDefinitionPayload[]
+  owners?: ComponentOwnerDelta[]
+}
+
+/**
+ * Payload of a `tree.patch` message.
+ *
+ * This is the data-only update envelope: page/component data plus component
+ * identity changes. A normal batch carries no element tree; the deprecated
+ * `renderHints`/`componentFlow` fields exist only for the
+ * `renderHints: 'always'` compatibility mode.
+ */
+export type TreePatchPayload = {
+  pageId: string
+  pageData?: Record<string, unknown>
+  pageDataPatches?: Array<Record<string, unknown>>
+  componentData?: Record<string, Record<string, unknown>>
+  componentFlowDelta?: ComponentFlowDelta
+  tabFrame?: PageFrameMount
+  ack?: string[]
+  /** Deprecated: full service snapshot, only in `renderHints: 'always'` mode. */
+  renderHints?: RenderNode
+  /** Deprecated: full identity list, only in `renderHints: 'always'` mode. */
+  componentFlow?: RenderComponentIdentity[]
 }

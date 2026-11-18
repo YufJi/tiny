@@ -513,4 +513,66 @@ describe('tree thread', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(order).toEqual(['templates', 'mountPage', 'patch'])
   })
+
+  test('applies a component flow delta before the data patch', async () => {
+    const [hostTransport, renderTransport] = createInMemoryTransportPair()
+    const order: string[] = []
+    const definitions: string[] = []
+    const deltas: unknown[] = []
+    bootTreeThread({
+      connection: createRenderConnection(renderTransport),
+      renderer: {
+        mountPage: () => {},
+        setComponentDefinitions: (next) => {
+          definitions.push(...Object.keys(next))
+          order.push('definitions')
+        },
+        applyComponentFlowDelta: (delta) => {
+          deltas.push(delta)
+          order.push('delta')
+        },
+        applyPageDataPatches: () => order.push('patch'),
+      },
+    })
+    const host = new BridgeConnection({
+      localRole: 'host',
+      peerRole: 'render',
+      transport: hostTransport,
+      respondToHello: false,
+    })
+    await host.handshake()
+    host.sendEvent('tree', 'flow', {
+      pageId: 'page-1',
+      pagePath: 'pages/index/index',
+      styles: [],
+      pageFrame: { rootViewId: 'page' },
+      messages: [
+        { type: 'tree', root: { type: 'element', id: 'page', tag: 'page' } },
+        { type: 'ready' },
+      ],
+    }, { pageId: 'page-1' })
+    host.sendEvent('tree', 'patch', {
+      pageId: 'page-1',
+      pageDataPatches: [{ showCard: true }],
+      componentFlowDelta: {
+        define: [{ path: 'components/card/card', properties: {} }],
+        owners: [{
+          id: 'page',
+          add: [{ id: 'card-1', path: 'components/card/card', index: 0 }],
+        }],
+      },
+    }, { pageId: 'page-1' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(definitions).toEqual(['components/card/card'])
+    expect(deltas).toEqual([{
+      define: [{ path: 'components/card/card', properties: {} }],
+      owners: [{
+        id: 'page',
+        add: [{ id: 'card-1', path: 'components/card/card', index: 0 }],
+      }],
+    }])
+    // A definition must be installed before the instance that needs it, and
+    // the data patch is applied after the identity batch.
+    expect(order).toEqual(['definitions', 'delta', 'patch'])
+  })
 })

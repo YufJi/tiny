@@ -9,6 +9,7 @@ import {
   TREE_PROTOCOL,
   type ComponentDefinitionPayload,
   type ComponentFlow,
+  type ComponentFlowDelta,
   type CustomEventMessage,
   type EventReturnMessage,
   type RenderAnimationRequest,
@@ -67,6 +68,14 @@ export type TreeRenderer = {
   setPageFrameHints?: (root: RenderNode) => void
   /** Replace the service-owned component identity list for the pageframe. */
   setPageFrameComponents?: (components: RenderComponentIdentity[]) => void
+  /**
+   * Apply an incremental component-identity batch.
+   *
+   * The render pageframe already owns the element tree; this only tells it
+   * which component ids the service assigned to instances it is creating or
+   * destroying. Data updates travel separately.
+   */
+  applyComponentFlowDelta?: (delta: ComponentFlowDelta) => void
   /** Public built-in behavior scheme from the service compatibility config. */
   setBehaviorScheme?: (scheme: string) => void
   setEventSink?: (sink: (event: TreeEventPayload) => void) => void
@@ -405,6 +414,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
         pageId?: string
         renderHints?: RenderNode
         componentFlow?: RenderComponentIdentity[]
+        componentFlowDelta?: ComponentFlowDelta
         tabFrame?: PageFrameMount
         pageData?: Record<string, unknown>
         pageDataPatches?: Array<Record<string, unknown>>
@@ -414,10 +424,17 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
       const pageId = payload.pageId ?? message.pageId ?? currentPageId
       if (payload.pageId) currentPageId = payload.pageId
       applyBatch(pageId, TREE_PROTOCOL.patch, payload.ack, () => {
+        const delta = payload.componentFlowDelta
+        if (delta?.define?.length) {
+          options.renderer.setComponentDefinitions?.(Object.fromEntries(
+            delta.define.map((definition) => [definition.path, definition]),
+          ))
+        }
         if (payload.componentFlow) {
           options.renderer.setPageFrameComponents?.(payload.componentFlow)
         }
         if (payload.renderHints) options.renderer.setPageFrameHints?.(payload.renderHints)
+        if (delta) options.renderer.applyComponentFlowDelta?.(delta)
         // The pageframe's WXML pass applies the props it owns first. Component
         // data follows as the remaining per-instance patch, matching WeChat's
         // property-before-setData order. The reverse order makes the same prop

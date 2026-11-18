@@ -69,6 +69,12 @@ The browser stage verifies:
 18. Runtime state diagnostics observe the todos → add-todo → router → semantics → todos
     page transitions.
 
+The runtime unit suite also holds the tree-protocol payload budget
+(`packages/runtime/tests/tree-payload-budget.test.ts`). It mounts a 2000-row
+pageframe (4001 render nodes) and asserts that both a data-only update and a
+one-component structural update stay under 5% of the mount payload; current
+values are 0.02% and 0.06%, against 86% for the legacy `renderHints` path.
+
 ## Existing test app stage (mini)
 
 After the P0 demo flow, the gate compiles `tests/apps/mini` (3 pages + 1 subpackage page,
