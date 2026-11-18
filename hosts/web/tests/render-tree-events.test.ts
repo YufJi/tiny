@@ -222,8 +222,8 @@ describe('render-resolved event target', () => {
     })
     group.addTmpl(
       pagePath,
-      '<view id="outer" data-kind="outer" bindtap="onOuter">'
-        + '<view id="inner" data-kind="inner" data-role="target">tap me</view>'
+      '<view id="outer" data-kind="outer" mark:scope="outer" bindtap="onOuter">'
+        + '<view id="inner" data-kind="inner" data-role="target" mark:scope="inner" mark:role="probe">tap me</view>'
         + '</view>',
     )
     const generated = group.getTmplGenObjectGroups()
@@ -263,6 +263,7 @@ describe('render-resolved event target', () => {
         id: 'inner',
         dataset: { kind: 'inner', role: 'target' },
       },
+      mark: { scope: 'inner', role: 'probe' },
     })
     expect((templateEvents[0]!.targetNode as { nodeId?: string }).nodeId).toMatch(/^r:/)
   })

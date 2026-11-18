@@ -954,6 +954,28 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
         )
       }
       assert.ok(rpx.url.includes('10rpx'), `url() rpx was rewritten: ${rpx.url}`)
+      // P0-7: mark values on the target's ancestor chain reach `event.mark`.
+      await render.locator('#mark-inner').click()
+      await waitForText('mark: outer/inner')
+      // P0-8: a slow press on a view without a longpress listener is still a
+      // tap; a view that binds longpress emits longtap/longpress and consumes
+      // the tap.
+      const press = async (selector, holdMs) => {
+        const box = await render.locator(selector).boundingBox()
+        assert.ok(box, `${selector} has no bounding box`)
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+        await page.mouse.down()
+        await page.waitForTimeout(holdMs)
+        await page.mouse.up()
+      }
+      await press('#slow-tap', 450)
+      await waitForText('slow: tap')
+      await press('#long-press', 450)
+      await waitForText('long: press')
+      assert.ok(
+        !(await text()).includes('long: tap'),
+        'longpress listener still let the tap through',
+      )
       // P0-1: the setData completion issues a selector query that must see the
       // new width, i.e. the ack waited for the glass render pass.
       await byText(render, 'Bump', { exact: true }).first().click()

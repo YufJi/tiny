@@ -76,6 +76,9 @@ The browser stage verifies:
     `setData` completion's selector query sees the new width. It also renders
     static, interpolated and `style:` inline `rpx` (each computed width is
     `innerWidth / 7.5`) and keeps a `url("/a-10rpx.png")` path untouched.
+    It also asserts `event.mark` inheritance (inner mark + ancestor mark), that
+    a 450 ms press on a plain view still fires `tap`, and that a longpress
+    listener emits `longtap`/`longpress` and consumes the tap.
 
 The runtime unit suite also holds the tree-protocol payload budget
 (`packages/runtime/tests/tree-payload-budget.test.ts`). It mounts a 2000-row

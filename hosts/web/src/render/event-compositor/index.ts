@@ -1,4 +1,5 @@
 import type * as glassEasel from '@tiny/runtime/glass-easel'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import { createMouseAdapter, createTouchAdapter } from './adapters'
 import { createGestureRecognizer } from './recognizer'
 import type {
@@ -115,9 +116,28 @@ export function attachEventCompositor(options: CompositorOptions): () => void {
     ?? null
   )
 
+  /**
+   * Whether the pressed element (or an ancestor) binds longpress/longtap.
+   * The compiler marks such elements; the DOM walk is duck-typed because the
+   * render tree may live in another realm.
+   */
+  const hasLongPressListener = (target: EventTarget | null): boolean => {
+    let current = target as (Node & {
+      getAttribute?: (name: string) => string | null
+      parentElement?: Element | null
+    }) | null
+    while (current) {
+      if (typeof current.getAttribute === 'function'
+        && current.getAttribute(TINY_ENGINE_NAMING.longPressAttribute) !== null) return true
+      current = (current.parentElement ?? current.parentNode) as typeof current
+    }
+    return false
+  }
+
   const recognize = createGestureRecognizer({
     tapDistance: options.tapDistance,
     longPressDelay: options.longPressDelay,
+    hasLongPressListener,
     onGesture: (gesture: GestureEvent) => {
       const target = resolveTarget(gesture.originalEvent)
       if (target) options.onGesture(gesture, target)

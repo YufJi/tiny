@@ -6,6 +6,9 @@ Page({
     probeReady: 0,
     probeWidth: 0,
     rpxWidth: 100,
+    markStatus: 'idle',
+    slowStatus: 'idle',
+    longStatus: 'idle',
   },
 
   onLoad() {
@@ -13,6 +16,20 @@ Page({
     // still observe the component before its ready callback ran.
     const probe = this.selectComponent('#probe')
     this.setData({ onLoadReady: probe?.data?.readyCount ?? 0 })
+  },
+
+  onMark(event) {
+    this.setData({
+      markStatus: `${event.mark?.from ?? '-'}/${event.mark?.role ?? '-'}`,
+    })
+  },
+
+  onSlowTap() {
+    this.setData({ slowStatus: 'tap' })
+  },
+
+  onLongPress() {
+    this.setData({ longStatus: 'press' })
   },
 
   onProbeReady(event) {

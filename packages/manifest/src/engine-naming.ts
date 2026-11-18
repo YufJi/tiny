@@ -52,6 +52,8 @@ export const TINY_ENGINE_NAMING = Object.freeze({
   wxsDynamicEventAttribute: 'wx-tiny-wxs-dynamic',
   /** Marker for a template-created element whose `catchtouchmove` needs a non-passive DOM guard. */
   catchTouchMoveAttribute: 'wx-tiny-catch-touchmove',
+  /** Marker for a template-created element that binds `longpress`/`longtap`. */
+  longPressAttribute: 'wx-tiny-longpress',
   /**
    * The compiler writes the declared entry path into this global before each
    * page/component script runs. `Page()` / `Component()` consume and clear it,

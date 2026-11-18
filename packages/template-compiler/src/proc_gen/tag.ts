@@ -994,6 +994,14 @@ function eventBindingToProcGen(
       )
     })
   }
+  // The gesture recognizer suppresses the following tap only when the target
+  // (or an ancestor) actually listens for longpress/longtap; the marker is how
+  // the render host sees that compile-time fact.
+  if (ev.name.name === 'longpress' || ev.name.name === 'longtap') {
+    w.exprStmt((ww) => {
+      ww.write(`if(C)R.a(N,${genLitStr(TINY_ENGINE_NAMING.longPressAttribute)},'1')`)
+    })
+  }
   if (!ev.value || ev.value.kind === 'Static') {
     const v = genLitStr(ev.value?.value ?? '')
     w.exprStmt((ww) => { ww.write(`if(C)R.v(N,${n},${v},${isCatch},${isMut},${isCapture},!1)`) })

@@ -12,6 +12,14 @@
   ></view>
   <timing-probe id="probe" bind:ready-rect="onProbeReady" />
   <text class="probe-status">probe-ready: {{probeReady}} rect: {{probeWidth}}</text>
+  <view id="mark-outer" class="tap-box" mark:from="outer" bindtap="onMark">
+    <view id="mark-inner" mark:role="inner">mark target</view>
+  </view>
+  <text class="mark-status">mark: {{markStatus}}</text>
+  <view id="slow-tap" class="tap-box" bindtap="onSlowTap">slow tap</view>
+  <text class="slow-status">slow: {{slowStatus}}</text>
+  <view id="long-press" class="tap-box" bindlongpress="onLongPress">long press</view>
+  <text class="long-status">long: {{longStatus}}</text>
   <text class="timing-status">timing: {{status}}</text>
   <button bindtap="bump">Bump</button>
   <button bindtap="back">Back</button>

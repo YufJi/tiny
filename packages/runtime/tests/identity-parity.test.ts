@@ -230,12 +230,14 @@ describe('identity parity', () => {
       detail: { x: 3 },
       id: 'card',
       dataset: { kind: 'primary' },
+      mark: { from: 'card', role: 'probe' },
     })
     expect(ran).toBe(true)
     expect(handled).toHaveLength(1)
     expect(handled[0]).toMatchObject({
       type: 'tap',
       detail: { x: 3 },
+      mark: { from: 'card', role: 'probe' },
       currentTarget: { id: 'card', dataset: { kind: 'primary' } },
     })
   })

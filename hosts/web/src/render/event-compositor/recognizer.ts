@@ -10,6 +10,7 @@ type ActiveGesture = {
   longPressFired: boolean
   timer: ReturnType<typeof setTimeout> | undefined
   originalEvent: Event
+  target: EventTarget | null
 }
 
 const DEFAULT_TAP_DISTANCE = 10
@@ -35,7 +36,7 @@ export function createGestureRecognizer(options: GestureRecognizerOptions): (eve
   }
 
   const emitGesture = (
-    name: 'tap' | 'longpress' | 'canceltap',
+    name: 'tap' | 'longtap' | 'longpress' | 'canceltap',
     x: number,
     y: number,
     originalEvent: Event,
@@ -73,11 +74,18 @@ export function createGestureRecognizer(options: GestureRecognizerOptions): (eve
       longPressFired: false,
       timer: undefined,
       originalEvent: event.originalEvent,
+      target: event.originalEvent.target ?? null,
     }
     gesture.timer = setTimeout(() => {
       gesture.timer = undefined
       if (!active || active !== gesture || gesture.moved) return
+      const listens = options.hasLongPressListener?.(gesture.target) ?? true
+      // No listener means this is just a slow tap: leave the candidate alone so
+      // the release still emits `tap` (WeChat only suppresses tap after a
+      // longpress that actually dispatched).
+      if (!listens) return
       gesture.longPressFired = true
+      emitGesture('longtap', gesture.lastX, gesture.lastY, gesture.originalEvent)
       emitGesture('longpress', gesture.lastX, gesture.lastY, gesture.originalEvent)
     }, longPressDelay)
     active = gesture

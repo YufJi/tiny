@@ -21,7 +21,7 @@ export type InputEvent = {
   originalEvent: Event
 }
 
-export type GestureName = 'tap' | 'longpress' | 'canceltap'
+export type GestureName = 'tap' | 'longtap' | 'longpress' | 'canceltap'
 
 export type GestureDetail = {
   x: number
@@ -39,6 +39,12 @@ export type GestureRecognizerOptions = {
   tapDistance?: number
   /** Hold time (ms) before `longpress`. */
   longPressDelay?: number
+  /**
+   * Whether the press target (or an ancestor) listens for longpress/longtap.
+   * Absent means "assume yes" for standalone recognizer use; the compositor
+   * supplies the compiled-template marker check.
+   */
+  hasLongPressListener?: (target: EventTarget | null) => boolean
   onGesture: (gesture: GestureEvent) => void
 }
 

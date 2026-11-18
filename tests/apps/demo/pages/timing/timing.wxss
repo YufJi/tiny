@@ -24,3 +24,9 @@
   background: #07c160;
   margin-bottom: 4px;
 }
+
+.tap-box {
+  padding: 8px;
+  margin-bottom: 4px;
+  background: #f2f2f2;
+}

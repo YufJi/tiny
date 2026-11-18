@@ -646,6 +646,9 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     const eventToken = (source as Record<string, unknown>)[EVENT_RETURN_TOKEN_FIELD]
     const viewId = element?.getAttribute?.(TINY_ENGINE_NAMING.nodeIdAttribute) ?? ''
     const dataset = plainDataset(element?.dataset)
+    // `mark:` values are collected by glass from the target's ancestor chain
+    // (nearest wins) and live on the event, not on the WXML dataset.
+    const mark = plainDataset((source as { mark?: Record<string, unknown> }).mark)
     const geometry = element && typeof element.offsetLeft === 'number'
       ? {
           viewId,
@@ -669,6 +672,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         : {}),
       ...(element?.id ? { id: String(element.id) } : {}),
       ...(dataset ? { dataset } : {}),
+      ...(mark ? { mark } : {}),
       ...(geometry ? { currentTarget: geometry } : {}),
       ...(targetRender.identity ? { targetId: targetRender.identity } : {}),
       ...(targetNode ? { targetNode } : {}),

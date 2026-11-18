@@ -113,6 +113,7 @@ function handleTemplateEvent(
     changedTouches?: unknown[]
     id?: string
     dataset?: Record<string, unknown>
+    mark?: Record<string, unknown>
     targetId?: string
     targetNode?: RenderEventTarget
     eventToken?: string
@@ -141,6 +142,7 @@ function handleTemplateEvent(
       ...(payload.changedTouches ? { changedTouches: payload.changedTouches } : {}),
       ...(payload.id ? { id: payload.id } : {}),
       ...(payload.dataset ? { dataset: payload.dataset } : {}),
+      ...(payload.mark ? { mark: payload.mark } : {}),
       ...(payload.targetId ? { targetId: payload.targetId } : {}),
       ...(payload.targetNode ? { targetNode: payload.targetNode } : {}),
       ...(payload.currentTarget ? { currentTarget: payload.currentTarget } : {}),

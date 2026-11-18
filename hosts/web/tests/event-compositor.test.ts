@@ -20,9 +20,10 @@ const input = (
   originalEvent: {} as Event,
 })
 
-const collect = () => {
+const collect = (options: { hasLongPressListener?: (target: EventTarget | null) => boolean } = {}) => {
   const gestures: Array<{ name: string; x: number; y: number }> = []
   const feed = createGestureRecognizer({
+    ...options,
     onGesture: (gesture) => {
       gestures.push({ name: gesture.name, x: gesture.detail.x, y: gesture.detail.y })
     },
@@ -58,18 +59,39 @@ describe('gesture recognizer', () => {
     const { gestures, feed } = collect()
     feed(input('start', [point(4, 6)]))
     vi.advanceTimersByTime(350)
-    expect(gestures).toEqual([{ name: 'longpress', x: 4, y: 6 }])
+    // WeChat emits `longtap` before `longpress`.
+    expect(gestures).toEqual([
+      { name: 'longtap', x: 4, y: 6 },
+      { name: 'longpress', x: 4, y: 6 },
+    ])
     feed(input('end', [], [point(4, 6)]))
-    expect(gestures).toHaveLength(1)
+    expect(gestures).toHaveLength(2)
   })
 
-  test('moving after longpress keeps the single longpress', () => {
+  test('moving after longpress keeps the single longpress pair', () => {
     const { gestures, feed } = collect()
     feed(input('start', [point(4, 6)]))
     vi.advanceTimersByTime(350)
     feed(input('move', [point(40, 6)]))
     feed(input('end', [], [point(40, 6)]))
-    expect(gestures.map((gesture) => gesture.name)).toEqual(['longpress'])
+    expect(gestures.map((gesture) => gesture.name)).toEqual(['longtap', 'longpress'])
+  })
+
+  test('a slow tap on a view without a longpress listener still emits tap', () => {
+    const { gestures, feed } = collect({ hasLongPressListener: () => false })
+    feed(input('start', [point(4, 6)]))
+    vi.advanceTimersByTime(450)
+    expect(gestures).toEqual([])
+    feed(input('end', [], [point(4, 6)]))
+    expect(gestures).toEqual([{ name: 'tap', x: 4, y: 6 }])
+  })
+
+  test('presses inside a longpress-marked ancestor consume the tap', () => {
+    const { gestures, feed } = collect({ hasLongPressListener: () => true })
+    feed(input('start', [point(4, 6)]))
+    vi.advanceTimersByTime(350)
+    feed(input('end', [], [point(4, 6)]))
+    expect(gestures.map((gesture) => gesture.name)).toEqual(['longtap', 'longpress'])
   })
 
   test('a second finger drops the tap candidate', () => {

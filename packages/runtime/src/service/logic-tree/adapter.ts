@@ -998,6 +998,7 @@ export class LogicTreeAdapter {
     changedTouches?: unknown[]
     id?: string
     dataset?: Record<string, unknown>
+    mark?: Record<string, unknown>
     targetId?: string
     /** Render-resolved target node; preferred over the `targetId` lookup. */
     targetNode?: {
@@ -1058,6 +1059,9 @@ export class LogicTreeAdapter {
       type: payload.name,
       timeStamp: Date.now(),
       detail: payload.detail ?? {},
+      // `mark:` values of the target's ancestor chain; WeChat exposes the same
+      // object on every event before the listener runs.
+      mark: payload.mark ?? {},
       target: targetShape,
       currentTarget: currentTargetShape,
       touches: payload.touches ?? [],

@@ -76,6 +76,8 @@ export type RenderTemplateEvent = {
   changedTouches?: unknown[]
   id?: string
   dataset?: Record<string, unknown>
+  /** `mark:` values collected from the target's ancestor chain (nearest wins). */
+  mark?: Record<string, unknown>
   currentTarget?: RenderEventGeometry
   /** Render identity of the innermost event target (legacy service lookup). */
   targetId?: string

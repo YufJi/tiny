@@ -221,7 +221,7 @@ observer 递归深度上限是 20，超过会产生 `OBSERVER_RECURSION_LIMIT`�
 
 ## 事件从渲染树回到逻辑树 {#events kicker="事件"}
 
-渲染树把真实 DOM 事件转成 `tree.templateEvent`（模板绑定）或兼容的 `tree.event`：带所属组件 id、render 侧解析的 target/currentTarget（id/dataset/几何）、事件名、detail 和 touch 列表。宿主私有的 native 字段在 render 侧归一化，不会进入通用事件载荷；service 直接在所属组件上执行方法，不再按元素 locator 回查。
+渲染树把真实 DOM 事件转成 `tree.templateEvent`（模板绑定）或兼容的 `tree.event`：带所属组件 id、render 侧解析的 target/currentTarget（id/dataset/几何）、`event.mark`、事件名、detail 和 touch 列表。长按在 350ms 时检查目标链上是否有 `longpress`/`longtap` 绑定：有则依次发 `longtap`、`longpress` 并吞掉 tap，没有则保持 tap 候选。宿主私有的 native 字段在 render 侧归一化，不会进入通用事件载荷；service 直接在所属组件上执行方法，不再按元素 locator 回查。
 
 :::sequence
 | title | detail | code |
