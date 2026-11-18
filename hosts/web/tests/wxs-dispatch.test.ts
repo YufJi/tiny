@@ -59,6 +59,45 @@ describe('WXS render-side dispatch', () => {
     expect(observations).toEqual([['2', undefined], ['5', '2']])
   })
 
+  test('drives custom-component change:prop observers from the identity payload', () => {
+    const observations: unknown[] = []
+    ;(globalThis as unknown as Record<string, unknown>).__tinyWxsObservations = observations
+    const tree = createGlassRenderTree({ backend: new glassEasel.EmptyBackendContext() })
+    tree.setComponentDefinitions?.(probeDefinition as never)
+    tree.setWxsModules?.({
+      modules: [{
+        id: 'pages/index/index.wxs',
+        code: 'module.exports = { observe: function (next, previous) { globalThis.__tinyWxsObservations.push([next, previous]) } }',
+      }],
+    })
+    // No mount snapshot: the component node is created from the legacy flow
+    // without WXS props, exactly like a pageframe-created component.
+    tree.mount({
+      type: 'element',
+      id: 'root',
+      tag: 'view',
+      children: [componentNode()],
+    })
+    tree.applyComponentFlowDelta?.({
+      owners: [{
+        id: 'root',
+        add: [{
+          id: 'probe',
+          path: 'components/probe/probe',
+          index: 0,
+          wxsProps: JSON.stringify([
+            { prop: 'label', moduleId: 'pages/index/index.wxs', exportPath: ['observe'] },
+          ]),
+        }],
+      }],
+    })
+
+    tree.setComponentData?.({ probe: { label: 2 } })
+    tree.setComponentData?.({ probe: { label: 5 } })
+
+    expect(observations).toEqual([['2', undefined], ['5', '2']])
+  })
+
   test('drives built-in change:prop observers from node props with shared getState', () => {
     const observations: unknown[] = []
     ;(globalThis as unknown as Record<string, unknown>).__tinyWxsObservations = observations

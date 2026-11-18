@@ -1,3 +1,4 @@
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import type {
   ComponentDefinitionPayload,
   ComponentFlow,
@@ -29,12 +30,22 @@ export function collectComponentIdentities(root: RenderNode): RenderComponentIde
   const visit = (node: RenderNode): void => {
     if (node.type !== 'element') return
     if (node.component === true && node.componentPath && node.id) {
-      identities.push({ id: node.id, path: node.componentPath })
+      identities.push({
+        id: node.id,
+        path: node.componentPath,
+        ...wxsPropsOf(node.props),
+      })
     }
     for (const child of node.children ?? []) visit(child)
   }
   visit(root)
   return identities
+}
+
+/** `change:prop` bindings live on the instance, not on the component path. */
+function wxsPropsOf(props: Record<string, unknown> | undefined): { wxsProps?: string } {
+  const raw = props?.[TINY_ENGINE_NAMING.wxsPropsAttribute]
+  return typeof raw === 'string' && raw.length > 0 ? { wxsProps: raw } : {}
 }
 
 /**
@@ -102,6 +113,7 @@ export function collectComponentOwners(root: RenderNode): ComponentOwnerMap {
       owners.set(node.id, node.componentInstances.map((instance) => ({
         id: instance.id,
         path: instance.path,
+        ...(instance.wxsProps ? { wxsProps: instance.wxsProps } : {}),
       })))
     }
     for (const child of node.children ?? []) visit(child)
@@ -118,6 +130,7 @@ function sameIdentityList(
   for (let index = 0; index < previous.length; index += 1) {
     const a = previous[index]!
     const b = next[index]!
+    // `wxsProps` is static per instance: it rides on `add`, never changes.
     if (a.id !== b.id || a.path !== b.path) return false
   }
   return true
@@ -136,7 +149,12 @@ function diffOwnerInstances(
   const add = next.flatMap((instance, index) => (
     previousIds.has(instance.id)
       ? []
-      : [{ id: instance.id, path: instance.path, index }]
+      : [{
+          id: instance.id,
+          path: instance.path,
+          ...(instance.wxsProps ? { wxsProps: instance.wxsProps } : {}),
+          index,
+        }]
   ))
   const survivingPrevious = previous
     .filter((instance) => nextIds.has(instance.id))

@@ -1,15 +1,20 @@
 import { describe, expect, test } from 'vitest'
+import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import { diffComponentOwners } from '../src/tree-protocol/flow'
 import type { RenderElement, RenderNode } from '../src/tree-protocol/protocol'
 
-function card(id: string, instances?: Array<{ id: string; path: string }>): RenderElement {
+function card(
+  id: string,
+  instances?: Array<{ id: string; path: string; wxsProps?: string }>,
+  wxsProps?: string,
+): RenderElement {
   return {
     type: 'element',
     id,
     tag: id,
     component: true,
     componentPath: `components/${id}/${id}`,
-    props: {},
+    props: wxsProps ? { [TINY_ENGINE_NAMING.wxsPropsAttribute]: wxsProps } : {},
     ...(instances ? { componentInstances: instances } : {}),
   }
 }
@@ -24,6 +29,45 @@ function page(children: RenderNode[]): RenderNode {
 }
 
 describe('component flow delta', () => {
+  test('change:prop bindings ride on the identity payload', () => {
+    const bindings = JSON.stringify([
+      { prop: 'label', moduleId: 'pages/index/index.wxs', exportPath: ['observe'] },
+    ])
+    const delta = diffComponentOwners(page([]), page([card('a', undefined, bindings)]))
+    expect(delta).toEqual({
+      owners: [{
+        id: 'page-1',
+        add: [{
+          id: 'a',
+          path: 'components/a/a',
+          wxsProps: bindings,
+          index: 0,
+        }],
+      }],
+    })
+  })
+
+  test('nested change:prop bindings ride on the owner list', () => {
+    const bindings = JSON.stringify([
+      { prop: 'value', moduleId: 'pages/index/index.wxs', exportPath: ['observe'] },
+    ])
+    const delta = diffComponentOwners(
+      page([card('a')]),
+      page([card('a', [{ id: 'x', path: 'components/x/x', wxsProps: bindings }])]),
+    )
+    expect(delta).toEqual({
+      owners: [{
+        id: 'a',
+        add: [{
+          id: 'x',
+          path: 'components/x/x',
+          wxsProps: bindings,
+          index: 0,
+        }],
+      }],
+    })
+  })
+
   test('a data-only change produces no component flow', () => {
     expect(diffComponentOwners(page([card('a')]), page([card('a')]))).toBeUndefined()
   })

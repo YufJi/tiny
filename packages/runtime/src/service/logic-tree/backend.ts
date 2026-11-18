@@ -525,8 +525,8 @@ export class LogicBackendContext {
      */
     const componentInstancesOf = (
       node: LogicBackendElement,
-    ): Array<{ id: string; path: string }> => {
-      const instances: Array<{ id: string; path: string }> = []
+    ): Array<{ id: string; path: string; wxsProps?: string }> => {
+      const instances: Array<{ id: string; path: string; wxsProps?: string }> = []
       const seenComponents = new Set<LogicBackendElement>()
       const walk = (
         children: LogicBackendElement[],
@@ -537,7 +537,14 @@ export class LogicBackendContext {
             if (!seenComponents.has(child)) {
               seenComponents.add(child)
               const path = componentPathOf(child)
-              if (path) instances.push({ id: nextId(child), path })
+              if (path) {
+                const wxsProps = child.attributes.get(TINY_ENGINE_NAMING.wxsPropsAttribute)
+                instances.push({
+                  id: nextId(child),
+                  path,
+                  ...(typeof wxsProps === 'string' && wxsProps.length > 0 ? { wxsProps } : {}),
+                })
+              }
             }
             if (child.shadowRoot) walk(child.shadowRoot.children, child.children)
             else walk(child.children)

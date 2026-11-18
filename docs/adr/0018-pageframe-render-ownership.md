@@ -85,7 +85,9 @@ The migration is staged to keep the gate green:
   `componentFlowDelta` addressed per owner (page root or component host):
   `add` (id/path/index), `remove`, optional `order`, plus `define` for
   definitions the render side has not installed. A data-only update has no
-  component delta at all. The page root's glass `setData` wrapper records the
+  component delta at all. Component identities also carry the instance's raw
+  `change:prop` bindings (`wxsProps`); the render pageframe drives WXS prop
+  observers from that payload instead of the mount element snapshot. The page root's glass `setData` wrapper records the
   patch, because page handlers call glass directly and never pass through
   `MiniProgramPageInstance.setData`.
   `treeProtocol.renderHints = 'always'` restores the Phase C behaviour as a

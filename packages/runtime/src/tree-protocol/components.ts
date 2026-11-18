@@ -57,6 +57,8 @@ export type ComponentDefinitionPayload = {
 export type ComponentInstanceRef = {
   id: RenderNodeId
   path: string
+  /** Raw `change:prop` bindings, see `RenderComponentIdentity.wxsProps`. */
+  wxsProps?: string
 }
 
 /**

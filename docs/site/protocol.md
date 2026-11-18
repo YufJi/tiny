@@ -287,7 +287,7 @@ mask, zIndex, visible, style, props }`；`mask` 是未被 DOM 浮层遮挡的矩
 }
 ```
 
-`add` 的 `index` 是实例在该 owner 下一版列表中的位置（先处理 `remove`）；存活实例整体重排时用 `order` 给出完整 id 顺序。纯数据更新没有 `componentFlowDelta`。
+`add` 的 `index` 是实例在该 owner 下一版列表中的位置（先处理 `remove`）；存活实例整体重排时用 `order` 给出完整 id 顺序。纯数据更新没有 `componentFlowDelta`。每个实例还携带 `wxsProps`（该节点的 `change:prop` 原始绑定），render 侧据此驱动 WXS 属性观察器，不再依赖 mount 快照里的元素 props。
 
 :::callout{title="patch 按页面合批"}
 service 在一个 microtask 内合并同一页面的更新，再发一条 `tree.patch`。pageframe 先应用组件身份增量，再应用页面 data 补丁，最后应用剩余的组件实例 data 补丁；结构性 DOM 变化完全由 pageframe 本地 diff 完成，不重放页面 DOM patch。自定义 tabBar 的独立根由 `tabFrame` 挂载，后续 data/身份变化也通过 `tabFrame` 更新，页面根和 tab 根共享同一个渲染批次。带 `setData` completion 的批次额外携带 `ack` token，渲染树应用后回 `tree.ack`（失败也回，先发 `RENDER_PATCH_ERROR` 诊断），service 收到确认才执行回调。

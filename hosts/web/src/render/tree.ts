@@ -723,6 +723,19 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
    * pageframe that re-mounts on change.
    */
   const componentInstancesByOwner = new Map<string, RenderComponentIdentity[]>()
+  /**
+   * Raw `change:prop` bindings per component id, carried on the identity flow.
+   *
+   * The render pageframe owns the WXS runtime, so the binding table must reach
+   * it without the mount element snapshot (the service template that produced
+   * the binding only exists in the service realm).
+   */
+  const wxsPropsByComponent = new Map<string, string>()
+
+  const rememberComponentIdentity = (instance: RenderComponentIdentity): void => {
+    if (instance.wxsProps) wxsPropsByComponent.set(instance.id, instance.wxsProps)
+    else wxsPropsByComponent.delete(instance.id)
+  }
   let pagePlaceholders: Record<string, string> = {}
   let pageFrameUnresolvedUsing = new Set<string>()
   const sameDataPatch = (
@@ -770,6 +783,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     pendingClasses.delete(id)
     pendingWxsEvents.delete(id)
     wxsPropSnapshots.delete(id)
+    wxsPropsByComponent.delete(id)
     desyncReported.delete(id)
     delete componentData[id]
     const nested = componentInstancesByOwner.get(id)
@@ -790,6 +804,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     }
     if (pageFrameComponents.length > 0) {
       componentInstancesByOwner.set(rootId, [...pageFrameComponents])
+      for (const instance of pageFrameComponents) rememberComponentIdentity(instance)
     } else {
       const pageRoot = currentTree.get(rootId)
       if (pageRoot?.type === 'element') {
@@ -808,10 +823,13 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     for (const [id, node] of currentTree) {
       if (tabBarNodeIds.has(id)) continue
       if (node.type === 'element' && node.component === true && node.componentInstances?.length) {
-        componentInstancesByOwner.set(id, node.componentInstances.map((instance) => ({
+        const instances = node.componentInstances.map((instance) => ({
           id: instance.id,
           path: instance.path,
-        })))
+          ...(instance.wxsProps ? { wxsProps: instance.wxsProps } : {}),
+        }))
+        componentInstancesByOwner.set(id, instances)
+        for (const instance of instances) rememberComponentIdentity(instance)
       }
     }
   }
@@ -835,7 +853,13 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       if (owner.add?.length) {
         for (const instance of [...owner.add].sort((a, b) => a.index - b.index)) {
           const at = Math.max(0, Math.min(instance.index, next.length))
-          next.splice(at, 0, { id: instance.id, path: instance.path })
+          const identity = {
+            id: instance.id,
+            path: instance.path,
+            ...(instance.wxsProps ? { wxsProps: instance.wxsProps } : {}),
+          }
+          next.splice(at, 0, identity)
+          rememberComponentIdentity(identity)
         }
       }
       if (owner.order?.length) {
@@ -1024,8 +1048,24 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       component?.setData?.(patch)
       // A custom component's WXS prop observers read the component's data, not
       // the node attributes: drive them from the same patch the template sees.
-      const node = currentTree.get(id)
-      if (node?.type === 'element' && node.component === true && component) {
+      // The binding table comes from the component identity flow; the mount
+      // snapshot is only the legacy fallback for hosts that still send one.
+      const snapshotNode = currentTree.get(id)
+      const wxsProps = wxsPropsByComponent.get(id) ?? (
+        snapshotNode?.type === 'element'
+          ? snapshotNode.props?.[WXS_PROPS_PROP]
+          : undefined
+      )
+      if (typeof wxsProps === 'string' && wxsProps.length > 0 && component) {
+        const node = snapshotNode?.type === 'element'
+          && snapshotNode.props?.[WXS_PROPS_PROP] === wxsProps
+          ? snapshotNode
+          : {
+              type: 'element' as const,
+              id,
+              tag: 'component',
+              props: { [WXS_PROPS_PROP]: wxsProps },
+            }
         applyWxsProps(node, component as never, wxsPropSnapshots.get(id), component.data)
       }
     }
@@ -3287,6 +3327,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     setPageFrameComponents: (components) => {
       pageFrameComponents = [...components]
       if (rootId.value) componentInstancesByOwner.set(rootId.value, [...pageFrameComponents])
+      for (const instance of pageFrameComponents) rememberComponentIdentity(instance)
     },
     applyComponentFlowDelta,
     setPageData: (data) => {
