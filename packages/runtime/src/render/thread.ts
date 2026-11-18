@@ -15,6 +15,7 @@ import {
   type RenderAnimationRequest,
   type RenderClearAnimationRequest,
   type RenderComponentIdentity,
+  type ComponentOwnerInstances,
   type RenderEventGeometry,
   type RenderHostAction,
   type RenderIntersectionEntry,
@@ -311,6 +312,7 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
         rootViewId?: string
       }
       componentFlow?: RenderComponentIdentity[]
+      componentOwners?: ComponentOwnerInstances[]
     }
     currentPageId = payload.pageId ?? message.pageId ?? currentPageId
     applyBatch(currentPageId, TREE_PROTOCOL.flow, payload.ack, () => {
@@ -332,15 +334,19 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
           tree = entry.root
           continue
         }
-        if (entry.type === 'ready' && tree) {
+        if (entry.type === 'ready') {
           if (Object.keys(definitions).length > 0) {
             options.renderer.setComponentDefinitions?.(definitions)
           }
-          const hints = applyComponentPlaceholders(
-            tree,
-            payload.placeholders,
-            (path) => Boolean(definitions[path]),
-          )
+          // The data-only protocol mounts from component identities only; the
+          // `mount-only`/`always` modes still carry the service element tree.
+          const hints = tree
+            ? applyComponentPlaceholders(
+                tree,
+                payload.placeholders,
+                (path) => Boolean(definitions[path]),
+              )
+            : undefined
           if (!currentPageId) throw new Error('tree.flow has no page id')
           options.renderer.mountPage({
             pageId: currentPageId,
@@ -356,7 +362,8 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
               ? { methods: payload.pageFrame.methods }
               : {}),
             ...(payload.componentFlow ? { componentFlow: payload.componentFlow } : {}),
-            renderHints: hints,
+            ...(payload.componentOwners ? { componentOwners: payload.componentOwners } : {}),
+            ...(hints ? { renderHints: hints } : {}),
           })
           if (payload.tabFrame) {
             options.renderer.mountTabBarPage?.({

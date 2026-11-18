@@ -18,6 +18,11 @@ export type BuildComponentFlowOptions = {
    * definition inline (placeholder replacement, lazy mount).
    */
   eagerDefinitions?: boolean
+  /**
+   * Emit the nested `tree` snapshot. The data-only protocol mounts from
+   * component identities only; the `always` compatibility mode still needs it.
+   */
+  includeTree?: boolean
 }
 
 /**
@@ -86,7 +91,7 @@ export function buildComponentFlow(
 
   // The snapshot travels as a tree: element ids are render-local, so the flow
   // does not need a flat `create-node` stream to address them.
-  messages.push({ type: 'tree', root })
+  if (options.includeTree !== false) messages.push({ type: 'tree', root })
   messages.push({ type: 'ready' })
   return messages
 }

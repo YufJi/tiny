@@ -225,7 +225,7 @@ Bridge 的 `assertJsonSafe` 做严格校验；runtime 的 `toJsonSafe` 会主动
 
 | 消息 | 方向 | 内容 |
 | --- | --- | --- |
-| `tree.flow` | service → render | 首屏 flow：`define`（该页可见组件定义）、`tree`（整棵页面渲染快照）、`ready`；payload 另带 `componentFlow` 组件身份流，并可带独立 `tabFrame`、页面样式、fallback app 样式、`pageScope`、`pageUsing`、`behaviorScheme`、`wxsModules`、`pageData` 和 `componentData` |
+| `tree.flow` | service → render | 首屏 flow：`define`（该页可见组件定义）+ `ready`；payload 带 `componentFlow` 与 `componentOwners`（每个 owner 的有序实例列表），不含元素树。`renderHints: 'mount-only'` 时才额外带 `tree` 快照。可带独立 `tabFrame`、页面样式、fallback app 样式、`pageScope`、`pageUsing`、`behaviorScheme`、`wxsModules`、`pageData` 和 `componentData` |
 | `tree.patch` | service → render | 数据-only 更新：原始 `setData` patch（`pageDataPatches`）、组件 data（`componentData`）和 `componentFlowDelta`（按 owner 的 `add`/`remove`/`order`，新定义走 `define`）。不再携带 `renderHints`、全量 `componentFlow` 或页面 virtual-node `patches`；`treeProtocol.renderHints='always'` 可回滚到旧行为。独立 tabBar 的模板更新走 `tabFrame` |
 | `tree.ack` | render → service | 批次确认：回显 flow/patch 上的 `ack` token；service 用它 settle `setData` completion |
 | `tree.event` | render → service | 组件 id 或元素 locator、可选 `targetId`、name、宿主已归一化的 detail、touches 和 target/currentTarget 几何；service 从最内层 target 节点开始分发，并保留当前 binding 的 currentTarget |
@@ -247,7 +247,7 @@ mask, zIndex, visible, style, props }`；`mask` 是未被 DOM 浮层遮挡的矩
 生成 CAShapeLayer mask。host 负责创建、裁剪和移动原生视图。该消息只走
 `render → host`，不经过 service，也不进入内核事件契约。
 
-首屏 flow 是一个带页面元数据的 payload，`messages` 里只放组件定义和一棵嵌套快照，元素 id 不上 wire：
+首屏 flow 是一个带页面元数据的 payload。默认 `messages` 只有组件定义和 `ready`，元素 id 不上 wire；pageframe 需要的组件身份在 `componentFlow` / `componentOwners` 里：
 
 ```js
 {
@@ -258,17 +258,16 @@ mask, zIndex, visible, style, props }`；`mask` 是未被 DOM 浮层遮挡的矩
   pageData: { ... },
   messages: [
     { type: 'define', path: 'pages/index/index', definition: { ... } },
-    { type: 'tree', root: {
-        type: 'element', id: 'page-1', tag: 'page',
-        children: [
-          { type: 'element', tag: 'view', props: { class: 'card' }, children: [ ... ] },
-          { type: 'element', id: 'card-1', tag: 'card', component: true, componentPath: 'components/card/card' },
-        ],
-    } },
     { type: 'ready' },
+  ],
+  componentFlow: [{ id: 'card-1', path: 'components/card/card' }],
+  componentOwners: [
+    { id: 'page-1', instances: [{ id: 'card-1', path: 'components/card/card' }] },
   ],
 }
 ```
+
+`componentOwners` 按 owner 分组：页根拥有页面模板里的组件，每个组件宿主拥有它 shadow 模板创建的实例（含嵌套后代），pageframe 按文档序消费。`treeProtocol.renderHints='mount-only'` 时 `messages` 额外带一棵 `tree` 快照，供旧宿主/回滚使用。
 
 后续页面更新只发原始数据补丁、组件数据补丁和组件身份增量；页面模板由 pageframe 自行求值：
 

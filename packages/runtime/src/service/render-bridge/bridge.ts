@@ -38,14 +38,15 @@ export type ServiceLogicFrameworkContext = LogicFrameworkContext
 /**
  * Cross-thread tree protocol options.
  *
- * `mount-only` is the data-only default: the mount flow carries the
- * service-owned element projection once, and every update carries only data
- * plus the component identities that changed. `always` restores the previous
- * behaviour (structural updates re-send the element tree) and exists as a
- * rollback switch and as the byte-benchmark baseline.
+ * `never` is the data-only default: neither mount nor update sends the
+ * service-owned element tree. The mount flow carries component identities
+ * (including per-owner instance lists) and every update carries only data plus
+ * the identities that changed. `mount-only` keeps the element tree on the
+ * mount flow (the byte-benchmark baseline); `always` also re-sends it on
+ * structural updates (the previous protocol, kept as a rollback switch).
  */
 export type TreeProtocolOptions = {
-  renderHints?: 'always' | 'mount-only'
+  renderHints?: 'always' | 'mount-only' | 'never'
   /**
    * Observability hook: size of every `tree.flow` / `tree.patch` payload.
    *
@@ -67,6 +68,8 @@ export type TreePayloadInfo = {
   componentDataBytes: number
   /** Full component identity list or incremental component flow delta. */
   componentFlowBytes: number
+  /** Per-owner instance lists carried by a data-only mount flow. */
+  componentOwnersBytes: number
 }
 
 export type ServiceRenderBridgeOptions = RenderProjectionOptions & {
@@ -80,7 +83,7 @@ export type ServiceRenderBridgeOptions = RenderProjectionOptions & {
   onError: (message: string) => void
   /** Page-scoped WXS runtime shared with generated service templates. */
   wxsRuntime?: WxsRuntime
-  /** Element-projection mode; defaults to `mount-only`. */
+  /** Element-projection mode; defaults to `never` (data-only mount). */
   treeProtocol?: TreeProtocolOptions
 }
 
@@ -355,11 +358,13 @@ export class ServiceRenderBridge implements ServiceRenderPort {
   private sendTreeFlow(pageId: string): void {
     const page = this.options.getPage(pageId)
     const ack = this.scheduler.takeCompletionBatch(pageId)
+    const hintsMode = this.options.treeProtocol?.renderHints ?? 'never'
     const payload = this.projection.buildFlow(
       pageId,
       ack,
       this.wxsModules,
       page?.data,
+      { includeTree: hintsMode !== 'never' },
     )
     if (!payload) return
     this.reportTreePayload('flow', pageId, payload)
@@ -381,7 +386,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
   private flushPage(pageId: string): void {
     if (!this.logicTree || !this.mountedPages.has(pageId)) return
     try {
-      const hintsMode = this.options.treeProtocol?.renderHints ?? 'mount-only'
+      const hintsMode = this.options.treeProtocol?.renderHints ?? 'never'
       // One snapshot advance per batch, whichever projection the mode needs.
       let structural = false
       let hints: RenderNode | undefined
@@ -485,6 +490,7 @@ export class ServiceRenderBridge implements ServiceRenderPort {
       pageDataBytes: size(payload.pageData) + size(payload.pageDataPatches),
       componentDataBytes: size(payload.componentData),
       componentFlowBytes: size(payload.componentFlow) + size(payload.componentFlowDelta),
+      componentOwnersBytes: size(payload.componentOwners),
     })
   }
 

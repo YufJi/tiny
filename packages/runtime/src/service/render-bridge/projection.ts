@@ -9,7 +9,11 @@ import {
 } from '../../shared/assets'
 import { cloneJsonSafe } from '../../shared/data'
 import type { StyleLoader } from '../../shared/template'
-import { buildComponentFlow, collectComponentIdentities } from '../../tree-protocol/flow'
+import {
+  buildComponentFlow,
+  collectComponentIdentities,
+  collectComponentOwners,
+} from '../../tree-protocol/flow'
 import {
   TREE_PROTOCOL,
   type ComponentDefinitionPayload,
@@ -134,16 +138,21 @@ export class RenderProjection {
     ack: string[] | undefined,
     wxsModules: WxsModuleTable | undefined,
     pageData: Record<string, unknown> | undefined,
+    options: { includeTree?: boolean } = {},
   ): Record<string, unknown> | null {
     const logicTree = this.getLogicTree()
     if (!logicTree) return null
     const root = logicTree.snapshotRenderTree(pageId)
     if (!root) return null
+    const includeTree = options.includeTree !== false
     const tabRoot = logicTree.snapshotTabBarTree(pageId)
     const tabFrame = tabRoot ? this.tabBarFrame(pageId, tabRoot) : undefined
     const pagePath = logicTree.pagePathFor(pageId)
-    const messages = cloneJsonSafe(this.treeFlow(root, pageId))
+    const messages = cloneJsonSafe(this.treeFlow(root, pageId, includeTree))
     this.markDefinitionsSent(pageId)
+    const componentOwners = includeTree
+      ? undefined
+      : [...collectComponentOwners(root)].map(([id, instances]) => ({ id, instances }))
     return {
       pageId,
       pagePath,
@@ -163,6 +172,7 @@ export class RenderProjection {
         : {}),
       messages,
       componentFlow: cloneJsonSafe(collectComponentIdentities(root)),
+      ...(componentOwners ? { componentOwners: cloneJsonSafe(componentOwners) } : {}),
       ...(tabFrame ? { tabFrame: cloneJsonSafe(tabFrame) } : {}),
       ...(wxsModules ? { wxsModules: cloneJsonSafe(wxsModules) } : {}),
       ...(pageData ? { pageData: cloneJsonSafe(pageData) } : {}),
@@ -291,8 +301,12 @@ export class RenderProjection {
     return pageDefinitions
   }
 
-  private treeFlow(root: RenderNode, pageId?: string): ReturnType<typeof buildComponentFlow> {
-    return buildComponentFlow(root, this.renderDefinitions(pageId))
+  private treeFlow(
+    root: RenderNode,
+    pageId?: string,
+    includeTree = true,
+  ): ReturnType<typeof buildComponentFlow> {
+    return buildComponentFlow(root, this.renderDefinitions(pageId), { includeTree })
   }
 
   /** The mount flow carries every page-visible definition. */

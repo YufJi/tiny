@@ -72,9 +72,10 @@ export type ServiceThreadOptions = {
    */
   onPageRelease?: (pageId: string) => void
   /**
-   * Element-projection mode. The default (`mount-only`) sends the service-owned
-   * element tree once at mount; updates are data-only. `always` is the legacy
-   * structural-hints behaviour and is kept as a rollback/benchmark switch.
+   * Element-projection mode. The default (`never`) sends no element tree at
+   * all: mount carries component identities, updates are data-only.
+   * `mount-only` keeps the tree on the mount flow; `always` is the legacy
+   * structural-hints behaviour (rollback/benchmark switches).
    */
   treeProtocol?: TreeProtocolOptions
 }

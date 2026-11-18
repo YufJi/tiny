@@ -17,6 +17,20 @@ export type PageFrameMount = {
   renderHints?: RenderNode
   /** Service-owned component identities in pageframe document order. */
   componentFlow?: RenderComponentIdentity[]
+  /**
+   * Component instances grouped by owner (page root and component hosts).
+   *
+   * The mount payload for the data-only protocol: the pageframe needs each
+   * owner's ordered instance list to bind ids, but not the element tree.
+   */
+  componentOwners?: ComponentOwnerInstances[]
+}
+
+/** One owner's ordered component instance list, sent at mount. */
+export type ComponentOwnerInstances = {
+  /** Page root id or a component host's shared id. */
+  id: string
+  instances: RenderComponentIdentity[]
 }
 
 /**

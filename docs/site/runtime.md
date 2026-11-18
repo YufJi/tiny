@@ -48,7 +48,7 @@ glass-easel ComponentSpace 在 service 中运行，自定义组件是完整实�
 :::callout{title="只有组件共享 id，元素用 locator"}
 service 给组件（和页面根）分配稳定 id，render 按这个 id 维护组件实例；元素不带跨线程 id，渲染侧分配本地 id，补丁、事件、查询和元素树检查都用 `owner#index.path` 形式的 locator 寻址。
 
-当前页面由 render pageframe 从 `templates.js` 挂载；首屏 component flow 携带 `define`、逻辑身份快照 `tree`、`ready` 和 service 侧 `componentFlow` 组件身份列表。之后的更新只带数据与 `componentFlowDelta`（按 owner 的 `add`/`remove`/`order`）；宿主组件 shadow tree 内的子组件身份变化由增量同步，禁止 render 按 DOM 顺序猜身份。custom tabBar 额外携带独立 `tabFrame`，由一个独立 pageframe root 挂载，后续 data/身份变化也走 `tabFrame`。页面 DOM 的文本、属性、结构和重排由 pageframe 自己 diff。
+当前页面由 render pageframe 从 `templates.js` 挂载；首屏 component flow 携带 `define`、`ready`、`componentFlow` 和 `componentOwners`（按 owner 的实例列表），默认不再携带逻辑身份快照 `tree`（`mount-only` 模式可回滚）。之后的更新只带数据与 `componentFlowDelta`（按 owner 的 `add`/`remove`/`order`）；宿主组件 shadow tree 内的子组件身份变化由增量同步，禁止 render 按 DOM 顺序猜身份。custom tabBar 额外携带独立 `tabFrame`，由一个独立 pageframe root 挂载，后续 data/身份变化也走 `tabFrame`。页面 DOM 的文本、属性、结构和重排由 pageframe 自己 diff。
 :::
 
 :::callout{title="每页树状态已收口，组件空间仍共享"}
@@ -409,7 +409,7 @@ runtime 单测用 headless pageframe 验证数据补丁、组件身份、元素 
 :::::split
 ::::stack
 :::card{title="首屏：tree.flow"}
-service 把组件定义、整棵身份快照和页面数据编成 component flow（define/tree/ready）；pageframe 安装组件定义后从编译模板挂载页面。
+service 把组件定义、组件身份（componentFlow/componentOwners）和页面数据编成 component flow（define/ready）；pageframe 安装组件定义后从编译模板挂载页面，元素树不跨桥。
 :::
 
 :::card{title="更新：tree.patch"}

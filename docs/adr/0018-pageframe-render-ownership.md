@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Phases A, B, C and E are implemented. The browser test host, debugger and iOS
+Accepted. Phases A, B, C, E and F are implemented. The browser test host, debugger and iOS
 render WKWebView all mount through the pageframe, and the runtime's cross-thread
 integration harness also defaults to pageframe. `TreeRenderer` requires
 `mountPage`; the legacy `tree.snapshot` event, service-side pageframe switch and
@@ -78,8 +78,8 @@ The migration is staged to keep the gate green:
   not a full component-data map. WXS `bindinput` on `input`/`textarea` is
   render-local, matching WeChat's pageframe dispatch; only plain JS `bindinput`
   uses the service event path.
-- **Phase E (implemented, R1)**: updates are data-only. `tree.flow` still
-  carries the initial projection (`define` + `tree` + `ready`), but a
+- **Phase E (implemented, R1)**: updates are data-only. The mount flow still
+  carried the initial projection (`define` + `tree` + `ready`); a
   `tree.patch` no longer carries the element tree or the full component list.
   It carries the original `setData` patch, per-instance component data, and a
   `componentFlowDelta` addressed per owner (page root or component host):
@@ -93,6 +93,20 @@ The migration is staged to keep the gate green:
   `treeProtocol.renderHints = 'always'` restores the Phase C behaviour as a
   rollback switch and as the byte-budget baseline; `'mount-only'` is the
   default.
+- **Phase F (implemented, R1 Phase B)**: the mount flow is data-only too.
+  `messages` is `define` + `ready` by default; the payload carries
+  `componentFlow` plus `componentOwners` (each owner's ordered instance list),
+  and the pageframe binds component ids from those lists without any element
+  snapshot. `treeProtocol.renderHints` now defaults to `'never'`;
+  `'mount-only'` restores the Phase E mount and `'always'` the Phase C update
+  behaviour. The last live snapshot dependency was the WXS runtime: component
+  `change:prop` bindings ride on the identity payload (`wxsProps`), and WXS
+  `callMethod`/`triggerEvent` resolve the owning node from the bound element's
+  DOM id instead of the snapshot (`ins` is per element, so a component host
+  keeps resolving to that component). Removing the snapshot exposed one more
+  host assumption: `descriptorFor` must prefer the bound element's own DOM id
+  over the owner fallback, otherwise a component-level WXS handler resolves to
+  the page.
 - **Phase D (closed by WeChat 3.17.5 source)**: the cross-tree
   `tree.wxsHandler` replay has been removed; WXS handlers, including
   `input`/`textarea` `bindinput`, execute only in the pageframe. Service
@@ -141,7 +155,8 @@ and the full service/render lifecycle.
 
 | Batch | Payload |
 | --- | --- |
-| mount flow (`tree` + `define` + page data) | 415,647 |
+| mount flow, `renderHints: 'mount-only'` (`tree` + `define` + page data) | 415,647 |
+| mount flow, default data-only (`define` + page data + owner lists) | 58,478 |
 | one row text update (`setData` patch) | 93 |
 | one component created by `wx:if` (delta + `define`) | 247 |
 | same component creation with `renderHints: 'always'` | 357,746 |
@@ -156,10 +171,9 @@ no longer used to replay render event handlers. Pageframe remains the final
 WXML/DOM owner. New runtime work should preserve this split rather than trying
 to remove service template instantiation outright.
 
-Mount still carries the element projection once (Phase B of R1, "never", is not
-done). Removing it needs a mount payload that carries only `componentFlow` plus
-the per-owner instance lists, a built-in prop fallback that reads the props
-captured during template evaluation, live-glass element locator resolution, and
-a replacement for the service-listener lookup on elements. R2's stable
-render-local element ids supply the identity half. Until then the mount snapshot
-is the single source those fallbacks read.
+The legacy tree-in-flow modes (`mount-only`/`always`) keep a compatibility
+path for old hosts, but the default protocol no longer sends element data. Any
+new host falls back must use the identity payload, the bound element's DOM id,
+or a live selector query; a feature that needs per-element WXML props at mount
+must extend the identity payload (the pattern used for `wxsProps`) instead of
+re-introducing the snapshot.

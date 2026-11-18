@@ -72,8 +72,10 @@ The browser stage verifies:
 The runtime unit suite also holds the tree-protocol payload budget
 (`packages/runtime/tests/tree-payload-budget.test.ts`). It mounts a 2000-row
 pageframe (4001 render nodes) and asserts that both a data-only update and a
-one-component structural update stay under 5% of the mount payload; current
-values are 0.02% and 0.06%, against 86% for the legacy `renderHints` path.
+one-component structural update stay under 5% of the `mount-only` payload;
+current values are 0.02% and 0.06%, against 86% for the legacy `renderHints`
+path. The same test asserts the default data-only mount carries no element
+tree (58,478 vs 415,647 characters for the `mount-only` flow).
 
 ## Existing test app stage (mini)
 

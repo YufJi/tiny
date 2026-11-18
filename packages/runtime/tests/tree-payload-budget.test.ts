@@ -179,7 +179,9 @@ function ratio(part: number, whole: number): number {
 
 describe('tree payload budget', () => {
   test('an append on a 2000-row page stays under 5% of the mount payload', async () => {
-    const run = await boot({})
+    // Denominator: the `mount-only` flow, i.e. a mount that still carries the
+    // element tree. The ratio is the R1 acceptance number.
+    const run = await boot({ renderHints: 'mount-only' })
     expect(run.telemetry.mount?.bytes ?? 0).toBeGreaterThan(100_000)
 
     run.page.setData({ 'items[1999].text': 'changed' })
@@ -211,6 +213,21 @@ describe('tree payload budget', () => {
     // The old path re-sends (at least) the whole element tree, i.e. ~100% of
     // the mount payload for a one-element change.
     expect(ratio(patch.hintsBytes, run.telemetry.mount!.bytes)).toBeGreaterThan(0.5)
+    await run.close()
+  })
+
+  test('the default mount carries identities only, without the element tree', async () => {
+    const run = await boot({})
+    const mount = run.telemetry.mount
+    expect(mount).toBeDefined()
+    expect(mount!.hintsBytes).toBe(0)
+    expect(mount!.componentOwnersBytes).toBeGreaterThan(0)
+    // The same 2000-row page mounts with page data + definitions + owner
+    // lists; no element snapshot.
+    expect(mount!.bytes).toBeLessThan(100_000)
+    run.page.setData({ label: 'second' })
+    await tick()
+    expect(lastPatch(run.telemetry).bytes).toBeLessThan(1_000)
     await run.close()
   })
 

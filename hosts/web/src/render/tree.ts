@@ -13,6 +13,7 @@ import {
 import type {
   ComponentDefinitionPayload,
   ComponentFlowDelta,
+  ComponentOwnerInstances,
   CustomEventMessage,
   RenderEventTarget,
   RenderAnimationRequest,
@@ -797,10 +798,27 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
    * Tab-node owners are preserved: `indexPageFrameHints` keeps tab entries in
    * `currentTree`, and the tab tree has its own mount/hints lifecycle.
    */
-  const indexPageComponentOwners = (rootId: string): void => {
+  const indexPageComponentOwners = (
+    rootId: string,
+    owners?: ComponentOwnerInstances[],
+  ): void => {
     for (const ownerId of [...componentInstancesByOwner.keys()]) {
       if (tabBarNodeIds.has(ownerId)) continue
       componentInstancesByOwner.delete(ownerId)
+    }
+    if (owners && owners.length > 0) {
+      // Data-only mount: the service sends each owner's ordered instance
+      // list; no element tree is involved.
+      for (const owner of owners) {
+        const instances = owner.instances.map((instance) => ({
+          id: instance.id,
+          path: instance.path,
+          ...(instance.wxsProps ? { wxsProps: instance.wxsProps } : {}),
+        }))
+        componentInstancesByOwner.set(owner.id, instances)
+        for (const instance of instances) rememberComponentIdentity(instance)
+      }
+      return
     }
     if (pageFrameComponents.length > 0) {
       componentInstancesByOwner.set(rootId, [...pageFrameComponents])
@@ -1952,8 +1970,19 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     explicitNode?: RenderElement,
   ) => {
     const node = explicitNode ?? wxsNodeForElement(element)
-    const viewId = node?.id ?? fallbackViewId
-    const ownerViewId = wxsNodeForElement(owner)?.id ?? fallbackViewId
+    // The element's DOM identity is the render-side fallback when the mount
+    // snapshot is gone: component hosts and the page root carry their shared
+    // id as an attribute, plain elements fall through to their owner.
+    const domViewId = (target: HTMLElement | null | undefined): string | undefined => {
+      const id = target?.getAttribute?.(TINY_ENGINE_NAMING.nodeIdAttribute)
+      return id || undefined
+    }
+    // The bound element's own DOM id wins over the owner fallback: a component
+    // host is addressed by its instance id, not by the page that owns it.
+    const viewId = node?.id ?? domViewId(element) ?? fallbackViewId
+    const ownerViewId = wxsNodeForElement(owner)?.id
+      ?? domViewId(owner)
+      ?? fallbackViewId
     const descriptor = {
       selectComponent(selector: string) {
         if (!owner) return null
@@ -2152,7 +2181,15 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         if (!target) return null
         const resolved = ownerFromGlass(target)
         const targetNode = wxsNodeForElement(target)
-        const owner = targetNode?.component === true ? target : resolved.node
+        // Without the mount snapshot the descriptor still has to know whether
+        // the bound node *is* a component (a custom event on the component
+        // resolves `callMethod` to that component), or is a plain element
+        // owned by the page/component around it.
+        const glass = (target as unknown as { __wxElement?: object }).__wxElement
+        const isComponentInstance = Boolean(glass && componentPathByComponent.get(glass))
+        const owner = targetNode?.component === true || isComponentInstance
+          ? target
+          : resolved.node
         return wxsDescriptorFor(target, owner, resolved.viewId)
       },
     }
@@ -3182,7 +3219,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         pageFrameComponents = [...(request.componentFlow ?? pageFrameComponents)]
         if (request.placeholders) pagePlaceholders = request.placeholders
         indexHints(request.renderHints)
-        indexPageComponentOwners(rootViewId)
+        indexPageComponentOwners(rootViewId, request.componentOwners)
         const next = { ...request.data }
         if (!sameDataPatch(pageData, next)) {
           pageData = next
@@ -3214,7 +3251,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     nodes.clear()
     currentTree.clear()
     indexHints(request.renderHints)
-    indexPageComponentOwners(rootViewId)
+    indexPageComponentOwners(rootViewId, request.componentOwners)
     const definition = space.defineComponent({
       is: request.pagePath,
       options: {
