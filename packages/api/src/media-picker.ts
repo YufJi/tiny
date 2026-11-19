@@ -20,6 +20,16 @@ export function createMediaPickerApi(context: ApiContext): ApiHost {
     chooseVideo: forward('chooseVideo'),
     chooseMessageFile: forward('chooseMessageFile'),
     compressImage: forward('compressImage'),
+    getAvailableAudioSources: (params: unknown = {}) => runApi(
+      params,
+      'getAvailableAudioSources',
+      () => callHost(context, 'audio.sources', params as Record<string, unknown>),
+    ),
+    cropImage: (params: unknown = {}) => runApi(
+      params,
+      'cropImage',
+      () => callHost(context, 'media.cropImage', params as Record<string, unknown>),
+    ),
     checkDeviceSupportHevc: (params: unknown = {}) => runApi(
       params,
       'checkDeviceSupportHevc',

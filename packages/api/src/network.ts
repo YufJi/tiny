@@ -1,5 +1,6 @@
 import type { ApiHost, ApiContext } from './context'
-import { callHost, runApi } from './run-api'
+import { cloneJsonSafe } from './json'
+import { callHost, callHostSync, runApi } from './run-api'
 
 /** How often a file task asks the host for progress while it is in flight. */
 const PROGRESS_POLL_MS = 50
@@ -41,6 +42,7 @@ export function createNetworkApi(context: ApiContext): ApiHost {
       context,
       'battery.get',
     )),
+    getBatteryInfoSync: () => cloneJsonSafe(callHostSync(context, 'battery.infoSync')),
     request: (params: unknown = {}) => {
       const options = (params ?? {}) as Record<string, unknown>
       const taskId = createTaskId()

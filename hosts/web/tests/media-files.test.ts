@@ -188,4 +188,37 @@ describe('media handlers', () => {
       errMsg: expect.stringContaining('compressImage:fail'),
     })
   })
+
+  test('cropImage writes the cropped rectangle as a temp file', async () => {
+    const registry = createRegistry()
+    const seen: Array<{ src: string; width: number; destWidth: number }> = []
+    const handlers = createMediaHandlers({
+      registry,
+      crop: async (src, rect) => {
+        seen.push({ src, width: rect.width, destWidth: rect.destWidth })
+        return new Blob(['crop'], { type: 'image/jpeg' })
+      },
+    })
+    const result = await handlers['media.cropImage']({
+      src: 'blob:big',
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 50,
+      destWidth: 200,
+      destHeight: 100,
+    })
+    expect(seen).toEqual([{ src: 'blob:big', width: 100, destWidth: 200 }])
+    expect(result).toMatchObject({ tempFilePath: 'blob:test/1', errMsg: 'cropImage:ok' })
+  })
+
+  test('cropImage rejects a missing src or size', async () => {
+    const handlers = createMediaHandlers({ registry: createRegistry() })
+    await expect(handlers['media.cropImage']({})).resolves.toMatchObject({
+      errMsg: 'cropImage:fail src is required',
+    })
+    await expect(handlers['media.cropImage']({ src: 'blob:1' })).resolves.toMatchObject({
+      errMsg: 'cropImage:fail width and height must be positive',
+    })
+  })
 })

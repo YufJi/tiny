@@ -139,6 +139,8 @@ export const API_CATALOG = {
   onNetworkWeakChange: { status: 'real' },
   offNetworkWeakChange: { status: 'real' },
   getBatteryInfo: { status: 'partial', host: 'battery.get' },
+  // Synchronous variant serves the last reading from the battery watcher.
+  getBatteryInfoSync: { status: 'partial', host: 'battery.infoSync' },
   request: { status: 'partial', host: 'network.request' },
   uploadFile: { status: 'real', host: 'network.uploadFile' },
   // A browser WebSocket cannot set handshake headers; everything else works.
@@ -237,6 +239,8 @@ export const API_CATALOG = {
   previewMedia: { status: 'partial', host: 'media.previewMedia' },
   getImageInfo: { status: 'real', host: 'media.getImageInfo' },
   getVideoInfo: { status: 'partial', host: 'media.getVideoInfo' },
+  cropImage: { status: 'real', host: 'media.cropImage' },
+  getAvailableAudioSources: { status: 'real', host: 'audio.sources' },
   // No photo album in a browser: the host saves the file as a download.
   saveImageToPhotosAlbum: { status: 'partial', host: 'media.saveImageToPhotosAlbum' },
   saveVideoToPhotosAlbum: { status: 'partial', host: 'media.saveVideoToPhotosAlbum' },

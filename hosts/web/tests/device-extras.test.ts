@@ -138,4 +138,22 @@ describe('network quality and keyboard', () => {
       payload: { level: 31, isCharging: true },
     })
   })
+
+  test('battery snapshot is available synchronously after a change', async () => {
+    const listeners: Array<() => void> = []
+    const battery = {
+      level: 0.66,
+      charging: false,
+      addEventListener(_type: string, listener: () => void) {
+        listeners.push(listener)
+      },
+    }
+    const handlers = createDeviceHandlers({
+      emit: () => undefined,
+      getBattery: async () => battery,
+    })
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(handlers['battery.infoSync']({})).toEqual({ level: 66, isCharging: false })
+  })
 })

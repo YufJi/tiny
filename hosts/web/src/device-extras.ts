@@ -56,13 +56,19 @@ export function createDeviceHandlers(
   let sentinel: WakeLockSentinel | undefined
   let lastViewportHeight: number | undefined
 
+  const batterySnapshot = { level: 100, isCharging: true }
   const getBattery = options.getBattery ?? defaultGetBattery()
   if (getBattery) {
     void getBattery().then((battery) => {
-      const emitBattery = (): void => options.emit('batteryInfoChange', {
-        level: Math.round(battery.level * 100),
-        isCharging: battery.charging,
-      })
+      const emitBattery = (): void => {
+        batterySnapshot.level = Math.round(battery.level * 100)
+        batterySnapshot.isCharging = battery.charging
+        options.emit('batteryInfoChange', {
+          level: batterySnapshot.level,
+          isCharging: batterySnapshot.isCharging,
+        })
+      }
+      emitBattery()
       battery.addEventListener?.('levelchange', emitBattery)
       battery.addEventListener?.('chargingchange', emitBattery)
     }).catch(() => undefined)
@@ -95,6 +101,10 @@ export function createDeviceHandlers(
   }
 
   return {
+    // Synchronous variant: the last reading from the battery watcher. Before
+    // the first reading it reports the default 100%/charging, which is what
+    // earlier builds always returned.
+    'battery.infoSync': () => ({ ...batterySnapshot }),
     'device.keepScreenOn': async (params) => {
       const keep = params.keepScreenOn !== false
       if (!keep) {

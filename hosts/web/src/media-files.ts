@@ -133,6 +133,8 @@ export type MediaHandlerOptions = {
   loadVideo?: typeof loadVideoElement
   /** Test/debug seam; defaults to canvas re-encoding. */
   compress?: (src: string, quality: number) => Promise<Blob>
+  /** Test/debug seam; defaults to a canvas crop. */
+  crop?: (src: string, rect: CropRect) => Promise<Blob>
 }
 
 type HandlerParams = Record<string, unknown>
@@ -154,6 +156,7 @@ export function createMediaHandlers(
     'media.chooseVideo': (params) => chooseVideo(options.registry, pick, loadVideo, params),
     'media.chooseMessageFile': (params) => chooseMessageFile(options.registry, pick, params),
     'media.compressImage': (params) => compressImage(options.registry, options.compress, params),
+    'media.cropImage': (params) => cropImage(options.registry, options.crop, params),
     'media.previewImage': (params) => previewImage(params),
     'media.previewMedia': (params) => previewMedia(params),
     'media.getImageInfo': (params) => imageInfo(options.registry, params),
@@ -512,6 +515,74 @@ function compressWithCanvas(): ((src: string, quality: number) => Promise<Blob>)
         if (blob) resolve(blob)
         else reject(new Error('canvas encoding failed'))
       }, 'image/jpeg', quality)
+    })
+  }
+}
+
+
+export type CropRect = {
+  x: number
+  y: number
+  width: number
+  height: number
+  destWidth: number
+  destHeight: number
+}
+
+async function cropImage(
+  registry: TempFileRegistry,
+  crop: ((src: string, rect: CropRect) => Promise<Blob>) | undefined,
+  params: HandlerParams,
+): Promise<HandlerResult> {
+  const src = String(params.src ?? '')
+  if (!src) return { errMsg: 'cropImage:fail src is required' }
+  const width = Number(params.width ?? 0)
+  const height = Number(params.height ?? 0)
+  if (width <= 0 || height <= 0) return { errMsg: 'cropImage:fail width and height must be positive' }
+  const encode = crop ?? cropWithCanvas()
+  if (!encode) return { errMsg: 'cropImage:fail image encoding is not available in this runtime' }
+  try {
+    const blob = await encode(src, {
+      x: Number(params.x ?? 0),
+      y: Number(params.y ?? 0),
+      width,
+      height,
+      destWidth: Number(params.destWidth ?? width),
+      destHeight: Number(params.destHeight ?? height),
+    })
+    const entry = registry.add(blob, 'crop.jpg')
+    return { tempFilePath: entry.url, errMsg: 'cropImage:ok' }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return { errMsg: `cropImage:fail ${message}` }
+  }
+}
+
+function cropWithCanvas(): ((src: string, rect: CropRect) => Promise<Blob>) | undefined {
+  if (typeof document === 'undefined' || typeof Image === 'undefined') return undefined
+  return async (src, rect) => {
+    const image = await loadImageElement(src)
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(rect.destWidth))
+    canvas.height = Math.max(1, Math.round(rect.destHeight))
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('canvas 2d context is unavailable')
+    context.drawImage(
+      image,
+      rect.x,
+      rect.y,
+      rect.width,
+      rect.height,
+      0,
+      0,
+      canvas.width,
+      canvas.height,
+    )
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob)
+        else reject(new Error('canvas encoding failed'))
+      }, 'image/jpeg', 0.92)
     })
   }
 }

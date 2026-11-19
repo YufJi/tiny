@@ -110,4 +110,11 @@ describe('audio handlers', () => {
       errMsg: 'innerAudioContext:fail audio playback is not available in this runtime',
     })
   })
+
+  test('reports the audio source list', () => {
+    const handlers = createAudioHandlers({ emit: () => undefined })
+    expect(handlers['audio.sources']({})).toEqual({
+      audioSources: ['auto', 'buildInMic', 'headsetMic', 'mic'],
+    })
+  })
 })

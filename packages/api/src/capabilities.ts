@@ -74,6 +74,8 @@ const CALLBACK_APIS = [
   'canvasPutImageData',
   'getExtConfig',
   'checkDeviceSupportHevc',
+  'cropImage',
+  'getAvailableAudioSources',
   'setKeepScreenOn',
   'loadFontFace',
   'startLocationUpdate',

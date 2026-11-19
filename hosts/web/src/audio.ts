@@ -83,6 +83,9 @@ export function createAudioHandlers(
   }
 
   return {
+    'audio.sources': () => ({
+      audioSources: ['auto', 'buildInMic', 'headsetMic', 'mic'],
+    }),
     'audio.create': (params) => {
       const created = ensure(params)
       return created.ok ? { errMsg: 'innerAudioContext:ok' } : created.result
