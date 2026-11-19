@@ -302,6 +302,16 @@ MVP 边界：`createWorker(path)` → `postMessage`/`onMessage`/`terminate`；wo
 
 语义覆盖从 20.6% 提升到 49.9%，官方 demo 在范围内的缺口从 61 降到 40。
 
+### 4.2 最终验证记录（2026-11-19）
+
+| 检查 | 命令 | 结果 |
+| --- | --- | --- |
+| 覆盖率基线 | `pnpm api:coverage --check` | 200 / 349 名字（57.3%），语义 49.9%，demo 缺口 40 |
+| 单元测试 | `pnpm test` | 142 个文件 / 803 个用例全部通过 |
+| 验收门禁 | `pnpm accept:glass-easel` | 43.1s，五段浏览器全绿 |
+| iOS 类型检查 | `pnpm --filter @tiny/host-ios typecheck` | 通过 |
+| iOS 模拟器构建 | `xcodebuild -scheme TinyHost -sdk iphonesimulator ARCHS=arm64` | BUILD SUCCEEDED |
+
 ## 5. 第一批 PR（建议）
 
 1. **PR-1（W0）**：`packages/api/src/catalog.ts` + `scripts/api-coverage.mjs` + `pnpm api:coverage`，
