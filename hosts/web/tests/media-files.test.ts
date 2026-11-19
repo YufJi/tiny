@@ -126,4 +126,25 @@ describe('media handlers', () => {
       errMsg: 'previewMedia:fail no document',
     })
   })
+
+  test('dataUrlToTempFile registers the exported canvas blob', async () => {
+    const registry = createRegistry()
+    const handlers = createMediaHandlers({ registry })
+    const result = await handlers['media.dataUrlToTempFile']({
+      dataUrl: 'data:text/plain;base64,aGVsbG8=',
+      fileType: 'png',
+    })
+    expect(result).toEqual({ tempFilePath: 'blob:test/1', errMsg: 'canvasToTempFilePath:ok' })
+    const entry = registry.get('blob:test/1')
+    expect(entry?.type).toBe('text/plain')
+    expect(entry?.size).toBe(5)
+    expect(entry?.name).toBe('canvas.png')
+  })
+
+  test('dataUrlToTempFile rejects a non-data url', async () => {
+    const handlers = createMediaHandlers({ registry: createRegistry() })
+    await expect(handlers['media.dataUrlToTempFile']({ dataUrl: 'blob:1' })).resolves.toEqual({
+      errMsg: 'canvasToTempFilePath:fail invalid data url',
+    })
+  })
 })

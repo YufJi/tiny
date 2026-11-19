@@ -154,6 +154,8 @@ export const API_CATALOG = {
   // --- canvas.ts ----------------------------------------------------------
   createAnimation: { status: 'real' },
   createCanvasContext: { status: 'real' },
+  // Only the canvas-node form can be exported; `canvasId` fails honestly.
+  canvasToTempFilePath: { status: 'partial', host: 'media.dataUrlToTempFile' },
   // Legacy alias kept for pre-1.9 bundles; not a WeChat 3.17.5 name.
   createContext: { status: 'stub' },
 

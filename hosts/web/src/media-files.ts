@@ -156,6 +156,7 @@ export function createMediaHandlers(
     'media.getVideoInfo': (params) => videoInfo(options.registry, loadVideo, params),
     'media.saveImageToPhotosAlbum': (params) => saveToAlbum(options.registry, params, 'saveImageToPhotosAlbum'),
     'media.saveVideoToPhotosAlbum': (params) => saveToAlbum(options.registry, params, 'saveVideoToPhotosAlbum'),
+    'media.dataUrlToTempFile': (params) => dataUrlToTempFile(options.registry, params),
   }
 }
 
@@ -418,4 +419,30 @@ function fileNameFromPath(filePath: string): string {
   const clean = filePath.split(/[?#]/)[0]
   const name = clean.slice(clean.lastIndexOf('/') + 1)
   return name || 'download'
+}
+
+
+/**
+ * Turn a canvas export into a temp file. The service side calls this after
+ * asking the canvas node for `toDataURL()`; the blob stays in the host registry
+ * so a later upload/save can read it.
+ */
+async function dataUrlToTempFile(
+  registry: TempFileRegistry,
+  params: HandlerParams,
+): Promise<HandlerResult> {
+  const dataUrl = String(params.dataUrl ?? '')
+  if (!/^data:[^,]*,/.test(dataUrl)) {
+    return { errMsg: 'canvasToTempFilePath:fail invalid data url' }
+  }
+  try {
+    const response = await fetch(dataUrl)
+    const blob = await response.blob()
+    const extension = String(params.fileType ?? 'png').replace(/[^a-z0-9]/gi, '') || 'png'
+    const entry = registry.add(blob, `canvas.${extension}`)
+    return { tempFilePath: entry.url, errMsg: 'canvasToTempFilePath:ok' }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return { errMsg: `canvasToTempFilePath:fail ${message}` }
+  }
 }

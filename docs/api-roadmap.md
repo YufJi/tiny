@@ -50,15 +50,15 @@
 
 ## 1. 结论
 
-1. **面够了，语义不够。** 在范围内的 349 个名字里，表里已有 128 个（37%），但端到端可用（A）只有 71 个
-   （另有 5 个宿主扩展）、半可用（B）21 个、纯桩（C）31 个——**语义覆盖 27.8%**，221 个名字缺失。
+1. **面够了，语义不够。** 在范围内的 349 个名字里，表里已有 129 个（37%），但端到端可用（A）只有 71 个
+   （另有 5 个宿主扩展）、半可用（B）22 个、纯桩（C）31 个——**语义覆盖 28.1%**，220 个名字缺失。
 2. **“假成功”已清零。** 2026-11-19 的 11 个在范围内“`canIUse` 说 true 但什么都不做”的 API，已按
    “真实现 / 诚实失败 / 声明不支持”三选一处理；`api:coverage` 的 honesty 段现在为 0。
-3. **官方 demo 在范围内的缺口是 58 个**（另 12 个落在排除分类）。这是唯一能“跑一遍就知道有没有退步”的短周期目标。
+3. **官方 demo 在范围内的缺口是 57 个**（另 12 个落在排除分类）。这是唯一能“跑一遍就知道有没有退步”的短周期目标。
 4. **iOS 是短板**：110 个表内 API 里 45 个依赖宿主 handler，其中 25 个在 iOS 上 `fail not implemented`
    （3 个属于排除分类）。新增 API 必须双宿主同时落地，否则 `canIUse` 在 iOS 上继续说谎。
 5. **分数杠杆很小，必须整域推进。** API 权重 20%，在范围分母 349，每 10 个语义条目只值 **0.57 分**；
-   把 58 个 demo 缺口全补上约 **+3.3 分**（61.1% → ~64.4%）。零散补单点对总分几乎不可见。
+   把 57 个 demo 缺口全补上约 **+3.3 分**（61.1% → ~64.4%）。零散补单点对总分几乎不可见。
 6. **C 层是计划盲区。** 31 个在范围内的可调用空壳既不在“缺失”里，也不在“假 true”里，
    很容易被漏掉——`createWorker` 就是这么漏的。W0 必须先给每个桩定归属。
 
@@ -68,20 +68,20 @@
 | --- | ---: | --- |
 | 微信 3.17.5 `wx.*` 名字 | 499 | 基础库内嵌 canIUse 矩阵的方法表 |
 | 在范围 / 排除 | 349 / 150 | 按 §0 的分类 |
-| tiny 表内名字（在范围） | 128 | 124 core + 5 扩展，扣掉 6 个排除分类 |
-| 端到端可用 A / 半可用 B / 纯桩 C | 71 / 21 / 31 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
-| 缺失（在范围） | 221 | 设备 88、媒体 36、界面 30、基础 8、网络 14、路由 14、位置 13…… |
+| tiny 表内名字（在范围） | 129 | 125 core + 5 扩展，扣掉 6 个排除分类 |
+| 端到端可用 A / 半可用 B / 纯桩 C | 71 / 22 / 31 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
+| 缺失（在范围） | 220 | 设备 88、媒体 35、界面 30、基础 8、网络 14、路由 14、位置 13…… |
 | 依赖宿主 handler 的 API | 45 | 其余 65 个是 service 侧逻辑 |
 | iOS 返回 `fail not implemented` | 25 / 45 | 其中 3 个属于排除分类 |
 | 官方 demo 调用到的唯一 API | 154 | `tests/apps/wechat-demo/**` 静态扫描 |
-| 其中在范围且缺失的 | 58 | 另 12 个落在排除分类，5 个不是 3.17.5 名字 |
+| 其中在范围且缺失的 | 57 | 另 12 个落在排除分类，5 个不是 3.17.5 名字 |
 | 受影响的 demo 源文件 | 51 | 至少调用 1 个缺失名字 |
 | `canIUse` 说 true 但无效果（在范围） | 0 | `api:coverage` 的 honesty 段；由 `catalog.test.ts` 强制 |
 
 ### 2.1 三个数字的含义
 
-- **名字覆盖** 128/349 = 37%。只说明 `typeof wx.foo === 'function'` 成立，不代表能用。
-- **语义覆盖** (A + B + 5 扩展)/349 = 27.8%。A 是有宿主 handler 且真的干活；B 是 handler 在但返回罐头数据。
+- **名字覆盖** 129/349 = 37%。只说明 `typeof wx.foo === 'function'` 成立，不代表能用。
+- **语义覆盖** (A + B + 5 扩展)/349 = 28.1%。A 是有宿主 handler 且真的干活；B 是 handler 在但返回罐头数据。
 - **demo 命中** 61 个缺口里，设备 31、媒体 10、网络 8、界面 3、位置 3、跳转 3、基础 2、画布 1。
 
 ### 2.2 诚实性（已清零）
@@ -153,7 +153,8 @@ DoD：`api:coverage` 进 CI；`canIUse` 与本宿主实际行为 0 差异；口�
 #### W2 本地媒体与画布（M，3–4 PR）
 
 **已落地（2026-11-19）**：临时文件注册表 + 宿主选图/预览/保存——`chooseImage`、`chooseMedia`、`chooseVideo`、
-`previewImage`、`previewMedia`、`getImageInfo`、`getVideoInfo`、`saveImageToPhotosAlbum`、`saveVideoToPhotosAlbum`；
+`previewImage`、`previewMedia`、`getImageInfo`、`getVideoInfo`、`saveImageToPhotosAlbum`、`saveVideoToPhotosAlbum`、
+`canvasToTempFilePath`（只支持 canvas node 形式，`canvasId` 诚实失败）；
 `@tiny/host-web` 提供 `createTempFileRegistry`/`pickFiles`/`getVideoInfo`/`createMediaHandlers`，
 acceptance host 与 devtool 挂同一套 handler。浏览器没有相册，保存落到“下载”，`previewImage` 无滑动/缩放，
 `chooseVideo` 不产缩略图——这三处按 partial 计。

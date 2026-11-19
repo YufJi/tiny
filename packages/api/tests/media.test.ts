@@ -135,4 +135,25 @@ describe('media picker', () => {
       'media.saveVideoToPhotosAlbum',
     ])
   })
+
+  test('canvasToTempFilePath exports a canvas node through the host', async () => {
+    const { host, calls } = createHost({
+      'media.dataUrlToTempFile': () => ({ tempFilePath: 'blob:canvas', errMsg: 'canvasToTempFilePath:ok' }),
+    })
+    const canvas = { toDataURL: (type: string) => `data:${type};base64,AAAA` }
+    const result = await host.canvasToTempFilePath({ canvas, fileType: 'jpg', quality: 0.8 })
+    expect(result).toMatchObject({ tempFilePath: 'blob:canvas' })
+    expect(calls[0]).toMatchObject({
+      method: 'media.dataUrlToTempFile',
+      params: { dataUrl: 'data:image/jpg;base64,AAAA', fileType: 'jpg', quality: 0.8 },
+    })
+  })
+
+  test('canvasToTempFilePath fails honestly for a canvasId-only call', async () => {
+    const { host } = createHost({})
+    const failures: Array<{ errMsg?: string }> = []
+    await host.canvasToTempFilePath({ canvasId: 'chart', fail: (value: { errMsg?: string }) => failures.push(value) })
+    expect(failures).toHaveLength(1)
+    expect(failures[0].errMsg).toContain('canvasToTempFilePath:fail')
+  })
 })
