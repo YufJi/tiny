@@ -238,7 +238,6 @@ export const STUB_APIS: ReadonlySet<string> = new Set([
   'offLocalServiceDiscoveryStop',
   'startLocalServiceDiscovery',
   'stopLocalServiceDiscovery',
-  'createWorker',
   // Chrome and page actions with no implementation on the acceptance host.
   // The devtool implements the navigation/share chrome; host capability
   // reporting will let `canIUse` answer per host (docs/api-roadmap.md W0).

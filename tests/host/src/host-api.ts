@@ -4,6 +4,7 @@ import {
   createMediaHandlers,
   createNetworkHandlers,
   createSensorHandlers,
+  createWorkerHandlers,
   createTempFileRegistry,
   pickFiles,
 } from '@tiny/host-web'
@@ -36,6 +37,8 @@ export type TestHostApiOptions = {
   onStorageChange?: () => void
   /** Forward host sensor/location readings as service global events. */
   emitGlobalEvent?: (name: string, payload?: unknown) => void
+  /** Resolve a mini-program worker path to a servable URL. */
+  resolveWorkerUrl?: (path: string) => string
 }
 
 export type HostIdentity = {
@@ -80,6 +83,10 @@ export function createTestHostApiHandlers(
     ...createNetworkHandlers({ registry: tempFiles }),
     ...createFileSystemHandlers(),
     ...createSensorHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
+    ...createWorkerHandlers({
+      resolveWorkerUrl: options.resolveWorkerUrl ?? ((workerPath) => workerPath),
+      emit: options.emitGlobalEvent ?? (() => undefined),
+    }),
     'system.setting': () => ({
       bluetoothEnabled: false,
       locationEnabled: typeof navigator !== 'undefined' && 'geolocation' in navigator,

@@ -2,13 +2,14 @@ import init, { WasmHostCore } from '@tiny/host-core-wasm'
 import { createPersistentStorage } from '@tiny/host-web'
 import { TestBrowserHost } from './test-host'
 import { createTestHostApiHandlers, createTestHostSyncApiHandlers } from './host-api'
-import { resolveTestApp } from './test-app'
+import { generatedBaseFor, resolveTestApp } from './test-app'
 
 const search = new URLSearchParams(window.location.search)
 const { app, manifest } = await resolveTestApp(search.get('app'))
 const initialPath = search.get('path') || manifest.pages[0]?.path || ''
 let emitGlobalEvent: (name: string, payload?: unknown) => void = () => undefined
 const persistent = createPersistentStorage(`tiny.storage.${app.id}`)
+const generatedBase = generatedBaseFor(app.id)
 const storage = persistent.values
 const baseSystemInfo = {
   SDKVersion: '3.17.5',
@@ -41,6 +42,9 @@ const wasmHost = new TestBrowserHost({
     appId: app.id,
     onStorageChange: persistent.flush,
     emitGlobalEvent: (name, payload) => emitGlobalEvent(name, payload),
+    resolveWorkerUrl: (workerPath) => (
+      `${generatedBase}/${workerPath.split('/').map(encodeURIComponent).join('/')}`
+    ),
   }),
   syncApiHandlers: createTestHostSyncApiHandlers(storage, getSystemInfo, {
     appId: app.id,

@@ -7,6 +7,7 @@ import { createLocationApi } from './location'
 import { createMediaApi } from './media'
 import { createMediaPickerApi } from './media-picker'
 import { createSensorApi } from './sensors'
+import { createWorkerApi } from './worker'
 import { createCompatStubs } from './compat-stubs'
 import { createDeviceApi } from './device'
 import { createEncodingApi } from './encoding'
@@ -90,6 +91,7 @@ export function createApiHost(
     ...createAnalyticsApi(),
     ...createMediaPickerApi(apiContext),
     ...createMediaApi(),
+    ...createWorkerApi(apiContext),
     ...createCompatStubs(),
     ...createQueryApi(apiContext),
     ...createFileSystemApi(apiContext),

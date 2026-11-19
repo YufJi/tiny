@@ -55,13 +55,13 @@ describe('canIUse schema families', () => {
       'createInnerAudioContext',
       'createContext',
       'getScreenBrightness',
-      'createWorker',
     ]) {
       expect(host.canIUse!(name)).toBe(false)
       expect(host.canIUse!(`wx.${name}`)).toBe(false)
     }
     // Host-backed APIs are not stubs.
     expect(host.canIUse!('getFileSystemManager')).toBe(true)
+    expect(host.canIUse!('createWorker')).toBe(true)
     expect(host.canIUse!('request')).toBe(true)
     expect(host.canIUse!('createAnimation')).toBe(true)
     expect(host.canIUse!('setClipboardData')).toBe(true)

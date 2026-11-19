@@ -42,6 +42,8 @@ export type AppConfig = {
   preloadRules: PreloadRuleArtifact[]
   /** `tabBar.custom`: render the developer-provided `custom-tab-bar` component. */
   tabBarCustom: boolean
+  /** `app.json.workers` root, normalized without a trailing slash. */
+  workers?: string
   /** `themeLocation` tables, when the project declares theme variables. */
   theme?: ThemeTable
   /** App-relative path of the theme file (diagnostics and CSS injection). */
@@ -192,6 +194,9 @@ async function readAppConfig(context: CompilerContext): Promise<AppConfig> {
   const tabBar = value.tabBar && typeof value.tabBar === 'object' && !Array.isArray(value.tabBar)
     ? value.tabBar as Record<string, unknown>
     : {}
+  const workers = typeof value.workers === 'string'
+    ? value.workers.replace(/^\.\//, '').replace(/\/+$/, '')
+    : undefined
   return {
     path: configPath,
     value,
@@ -199,6 +204,7 @@ async function readAppConfig(context: CompilerContext): Promise<AppConfig> {
     subPackages,
     preloadRules,
     tabBarCustom: tabBar.custom === true,
+    ...(workers ? { workers } : {}),
     ...themeInfo,
   }
 }

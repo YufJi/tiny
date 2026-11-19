@@ -189,6 +189,10 @@ export class DevtoolRuntimeClient {
         onNavigation: (action, params) => this.applyNavigation(action, params),
         onShareMenu: (visible) => this.update({ shareMenuVisible: visible }),
         emitGlobalEvent: (name, payload) => emitGlobalEvent(name, payload),
+        resolveWorkerUrl: (workerPath) => {
+          const base = this.options.serviceUrl.replace(/\/[^/]*$/, '')
+          return `${base}/${workerPath.split('/').map(encodeURIComponent).join('/')}`
+        },
       })
       this.wasmHost = new WasmBrowserHost({
         appId: this.options.appId ?? 'devtool',

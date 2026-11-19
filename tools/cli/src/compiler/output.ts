@@ -23,9 +23,13 @@ export async function copyAssets(context: CompilerContext, project: Project): Pr
     ...context.extensions.templateScript,
     ...context.extensions.config,
   ].map((extension) => extension.toLowerCase())
+  // Worker scripts are shipped verbatim: they run in their own thread and are
+  // not part of the service bundle.
+  const workersRoot = project.appConfig.workers ? `${project.appConfig.workers}/` : undefined
   for (const [virtual, sourcePath] of project.files) {
     const lower = virtual.toLowerCase()
-    if (sourceExtensions.some((extension) => lower.endsWith(extension))) continue
+    const isWorker = workersRoot !== undefined && virtual.startsWith(workersRoot)
+    if (!isWorker && sourceExtensions.some((extension) => lower.endsWith(extension))) continue
     await copyFile(sourcePath, outputPath(context, virtual))
     context.assets.push({ path: virtual, sourcePath: virtual })
   }

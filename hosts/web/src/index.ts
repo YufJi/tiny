@@ -45,6 +45,12 @@ export {
   type GlassRenderTreeOptions,
 } from './render/tree'
 export {
+  createWorkerHandlers,
+  WORKER_BOOTSTRAP,
+  wrapWorkerSource,
+  type WorkerHandlerOptions,
+} from './workers'
+export {
   createSensorHandlers,
   type GlobalEventEmitter,
   type SensorHandlerOptions,

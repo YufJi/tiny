@@ -34,6 +34,7 @@ export async function createManifest(
   const app: AppArtifact | undefined = appEntry
     ? {
         path: appEntry.path,
+        ...(project.appConfig.workers ? { workers: project.appConfig.workers } : {}),
         script: appEntry.scriptPath
           ? context.scripts.get(relativePath(context, appEntry.scriptPath))
           : undefined,

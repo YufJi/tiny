@@ -231,7 +231,7 @@ export const API_CATALOG = {
   offLocalServiceDiscoveryStop: { status: 'stub' },
   startLocalServiceDiscovery: { status: 'stub' },
   stopLocalServiceDiscovery: { status: 'stub' },
-  createWorker: { status: 'stub' },
+  createWorker: { status: 'real', host: 'worker.create' },
 
   // --- query.ts -----------------------------------------------------------
   // Selector/intersection queries run over the render tree, not the host `api` domain.

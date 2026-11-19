@@ -4,6 +4,7 @@ import {
   createMediaHandlers,
   createNetworkHandlers,
   createSensorHandlers,
+  createWorkerHandlers,
   createTempFileRegistry,
   pickFiles,
 } from '@tiny/host-web'
@@ -25,6 +26,8 @@ export type DevtoolApiOptions = {
   pickFiles?: typeof pickFiles
   /** Forward host sensor/location readings as service global events. */
   emitGlobalEvent?: (name: string, payload?: unknown) => void
+  /** Resolve a mini-program worker path to a servable URL. */
+  resolveWorkerUrl?: (path: string) => string
 }
 
 export type DevtoolApiHost = {
@@ -66,6 +69,10 @@ function createApiHandlers(
     ...createNetworkHandlers({ registry: tempFiles }),
     ...createFileSystemHandlers(),
     ...createSensorHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
+    ...createWorkerHandlers({
+      resolveWorkerUrl: options.resolveWorkerUrl ?? ((workerPath) => workerPath),
+      emit: options.emitGlobalEvent ?? (() => undefined),
+    }),
     'keyboard.hide': () => ({ errMsg: 'hideKeyboard:ok' }),
     'system.info': () => getSystemInfo(),
     'system.setting': () => ({
