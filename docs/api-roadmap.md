@@ -55,7 +55,8 @@
 2. **“假成功”已清零。** 2026-11-19 的 11 个在范围内“`canIUse` 说 true 但什么都不做”的 API，已按
    “真实现 / 诚实失败 / 声明不支持”三选一处理；`api:coverage` 的 honesty 段现在为 0。
 3. **官方 demo 在范围内的缺口是 42 个**（另 12 个落在排除分类）。这是唯一能“跑一遍就知道有没有退步”的短周期目标。
-4. **iOS 是短板**：88 个宿主 handler key 里 iOS 实现 33 个（身份、设置、剪贴板、批量存储、account/update、网络、电量、震动）
+4. **iOS 是短板**：88 个宿主 handler key 里 iOS 实现 38 个（身份、设置、剪贴板、批量存储、account/update、网络、电量、震动、
+toast/loading/modal/actionSheet）
    加 Rust 的 5 个路由与 2 个页面指令，并已通过 `hostCapabilities` 上报给 `canIUse`；媒体、网络、音频、
    传感器、Worker、文件仍全部缺失。新增 API 必须双宿主同时落地，否则 iOS 只能回答 false。
 5. **分数杠杆很小，必须整域推进。** API 权重 20%，在范围分母 349，每 10 个语义条目只值 **0.57 分**；
@@ -73,7 +74,7 @@
 | 端到端可用 A / 半可用 B / 纯桩 C | 131 / 35 / 26 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
 | 缺失（在范围） | 152 | 设备 54、媒体 23、界面 28、基础 4、网络 3、路由 14、位置 4、跳转 7、画布 1…… |
 | 依赖宿主 handler 的 API | 45 | 其余 65 个是 service 侧逻辑 |
-| iOS 已实现的宿主 handler key | 33 / 88 | 身份/设置/剪贴板/批量存储/account/update + Rust 路由指令 |
+| iOS 已实现的宿主 handler key | 38 / 88 | 身份/设置/剪贴板/批量存储/account/update + Rust 路由指令 |
 | 官方 demo 调用到的唯一 API | 154 | `tests/apps/wechat-demo/**` 静态扫描 |
 | 其中在范围且缺失的 | 42 | 另 12 个落在排除分类，5 个不是 3.17.5 名字 |
 | 受影响的 demo 源文件 | 51 | 至少调用 1 个缺失名字 |

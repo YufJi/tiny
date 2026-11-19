@@ -19,6 +19,8 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private let smoke: Bool
   private var core: HostCoreSession?
   private var networkMonitor: NWPathMonitor?
+  private var toastView: UIView?
+  private var loadingView: UIView?
   /// Last network type reported by `NWPathMonitor`, served to `wx.getNetworkType`.
   private var currentNetworkType = "wifi"
   private var initialPageId: String?
@@ -1351,6 +1353,151 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     return text
   }
 
+  // MARK: - Native overlays
+
+  private func overlayContainer() -> UIView {
+    let box = UIView()
+    box.backgroundColor = UIColor.black.withAlphaComponent(0.75)
+    box.layer.cornerRadius = 10
+    box.translatesAutoresizingMaskIntoConstraints = false
+    return box
+  }
+
+  private func showToastOverlay(_ text: String) {
+    toastView?.removeFromSuperview()
+    guard !text.isEmpty else { return }
+    let box = overlayContainer()
+    let label = UILabel()
+    label.text = text
+    label.textColor = .white
+    label.font = .systemFont(ofSize: 14)
+    label.numberOfLines = 0
+    label.textAlignment = .center
+    label.translatesAutoresizingMaskIntoConstraints = false
+    box.addSubview(label)
+    container.addSubview(box)
+    NSLayoutConstraint.activate([
+      label.leadingAnchor.constraint(equalTo: box.leadingAnchor, constant: 14),
+      label.trailingAnchor.constraint(equalTo: box.trailingAnchor, constant: -14),
+      label.topAnchor.constraint(equalTo: box.topAnchor, constant: 10),
+      label.bottomAnchor.constraint(equalTo: box.bottomAnchor, constant: -10),
+      box.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+      box.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+      box.widthAnchor.constraint(lessThanOrEqualTo: container.widthAnchor, constant: -40),
+    ])
+    toastView = box
+    box.alpha = 0
+    UIView.animate(withDuration: 0.15) { box.alpha = 1 }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { [weak self, weak box] in
+      guard let self, let box, self.toastView === box else { return }
+      box.removeFromSuperview()
+      self.toastView = nil
+    }
+  }
+
+  private func showLoadingOverlay(_ text: String) {
+    hideLoadingOverlay()
+    let box = overlayContainer()
+    let spinner = UIActivityIndicatorView(style: .medium)
+    spinner.color = .white
+    spinner.startAnimating()
+    spinner.translatesAutoresizingMaskIntoConstraints = false
+    let label = UILabel()
+    label.text = text.isEmpty ? "加载中" : text
+    label.textColor = .white
+    label.font = .systemFont(ofSize: 13)
+    label.translatesAutoresizingMaskIntoConstraints = false
+    box.addSubview(spinner)
+    box.addSubview(label)
+    container.addSubview(box)
+    NSLayoutConstraint.activate([
+      spinner.topAnchor.constraint(equalTo: box.topAnchor, constant: 12),
+      spinner.centerXAnchor.constraint(equalTo: box.centerXAnchor),
+      label.topAnchor.constraint(equalTo: spinner.bottomAnchor, constant: 8),
+      label.leadingAnchor.constraint(equalTo: box.leadingAnchor, constant: 14),
+      label.trailingAnchor.constraint(equalTo: box.trailingAnchor, constant: -14),
+      label.bottomAnchor.constraint(equalTo: box.bottomAnchor, constant: -12),
+      box.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+      box.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+    ])
+    loadingView = box
+  }
+
+  private func hideLoadingOverlay() {
+    loadingView?.removeFromSuperview()
+    loadingView = nil
+  }
+
+  private func presentModal(requestId: String, params: [String: Any]) {
+    guard let controller = topViewController() else {
+      try? core?.platformResult(requestId: requestId, result: [
+        "confirm": false,
+        "cancel": false,
+        "errMsg": "showModal:fail no view controller",
+      ])
+      return
+    }
+    let alert = UIAlertController(
+      title: params["title"] as? String,
+      message: params["content"] as? String,
+      preferredStyle: .alert,
+    )
+    let confirmText = params["confirmText"] as? String ?? "确定"
+    let cancelText = params["cancelText"] as? String ?? "取消"
+    let showCancel = params["showCancel"] as? Bool ?? true
+    alert.addAction(UIAlertAction(title: confirmText, style: .default) { [weak self] _ in
+      try? self?.core?.platformResult(requestId: requestId, result: [
+        "confirm": true,
+        "cancel": false,
+        "errMsg": "showModal:ok",
+      ])
+    })
+    if showCancel {
+      alert.addAction(UIAlertAction(title: cancelText, style: .cancel) { [weak self] _ in
+        try? self?.core?.platformResult(requestId: requestId, result: [
+          "confirm": false,
+          "cancel": true,
+          "errMsg": "showModal:ok",
+        ])
+      })
+    }
+    controller.present(alert, animated: true)
+  }
+
+  private func presentActionSheet(requestId: String, params: [String: Any]) {
+    guard let controller = topViewController() else {
+      try? core?.platformResult(requestId: requestId, result: [
+        "tapIndex": -1,
+        "errMsg": "showActionSheet:fail no view controller",
+      ])
+      return
+    }
+    let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+    let items = params["itemList"] as? [String] ?? []
+    for (index, item) in items.enumerated() {
+      sheet.addAction(UIAlertAction(title: item, style: .default) { [weak self] _ in
+        try? self?.core?.platformResult(requestId: requestId, result: [
+          "tapIndex": index,
+          "errMsg": "showActionSheet:ok",
+        ])
+      })
+    }
+    let cancelText = params["cancelText"] as? String ?? "取消"
+    sheet.addAction(UIAlertAction(title: cancelText, style: .cancel) { [weak self] _ in
+      try? self?.core?.platformResult(requestId: requestId, result: [
+        "tapIndex": -1,
+        "errMsg": "showActionSheet:fail cancel",
+      ])
+    })
+    // iPad requires a popover anchor; the container center is good enough.
+    if let popover = sheet.popoverPresentationController {
+      popover.sourceView = container
+      popover.sourceRect = CGRect(x: container.bounds.midX, y: container.bounds.maxY, width: 0, height: 0)
+      popover.permittedArrowDirections = []
+    }
+    controller.present(sheet, animated: true)
+  }
+
   /// URLSession-backed `wx.request`. The reply is delivered later, so the
   /// switch returns without calling `platformResult`.
   private func performNetworkRequest(requestId: String, params: [String: Any]) {
@@ -1540,6 +1687,19 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
         try core?.platformResult(requestId: requestId, result: ["errMsg": "vibrateShort:ok"])
       case "network.request":
         performNetworkRequest(requestId: requestId, params: params)
+      case "toast.show":
+        showToastOverlay(params["title"] as? String ?? "")
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "showToast:ok"])
+      case "ui.loading":
+        showLoadingOverlay(params["title"] as? String ?? "")
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "showLoading:ok"])
+      case "ui.hideLoading":
+        hideLoadingOverlay()
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "hideLoading:ok"])
+      case "ui.modal":
+        presentModal(requestId: requestId, params: params)
+      case "ui.actionSheet":
+        presentActionSheet(requestId: requestId, params: params)
       default:
         // An unimplemented host handler is a platform failure, not a fake
         // success: `request` must not look like it fetched anything, `login`
