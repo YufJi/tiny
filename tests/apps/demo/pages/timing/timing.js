@@ -13,6 +13,8 @@ Page({
     groupStatus: 'idle',
     animStatus: 'idle',
     animationData: {},
+    pickerItems: ['A', 'B', 'C', 'D', 'E'],
+    pickerValue: [1],
   },
 
   onLoad() {

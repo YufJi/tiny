@@ -1027,6 +1027,37 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       assert.equal(fields.textareaOverflow, 'hidden')
       assert.equal(fields.nativeTextareaValue, 'textarea-value')
       assert.ok(Math.abs(fields.autoHeight - 20) < 1, `textarea auto height ${fields.autoHeight}`)
+      // R4: picker-view columns were zero-height until the wrapper and the
+      // deferred height measurement were fixed; the selected row must be
+      // centered and the mask/indicator must use the 34px item window.
+      const picker = await render.evaluate(() => {
+        const view = document.querySelector('#skin-picker-view')
+        const column = view?.querySelector('tiny-picker-view-column')
+        const content = column?.querySelector('[class*="picker__content"]')
+        const indicator = column?.querySelector('[class*="picker__indicator"]')
+        const items = [...(content?.children ?? [])]
+        const viewRect = view?.getBoundingClientRect()
+        const selected = items[1]?.getBoundingClientRect()
+        return {
+          viewHeight: viewRect?.height ?? 0,
+          columnHeight: column?.getBoundingClientRect().height ?? 0,
+          contentPaddingTop: content ? getComputedStyle(content).paddingTop : '',
+          indicatorTop: indicator ? getComputedStyle(indicator).top : '',
+          selectedCenter: viewRect && selected
+            ? selected.top + selected.height / 2 - viewRect.top
+            : -1,
+          itemHeight: selected?.height ?? 0,
+        }
+      })
+      assert.equal(picker.viewHeight, 200)
+      assert.equal(picker.columnHeight, 200)
+      assert.equal(picker.contentPaddingTop, '83px')
+      assert.equal(picker.indicatorTop, '83px')
+      assert.equal(picker.itemHeight, 34)
+      assert.ok(
+        Math.abs(picker.selectedCenter - 100) < 1,
+        `picker selected row not centered: ${picker.selectedCenter}`,
+      )
       // P0-9/P0-10: data belongs to the component after setData, Dates survive
       // the copy, and groupSetData calls back with the caller as `this`.
       await render.locator('#copy-probe').click()

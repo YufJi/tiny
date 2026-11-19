@@ -6,7 +6,8 @@
     "pages/flow/flow",
     "pages/move/move",
     "pages/form-controls/form-controls",
-    "pages/inputs/inputs"
+    "pages/inputs/inputs",
+    "pages/picker-view/picker-view"
   ],
   "window": {
     "navigationBarTitleText": "Tiny WXS parity"
