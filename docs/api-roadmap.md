@@ -302,6 +302,22 @@ MVP 边界：`createWorker(path)` → `postMessage`/`onMessage`/`terminate`；wo
 
 语义覆盖从 20.6% 提升到 49.9%，官方 demo 在范围内的缺口从 61 降到 40。
 
+### 4.3 后续三条线
+
+剩余 149 个缺口不在同一个层面，下一阶段建议按线推进，而不是继续加表项：
+
+1. **组件承载线（19 个）**：`createCameraContext` / `createVideoContext` / `createLivePlayerContext` /
+   `createMapContext` / `createWebAudioContext` / `createOffscreenCanvas` / 图片视频编辑。前提是先把
+   `<camera>`/`<video>`/`<map>` 做到可承载（当前 39/60 标签里这几个仍是占位），做完再让 API 控制组件实例。
+2. **devtool chrome 线（25 个）**：`setTopBarText`、`setBackgroundColor`、`setBackgroundTextStyle`、
+   `hideHomeButton`、`setWindowSize`、window/key 事件、`enableAlertBeforeUnload`。改
+   `apps/devtool/src/host-api.ts` 的 `onNavigation` 动作 + `PreviewStage` 渲染，浏览器宿主保持诚实失败。
+3. **宿主插件线（71 个）**：蓝牙/WiFi/NFC/HCE/Beacon、TCP/UDP、支付、跨小程序、广告。产出应是
+   “能力矩阵 + 宿主插件接口”，不是逐条实现；`canIUse` 由宿主能力上报回答。
+
+iOS 侧同理：媒体、传感器、Worker 三族的 Swift handler 补上后，`IOS_HOST_API_KEYS` 会从 38 继续上升，
+`canIUse` 也会随之变真——列表与实现的漂移已由 `host-capabilities.test.ts` 兜住。
+
 ### 4.2 最终验证记录（2026-11-19）
 
 | 检查 | 命令 | 结果 |
