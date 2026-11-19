@@ -80,9 +80,18 @@ export function createTestHostApiHandlers(
     'ui.hideLoading': () => hideLoading(),
     'ui.modal': (params) => showModal(params),
     'ui.actionSheet': (params) => showActionSheet(params),
-    'navigation.color': () => ({ errMsg: 'setNavigationBarColor:ok' }),
-    'navigation.loading': () => ({ errMsg: 'showNavigationBarLoading:ok' }),
-    'share.menu': (params) => ({ errMsg: `${String(params.action ?? 'share')}:ok` }),
+    // The acceptance host has no page chrome, so these report failure instead
+    // of faking ok; the devtool owns real implementations in its own host API.
+    'navigation.color': () => ({
+      errMsg: 'setNavigationBarColor:fail not supported by this host',
+    }),
+    'navigation.loading': (params) => ({
+      errMsg: `${params.visible === false ? 'hide' : 'show'}NavigationBarLoading:fail not supported by this host`,
+    }),
+    'share.menu': (params) => ({
+      errMsg: `${String(params.action ?? 'share')}:fail not supported by this host`,
+    }),
+    'page.scrollTo': () => ({ errMsg: 'pageScrollTo:fail not supported by this host' }),
     'storage.get': (params) => ({ value: storage[String(params.key)] }),
     'storage.set': (params) => {
       storage[String(params.key)] = params.value

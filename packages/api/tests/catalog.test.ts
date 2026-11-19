@@ -9,6 +9,7 @@ import {
   TINY_ONLY_APIS,
   apiHostKeys,
 } from '../src/catalog'
+import { STUB_APIS } from '../src/capabilities'
 
 type WechatRow = {
   name: string
@@ -63,6 +64,16 @@ describe('api catalog', () => {
       expect(['real', 'partial', 'stub'], name).toContain(
         (descriptor as { status: string }).status,
       )
+    }
+  })
+
+  test('a stub never claims to be supported', () => {
+    // The honesty rule behind `api:coverage`: `status: 'stub'` means the call
+    // shape exists but does nothing (or always fails), so `canIUse` must answer
+    // false and apps take their fallback path instead.
+    for (const [name, descriptor] of Object.entries(API_CATALOG)) {
+      const stub = (descriptor as { status: string }).status === 'stub'
+      expect(STUB_APIS.has(name), name).toBe(stub)
     }
   })
 

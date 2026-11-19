@@ -90,7 +90,7 @@ export const API_CATALOG = {
   setNavigationBarColor: { status: 'stub', host: 'navigation.color' },
   showNavigationBarLoading: { status: 'stub', host: 'navigation.loading' },
   hideNavigationBarLoading: { status: 'stub', host: 'navigation.loading' },
-  pageScrollTo: { status: 'stub' },
+  pageScrollTo: { status: 'stub', host: 'page.scrollTo' },
 
   // --- ui.ts: host overlays ------------------------------------------------
   showToast: { status: 'real', host: 'toast.show' },

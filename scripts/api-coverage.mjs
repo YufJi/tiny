@@ -27,7 +27,7 @@ const BASELINE = {
   present: 109,
   semantic: 78,
   demoMissing: 61,
-  inert: 11,
+  inert: 0,
 }
 
 const EXCLUDED_SCOPES = new Set(['out'])

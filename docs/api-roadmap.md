@@ -52,15 +52,14 @@
 
 1. **面够了，语义不够。** 在范围内的 349 个名字里，表里已有 109 个（31%），但端到端可用（A）只有 58 个
    （另有 5 个宿主扩展）、半可用（B）15 个、纯桩（C）31 个——**语义覆盖 22.3%**，240 个名字缺失。
-2. **最大的问题不是“缺”，是“假”。** `api:coverage` 现在能自动报出 11 个在范围内“`canIUse` 说 true
-   但什么都不做”的 API：6 个是主题/内存/截屏的三对事件（宿主没有发送方），4 个是导航栏与滚动动作，
-   1 个是 `pageScrollTo`。它们比缺失更难排查。
+2. **“假成功”已清零。** 2026-11-19 的 11 个在范围内“`canIUse` 说 true 但什么都不做”的 API，已按
+   “真实现 / 诚实失败 / 声明不支持”三选一处理；`api:coverage` 的 honesty 段现在为 0。
 3. **官方 demo 在范围内的缺口是 61 个**（另 12 个落在排除分类）。这是唯一能“跑一遍就知道有没有退步”的短周期目标。
 4. **iOS 是短板**：110 个表内 API 里 45 个依赖宿主 handler，其中 25 个在 iOS 上 `fail not implemented`
    （3 个属于排除分类）。新增 API 必须双宿主同时落地，否则 `canIUse` 在 iOS 上继续说谎。
 5. **分数杠杆很小，必须整域推进。** API 权重 20%，在范围分母 349，每 10 个语义条目只值 **0.57 分**；
    把 61 个 demo 缺口全补上约 **+3.5 分**（61.1% → ~64.6%）。零散补单点对总分几乎不可见。
-6. **C 层是计划盲区。** 37 个在范围内的可调用空壳既不在“缺失”里，也不在“假 true”里，
+6. **C 层是计划盲区。** 31 个在范围内的可调用空壳既不在“缺失”里，也不在“假 true”里，
    很容易被漏掉——`createWorker` 就是这么漏的。W0 必须先给每个桩定归属。
 
 ## 2. 现状（2026-11-19 实测）
@@ -77,7 +76,7 @@
 | 官方 demo 调用到的唯一 API | 154 | `tests/apps/wechat-demo/**` 静态扫描 |
 | 其中在范围且缺失的 | 61 | 另 12 个落在排除分类，5 个不是 3.17.5 名字 |
 | 受影响的 demo 源文件 | 51 | 至少调用 1 个缺失名字 |
-| `canIUse` 说 true 但无效果（在范围） | 11 | `api:coverage` 的 honesty 段 |
+| `canIUse` 说 true 但无效果（在范围） | 0 | `api:coverage` 的 honesty 段；由 `catalog.test.ts` 强制 |
 
 ### 2.1 三个数字的含义
 
@@ -85,17 +84,19 @@
 - **语义覆盖** (A + B + 5 扩展)/349 = 22.3%。A 是有宿主 handler 且真的干活；B 是 handler 在但返回罐头数据。
 - **demo 命中** 61 个缺口里，设备 31、媒体 10、网络 8、界面 3、位置 3、跳转 3、基础 2、画布 1。
 
-### 2.2 必须先修的“假成功”（在范围）
+### 2.2 诚实性（已清零）
 
-| API | 现状 | 位置 |
-| --- | --- | --- |
-| `pageScrollTo` | 返回 ok，从不滚动 | `packages/api/src/navigation.ts:88` |
-| `stopPullDownRefresh` | 返回 ok，没有可停的刷新 | `packages/api/src/navigation.ts:63` |
-| `setNavigationBarColor` / `show`/`hideNavigationBarLoading` | 返回 ok，无 UI；hide 复用了 show 的 errMsg | `navigation.ts:73`、`:78`、`:83` |
-| `createWorker` | Proxy 全 noop，`onMessage` 永不触发 | `compat-stubs.ts:40` |
-| `on/offThemeChange`、`on/offMemoryWarning`、`on/offUserCaptureScreen`（6 个） | 能注册，宿主没有发送方 | `global-events.ts:77`、`:85`、`:87` |
+**规则**：`status: 'stub'` ⇔ `canIUse` false，由 `catalog.test.ts` 双向强制。11 个“说 true 但无效果”的
+API 已按三种方式处理：
 
-排除分类里的 3 个分享菜单 API 在 W0 改成诚实失败。身份 7 个（`login`/`authorize`/`getSetting`/`openSetting`/`checkSession`/`getUserProfile`/`getUserInfo`）已从假成功清单移出，改为宿主 Mock。
+| 处理 | API |
+| --- | --- |
+| 真实现（宿主 Mock） | `login`、`authorize`、`getSetting`、`openSetting`、`checkSession`、`getUserProfile`、`getUserInfo` |
+| 诚实失败（宿主返回 `:fail`） | `pageScrollTo`、`setNavigationBarColor`、`show`/`hideNavigationBarLoading`（浏览器宿主） |
+| 声明不支持（保留注册形状） | `on/offThemeChange`、`on/offMemoryWarning`、`on/offUserCaptureScreen` |
+
+遗留两点：分享菜单 3 个（排除分类）在浏览器宿主也改为诚实失败；devtool 的导航栏/分享 chrome 仍能工作，
+但在宿主能力上报落地前，`canIUse` 对它们保守回答 false（ADR-0027 的“宁缺勿假”）。
 
 ## 3. 排序模型
 
@@ -121,7 +122,7 @@
 - **`pnpm api:coverage`**：输出 名字/语义/demo 命中/iOS 对齐/假成功 五张表，分母用 349。
 - **宿主能力上报**：宿主启动时声明实现了哪些 `api` handler key，`canIUse` 改为「表里有 ∩ 宿主真实现」。
   需要一篇 ADR 补 0027。
-- **假成功清零**：`api:coverage` 报出的 11 项；浏览器能做掉的直接做（`pageScrollTo`、`stopPullDownRefresh`）。
+- **假成功清零**：已完成（11 → 0）；后续新 API 由 `catalog.test.ts` 的 stub⇔canIUse 规则挡住。
 - **C 层 31 个桩逐个定归属**：能实现的挂到对应波次，不能实现的写清理由，多余的删除。
 - **iOS 25 个缺口先“说真话”**：W0 只做能力上报与显式不支持声明，让 `canIUse` 在 iOS 上不再虚报。
 

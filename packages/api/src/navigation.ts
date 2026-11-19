@@ -88,7 +88,7 @@ export function createNavigationApi(context: ApiContext): ApiHost {
     pageScrollTo: (params: unknown = {}) => runApi(
       params,
       'pageScrollTo',
-      () => ({ errMsg: 'pageScrollTo:ok' }),
+      () => callHost(context, 'page.scrollTo', navigationPayload(params)),
     ),
   }
 }

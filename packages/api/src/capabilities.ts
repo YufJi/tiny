@@ -215,6 +215,24 @@ export const STUB_APIS: ReadonlySet<string> = new Set([
   'startLocalServiceDiscovery',
   'stopLocalServiceDiscovery',
   'createWorker',
+  // Chrome and page actions with no implementation on the acceptance host.
+  // The devtool implements the navigation/share chrome; host capability
+  // reporting will let `canIUse` answer per host (docs/api-roadmap.md W0).
+  'pageScrollTo',
+  'stopPullDownRefresh',
+  'setNavigationBarColor',
+  'showNavigationBarLoading',
+  'hideNavigationBarLoading',
+  'showShareMenu',
+  'hideShareMenu',
+  'updateShareMenu',
+  // Global events no host emits yet.
+  'onThemeChange',
+  'offThemeChange',
+  'onMemoryWarning',
+  'offMemoryWarning',
+  'onUserCaptureScreen',
+  'offUserCaptureScreen',
 ])
 
 /** The capability table handed to the `canIUse` resolver. */
