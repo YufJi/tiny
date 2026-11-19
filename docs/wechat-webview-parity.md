@@ -186,6 +186,13 @@ WebView renderer 和 glass-easel component framework 为准。
 
 **73 / 502 ≈ 14.5%；官方 demo 实际用到的 150 个唯一 `wx.*` 中约支持 36–37 个（~24–25%）。**
 
+> 2026-11-19 按实际注入表复测：`createApiHost` 110 个 core 名字 + 5 个宿主扩展（`getWindowInfo`、
+> `getDeviceInfo`、`getAppBaseInfo`、`getMenuButtonBoundingClientRect`、`getPerformance`），
+> 其中端到端可用 51、半可用 16、纯桩 43；125 页 demo fixture 静态扫出 154 个唯一 `wx.*`，
+> 73 个真实微信 API 尚未落地。同日确定范围：按文档分类排除 9 类共 150 个条目，在范围 349 个
+> （开放接口里 7 个身份 API 走宿主 Mock，仍算在范围），demo 在范围内的缺口 61 个。分母与口径统一（含本节 73 与 115 的差异）见
+> [api-roadmap.md](./api-roadmap.md) §0 与 W0；补齐顺序也在该文。
+
 能力分布：
 
 | 能力 | 状态 | 说明 |
