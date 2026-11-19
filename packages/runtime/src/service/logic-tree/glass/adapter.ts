@@ -28,6 +28,7 @@ import {
 import type { MiniProgramComponentSchema } from '../../../component/schema'
 import type { StyleLoader, TemplateRegistry } from '../../../shared/template'
 import { toJsonSafe } from '../../../shared/events'
+import { cloneDataValue } from '../../../shared/data'
 import type {
   AssetUrlResolver,
   ProtocolRelativeUrlResolver,
@@ -792,11 +793,15 @@ export class GlassEaselRuntimeAdapter {
     }
     const original = target.setData.bind(component)
     target.setData = (data: never, callback?: () => void): void => {
-      original(data)
+      // WeChat's default `dataDeepCopy: simple`: data belongs to the component
+      // from here on, so a caller mutating its object afterwards must not
+      // change the rendered tree. Dates/functions survive this clone.
+      const cloned = cloneDataValue(data)
+      original(cloned)
       if (pageRoot) {
         const pageId = this.pageIdOf(component)
         if (pageId) {
-          this.onPageDataPatch?.(pageId, data as unknown as Record<string, unknown>)
+          this.onPageDataPatch?.(pageId, cloned as unknown as Record<string, unknown>)
         }
       }
       if (typeof callback !== 'function') return

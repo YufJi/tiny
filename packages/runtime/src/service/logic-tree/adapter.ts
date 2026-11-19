@@ -229,8 +229,9 @@ export class LogicTreeAdapter {
     this.backend.setScopeNameResolver(
       (scopeId) => this.glass.componentSpace.styleScopeManager.queryName(scopeId),
     )
-    // The logic layer must not lose Date prototypes or function values while
-    // copying data; glass-easel's default strategy flattens Date to {}.
+    // The kernel owns the WeChat `"simple"` copy (`cloneDataValue`) at the
+    // setData/initial-data boundaries; glass keeps references so Date and
+    // function values are not flattened by its built-in strategy.
     this.glass.componentSpace.updateComponentOptions({
       dataDeepCopy: glassEasel.DeepCopyKind.None,
       propertyPassingDeepCopy: glassEasel.DeepCopyKind.None,
@@ -265,6 +266,8 @@ export class LogicTreeAdapter {
       )
     }
     this.activePageId = pageId
+    // `data` is the page instance's own copy (P0-10); glass must receive that
+    // same object because its data factory may be evaluated more than once.
     const page = this.glass.mountPage(path, data, pageId)
     this.reportMissingComponents(path)
     if (styleStart !== undefined) {

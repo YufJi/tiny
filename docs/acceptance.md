@@ -78,7 +78,10 @@ The browser stage verifies:
     `innerWidth / 7.5`) and keeps a `url("/a-10rpx.png")` path untouched.
     It also asserts `event.mark` inheritance (inner mark + ancestor mark), that
     a 450 ms press on a plain view still fires `tap`, and that a longpress
-    listener emits `longtap`/`longpress` and consumes the tap.
+    listener emits `longtap`/`longpress` and consumes the tap. Finally a
+    `groupSetData` callback proves data ownership: after mutating the object it
+    passed to `setData`, the rendered value is unchanged, the Date prototype
+    survived, and the callback's `this` is the page.
 
 The runtime unit suite also holds the tree-protocol payload budget
 (`packages/runtime/tests/tree-payload-budget.test.ts`). It mounts a 2000-row

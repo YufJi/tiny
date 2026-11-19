@@ -976,6 +976,11 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
         !(await text()).includes('long: tap'),
         'longpress listener still let the tap through',
       )
+      // P0-9/P0-10: data belongs to the component after setData, Dates survive
+      // the copy, and groupSetData calls back with the caller as `this`.
+      await render.locator('#copy-probe').click()
+      await waitForText('copy: 1/true/true')
+      await waitForText('group: ok')
       // P0-1: the setData completion issues a selector query that must see the
       // new width, i.e. the ack waited for the glass render pass.
       await byText(render, 'Bump', { exact: true }).first().click()

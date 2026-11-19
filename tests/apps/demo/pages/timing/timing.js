@@ -9,6 +9,8 @@ Page({
     markStatus: 'idle',
     slowStatus: 'idle',
     longStatus: 'idle',
+    copyStatus: 'idle',
+    groupStatus: 'idle',
   },
 
   onLoad() {
@@ -30,6 +32,27 @@ Page({
 
   onLongPress() {
     this.setData({ longStatus: 'press' })
+  },
+
+  onCopy() {
+    // The caller mutates its object after setData; the view data must keep the
+    // value it was given (WeChat's dataDeepCopy: simple).
+    const shared = { nested: { n: 1 } }
+    this.setData({ copyValue: shared })
+    shared.nested.n = 2
+    const date = new Date(0)
+    this.setData({ copyDate: date })
+    const outer = this
+    this.groupSetData(function () {
+      this.setData({
+        copyStatus: [
+          this.data.copyValue.nested.n,
+          this.data.copyDate instanceof Date,
+          this === outer,
+        ].join('/'),
+        groupStatus: 'ok',
+      })
+    })
   },
 
   onProbeReady(event) {

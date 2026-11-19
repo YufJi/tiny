@@ -20,6 +20,9 @@
   <text class="slow-status">slow: {{slowStatus}}</text>
   <view id="long-press" class="tap-box" bindlongpress="onLongPress">long press</view>
   <text class="long-status">long: {{longStatus}}</text>
+  <view id="copy-probe" class="tap-box" bindtap="onCopy">copy probe</view>
+  <text class="copy-status">copy: {{copyStatus}}</text>
+  <text class="group-status">group: {{groupStatus}}</text>
   <text class="timing-status">timing: {{status}}</text>
   <button bindtap="bump">Bump</button>
   <button bindtap="back">Back</button>

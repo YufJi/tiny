@@ -13,6 +13,7 @@ import type {
   NormalizedTraitImplementation,
 } from '../../../component/definition/types'
 import type { MiniProgramComponentSchema } from '../../../component/schema'
+import { cloneDataValue } from '../../../shared/data'
 import {
   isTraitBehavior,
   type MiniProgramTraitBehavior,
@@ -155,6 +156,21 @@ export type GlassDefinitionHost = {
  * trait mapping. The adapter provides only instance identity, method-caller
  * installation and cleanup callbacks.
  */
+/**
+ * WeChat's `this.groupSetData(callback)` runs the callback with the same
+ * `this` as the caller; the actual update grouping is the page-scoped batch
+ * (all setData calls in the callback share one microtask flush).
+ */
+function groupSetDataMethod(this: unknown, callback?: unknown): void {
+  if (typeof callback !== 'function') return
+  glassEasel.safeCallback(
+    'GroupSetData Callback',
+    callback as (...args: unknown[]) => unknown,
+    this,
+    [],
+  )
+}
+
 export class GlassDefinitionRegistry {
   private readonly componentDefinitions =
     new Map<string, glassEasel.GeneralComponentDefinition>()
@@ -353,7 +369,10 @@ export class GlassDefinitionRegistry {
         groupList: this.host.templates.groupList,
         content: (name = '') => this.host.templates.content(schema.path, name),
       })
-      .data(() => ({ ...(schema.data as Record<string, unknown>), ...reservedData } as never))
+      .data(() => cloneDataValue({
+        ...(schema.data as Record<string, unknown>),
+        ...reservedData,
+      }) as never)
       .usingComponents(using as never)
       .placeholders(placeholders as never)
       .generics(generics as never)
@@ -416,10 +435,7 @@ export class GlassDefinitionRegistry {
           return adapter.host.logicQueryFactory?.(this)
         }
       }
-      methods.groupSetData = function (...args: unknown[]) {
-        const callback = args[0]
-        if (typeof callback === 'function') (callback as () => void)()
-      }
+      methods.groupSetData = groupSetDataMethod
       if (this.host.logicIntersectionFactory) {
         methods.createIntersectionObserver = function (
           this: glassEasel.GeneralComponent,
@@ -783,7 +799,9 @@ export class GlassDefinitionRegistry {
   private logicPageMethods(
     path: string,
   ): Record<string, (...args: unknown[]) => unknown> {
-    const methods: Record<string, (...args: unknown[]) => unknown> = {}
+    const methods: Record<string, (...args: unknown[]) => unknown> = {
+      groupSetData: groupSetDataMethod,
+    }
     const options = this.host.logicPageOptions?.get(path)
     if (options) {
       const explicit = (options as { methods?: Record<string, unknown> }).methods

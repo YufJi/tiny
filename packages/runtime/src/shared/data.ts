@@ -6,21 +6,33 @@ export function cloneJsonSafe<T>(value: T): T {
 }
 
 /**
- * Clone mini-program data without dropping function values. Function values
- * stay in the logic layer; bridge payloads are sanitized separately.
+ * Clone mini-program data without dropping function values or Date prototypes.
+ *
+ * This is Tiny's `dataDeepCopy: "simple"` implementation (P0-10): WeChat copies
+ * component/page data on `setData`, so mutating the object passed by the caller
+ * afterwards must not change the rendered data. Function values stay in the
+ * logic layer (the bridge sanitizes separately) and Dates are cloned instead of
+ * being flattened to `{}`. Recursive data is preserved via `seen` rather than
+ * overflowing the stack.
  */
-export function cloneDataValue<T>(value: T): T {
+export function cloneDataValue<T>(value: T, seen: WeakMap<object, unknown> = new WeakMap()): T {
   if (typeof value === 'function') return value
-  if (Array.isArray(value)) return value.map((item) => cloneDataValue(item)) as T
-  if (value && typeof value === 'object') {
-    if (value instanceof Date) return new Date(value.getTime()) as T
-    const result: Record<string, unknown> = {}
-    for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
-      result[key] = cloneDataValue(item)
-    }
+  if (!value || typeof value !== 'object') return value
+  const cached = seen.get(value as object)
+  if (cached !== undefined) return cached as T
+  if (value instanceof Date) return new Date(value.getTime()) as T
+  if (Array.isArray(value)) {
+    const result: unknown[] = []
+    seen.set(value, result)
+    for (const item of value) result.push(cloneDataValue(item, seen))
     return result as T
   }
-  return value
+  const result: Record<string, unknown> = {}
+  seen.set(value as object, result)
+  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+    result[key] = cloneDataValue(item, seen)
+  }
+  return result as T
 }
 
 export function applyDataPatch(data: Record<string, unknown>, patch: DataPatch): Record<string, unknown> {

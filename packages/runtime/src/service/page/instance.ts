@@ -1,4 +1,9 @@
-import { applyDataPatch, cloneJsonSafe, type DataPatch } from '../../shared/data'
+import {
+  applyDataPatch,
+  cloneDataValue,
+  cloneJsonSafe,
+  type DataPatch,
+} from '../../shared/data'
 import { runObservers, type ObserverHost } from '../../component/observers'
 import type {
   ComponentLifecycleName,
@@ -137,7 +142,7 @@ export class MiniProgramPageInstance implements ObserverHost {
     this.onDiagnostic = input.onDiagnostic
     this.logic = input.logic ?? {}
     this.query = cloneJsonSafe(query)
-    this.data = cloneJsonSafe(definition?.data ?? input.options.data ?? {})
+    this.data = cloneDataValue(definition?.data ?? input.options.data ?? {})
     this.properties = {}
     this.router = runtime.router
     this.pageRouter = runtime.router
@@ -216,6 +221,7 @@ export class MiniProgramPageInstance implements ObserverHost {
       selectOwnerComponent: this.selectOwnerComponent.bind(this),
       getRelationNodes: this.getRelationNodes.bind(this),
       createSelectorQuery: this.createSelectorQuery.bind(this),
+      groupSetData: this.groupSetData.bind(this),
       createIntersectionObserver: this.createIntersectionObserver.bind(this),
       animate: this.animate.bind(this),
       clearAnimate: this.clearAnimate.bind(this),
@@ -227,16 +233,34 @@ export class MiniProgramPageInstance implements ObserverHost {
   }
 
   /**
+   * WeChat's `this.groupSetData(callback)`: run the callback with the page as
+   * `this`. Calls inside it share one page-scoped update batch (the runtime's
+   * normal microtask flush), so no separate bridge message is emitted.
+   */
+  groupSetData(callback?: unknown): void {
+    if (typeof callback !== 'function') return
+    try {
+      ;(callback as () => void).call(this)
+    } catch (error) {
+      this.onDiagnostic?.(
+        DIAGNOSTIC_CODES.EVENT_HANDLER_ERROR,
+        `groupSetData callback error: ${error instanceof Error ? error.message : String(error)}`,
+        { path: this.path },
+      )
+    }
+  }
+
+  /**
    * Apply a data patch. The patch is visible in `this.data` synchronously;
    * the optional completion runs after the view layer applied the update.
    */
   setData(patch: DataPatch, callback?: () => void): void {
     if (this.unloaded) throw new Error(`Cannot setData on unloaded page: ${this.path}`)
-    const clonedPatch = cloneJsonSafe(patch)
+    const clonedPatch = cloneDataValue(patch)
     const hasPropertyObserver = this.definition?.observers.some(
       (observer) => observer.kind === 'property',
     ) ?? false
-    const oldData = hasPropertyObserver ? cloneJsonSafe(this.data) : undefined
+    const oldData = hasPropertyObserver ? cloneDataValue(this.data) : undefined
     applyDataPatch(this.data, clonedPatch)
     if (this.definition) {
       for (const name of Object.keys(this.definition.properties)) {

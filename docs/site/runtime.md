@@ -176,6 +176,8 @@ glass-easel 尚未公开 host/style scope 属性配置，因此 `TINY_ENGINE_NAM
 | 重新求值模板 | 逻辑树里的 glass-easel 重新计算模板，得到新的虚拟 RenderNode。 | logicTree.updateRenderTree(pageId) |
 | diff 出 patch | 旧快照和新快照按 text、replace、props、insert、remove、reorder 做 diff，同一个 microtask 内的更新会合批。 | diffRenderTree(previous, next) |
 | 渲染树应用 patch | 宿主 TreeRenderer 把 patch 应用到真实组件和 DOM；带 completion 的批次同时携带 ack token，渲染树应用后回 `tree.ack`。 | tree.patch · tree.ack |
+| 数据拷贝 | 页面/组件的初始 data 与每次 `setData` 都走 WeChat `dataDeepCopy: "simple"` 语义：递归拷贝普通对象/数组、检测循环、克隆 Date、保留函数；调用方之后改对象不再影响视图。 | cloneDataValue(value) |
+| 分组更新 | `this.groupSetData(callback)` 以页面/组件为 `this` 执行回调；回调内同步 setData 共享一次 microtask 批量更新。 | groupSetData(callback) |
 | 执行完成回调 | `setData(patch, cb)` 的 `cb` 不在数据写入时执行：batch 在 renderer 的 render pass 完成后才回 `tree.ack`，回调再按调用顺序执行；回调异常走 `SET_DATA_CALLBACK_ERROR` 诊断。 | completeAfterRender(pageId, cb) |
 :::
 
@@ -210,7 +212,7 @@ render 发现 DOM 事件后把所属组件 id、render 侧解析的 target/curre
 :::
 
 :::card{title="completion 等 render 确认"}
-`setData(patch, cb)` 的 data 写入是同步的，`cb` 却要等对应批次在渲染树应用、且 renderer 的 render pass 完成后才执行。同一 microtask 内的多次 setData 合批、按调用顺序回调；回调里再 setData 会进入下一批。没有可渲染变化时，回调在本次 flush 末尾执行。首挂载组件的 `ready` 也走同一套等待：`onLoad`/`onShow` 先跑，pageframe 挂载并完成首帧后发 `tree.pageReady`，service 再 flush ready，因此 `ready` 里能测量到布局。
+`setData(patch, cb)` 的 data 写入是同步的，且写入的是 patch 的**拷贝**（`cloneDataValue`）：调用方之后修改传入对象不会影响 `this.data`，Date 保留原型、函数保留引用；`cb` 要等对应批次在渲染树应用、且 renderer 的 render pass 完成后才执行。同一 microtask 内的多次 setData 合批、按调用顺序回调；回调里再 setData 会进入下一批。没有可渲染变化时，回调在本次 flush 末尾执行。首挂载组件的 `ready` 也走同一套等待：`onLoad`/`onShow` 先跑，pageframe 挂载并完成首帧后发 `tree.pageReady`，service 再 flush ready，因此 `ready` 里能测量到布局。
 :::
 
 :::card{title="递归和异常都有诊断" tone="warn"}
