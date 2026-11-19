@@ -981,11 +981,62 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       await render.locator('#copy-probe').click()
       await waitForText('copy: 1/true/true')
       await waitForText('group: ok')
+      // P0-12: `animation="{{actions}}"` is an object protocol; the host runs
+      // the action sequence instead of stringifying it into a DOM attribute.
+      await render.locator('#animate-probe').click()
+      await waitForText('anim: running')
+      await page.waitForTimeout(300)
+      const animated = await render.locator('#anim-box').evaluate((element) => ({
+        transform: getComputedStyle(element).transform,
+        animation: element.getAttribute('animation'),
+        payload: element.getAttribute('wx-tiny-animation'),
+      }))
+      assert.match(animated.transform, /^matrix\(/, 'animation attribute did not apply a transform')
+      assert.notEqual(animated.transform, 'none')
+      assert.equal(animated.animation, null, 'animation was stringified into a DOM attribute')
+      assert.ok(animated.payload?.includes('actions'), 'serialized animation payload missing')
       // P0-1: the setData completion issues a selector query that must see the
       // new width, i.e. the ack waited for the glass render pass.
       await byText(render, 'Bump', { exact: true }).first().click()
       await waitForText('timing: width:120')
       await byText(render, 'Back', { exact: true }).first().click()
+      await waitForText('Tiny Glass-easel P0')
+    })
+
+    await step('flatten virtualHost components and route their custom events', async () => {
+      currentStep = 'flatten virtualHost components and route their custom events'
+      await tapToPage('Virtual host', 'vh probe')
+      await render.waitForFunction(() => {
+        const inner = document.querySelector('#vh-inner')
+        const outer = document.querySelector('#vh-outer')
+        return Boolean(
+          inner
+          && outer
+          && outer.contains(inner)
+          && !document.querySelector('tiny-virtual-host'),
+        )
+      })
+      const virtualHost = await render.evaluate(() => {
+        const host = document.querySelector('tiny-virtual-host')
+        const inner = document.querySelector('#vh-inner')
+        const outer = document.querySelector('#vh-outer')
+        return {
+          host: Boolean(host),
+          inner: Boolean(inner),
+          outer: Boolean(outer),
+          contains: Boolean(outer && inner && outer.contains(inner)),
+          parentTag: inner?.parentElement?.tagName,
+          parentId: inner?.parentElement?.id ?? '',
+        }
+      })
+      assert.equal(virtualHost.host, false, `virtualHost component produced a host element: ${JSON.stringify(virtualHost)}`)
+      assert.ok(
+        virtualHost.contains,
+        `virtualHost children were not flattened into the parent: ${JSON.stringify(virtualHost)}`,
+      )
+      await render.locator('#vh-inner').click()
+      await waitForText('vh-inner: vh-inner')
+      await byText(render, 'Back', { exact: true }).click()
       await waitForText('Tiny Glass-easel P0')
     })
 
@@ -1347,7 +1398,8 @@ export async function runMiniProgramAcceptance({ baseUrl, app = 'mini', browser 
 
       const animated = await render.evaluate(() => [...document.querySelectorAll('tiny-view, view')].some((element) => {
         const style = element.getAttribute('style') ?? ''
-        return style.includes('transition: all') && getComputedStyle(element).transform !== 'none'
+        return style.includes('transition:')
+          && getComputedStyle(element).transform !== 'none'
       }))
       assert.ok(animated, 'animation data did not produce a transform')
     })

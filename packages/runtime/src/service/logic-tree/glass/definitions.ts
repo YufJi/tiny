@@ -378,7 +378,11 @@ export class GlassDefinitionRegistry {
       .generics(generics as never)
       .options({
         multipleSlots: schema.options?.multipleSlots ?? false,
-        virtualHost: schema.options?.virtualHost ?? false,
+        // Keep a logical host in the service tree: WeChat's `virtualHost`
+        // removes the host from the *view* tree, not from the logic tree.
+        // Event listeners on the component tag (custom events) attach to the
+        // logic host; the render definition still passes the option through.
+        virtualHost: false,
         writeIdToDOM: true,
         useMethodCallerListeners: true,
         styleScope: styleScopeId,

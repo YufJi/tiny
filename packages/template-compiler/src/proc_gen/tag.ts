@@ -762,6 +762,46 @@ function writeAttributeValue(
   }
 }
 
+function writeAnimationAttribute(
+  attr: NormalAttribute,
+  w: JsFunctionScopeWriter,
+  scopes: ScopeVar[],
+  bmc: BindingMapCollector,
+): void {
+  const name = genLitStr(TINY_ENGINE_NAMING.animationAttribute)
+  if (attr.value === null) {
+    w.exprStmt((ww) => { ww.write(`if(C)R.a(N,${name},true)`) })
+    return
+  }
+  if (attr.value.kind === 'Static') {
+    const value = genLitStr(`__tinyAnimation(${JSON.stringify(attr.value.value)})`)
+    w.exprStmt((ww) => { ww.write(`if(C)R.a(N,${name},${value})`) })
+    return
+  }
+  const p = exprToProcGenPrepare(attr.value.expression, w, scopes)
+  w.exprStmt((ww) => {
+    ww.write('if(C||K||')
+    p.lvalueStateExpr(ww, scopes, false)
+    ww.write(`)R.a(N,${name},__tinyAnimation(`)
+    p.valueExpr(ww)
+    ww.write('))')
+  })
+  if (attr.value.bindingMapKeys && !attr.value.bindingMapKeys.isEmpty(bmc)) {
+    attr.value.bindingMapKeys.toProcGenWriteMap(w, bmc, (fw) => {
+      const p2 = exprToProcGenPrepare(
+        (attr.value as { kind: 'Dynamic'; expression: Expression }).expression,
+        fw,
+        scopes,
+      )
+      fw.exprStmt((ww) => {
+        ww.write(`R.a(N,${name},__tinyAnimation(`)
+        p2.valueExpr(ww)
+        ww.write('))')
+      })
+    })
+  }
+}
+
 const BUILTIN_TAGS = new Set<string>(BUILTIN_COMPONENT_TAGS)
 
 type WxsDynamicEventMetadata = {
@@ -813,6 +853,13 @@ function normalAttrToProcGenAsNormal(
   bmc: BindingMapCollector,
   rawAttributeNames?: ReadonlySet<string>,
 ): void {
+  // WeChat's `animation` attribute is an object (`{actions:[...]}`), applied by
+  // the runtime rather than stringified into a DOM attribute. Serialize it to
+  // the host-only attribute and let the render tree run the action sequence.
+  if (attr.name.name === 'animation') {
+    writeAnimationAttribute(attr, w, scopes, bmc)
+    return
+  }
   const attrName = genLitStr(attr.name.name)
   const needsRaw = rawAttributeNames?.has(attr.name.name) === true
   if (attr.value === null) {

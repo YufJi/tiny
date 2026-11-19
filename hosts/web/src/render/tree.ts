@@ -42,7 +42,117 @@ import {
   type BuiltinComponentTag,
   type BuiltinHostEventSource,
 } from '@tiny/host-web-components'
+import { animationToStyle, type AnimationAction } from '@tiny/api'
 import { attachEventCompositor } from './event-compositor'
+
+const ANIMATION_ATTRIBUTE = TINY_ENGINE_NAMING.animationAttribute
+const animationValues = new WeakMap<Element, string>()
+const animationStops = new WeakMap<Element, () => void>()
+
+const cssName = (name: string): string => (
+  name.startsWith('--') ? name : name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)
+)
+
+const stopAnimation = (element: Element): void => {
+  const stop = animationStops.get(element)
+  if (!stop) return
+  stop()
+  animationStops.delete(element)
+}
+
+/**
+ * Run WeChat's `animation="{{{actions}}}"` protocol on a plain element.
+ * Each action is applied as a CSS transition; `transitionend` (with a timer
+ * fallback for no-op transitions) advances to the next action.
+ */
+const runAnimationActions = (element: HTMLElement, actions: AnimationAction[]): void => {
+  stopAnimation(element)
+  const applied = new Map<string, string>()
+  let index = 0
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let listener: ((event: Event) => void) | undefined
+  let cancelled = false
+  const clearWait = (): void => {
+    if (timer !== undefined) { clearTimeout(timer); timer = undefined }
+    if (listener) { element.removeEventListener('transitionend', listener); listener = undefined }
+  }
+  const stop = (): void => {
+    cancelled = true
+    clearWait()
+  }
+  animationStops.set(element, stop)
+  const apply = (): void => {
+    if (cancelled) return
+    const action = actions[index]
+    if (!action) {
+      clearWait()
+      animationStops.delete(element)
+      return
+    }
+    const styled = animationToStyle(action)
+    for (const [name, value] of Object.entries(styled.style)) {
+      applied.set(cssName(name), String(value))
+    }
+    for (const [name, value] of applied) element.style.setProperty(name, value)
+    element.style.setProperty('transition', styled.transition)
+    element.style.setProperty('transition-property', styled.transitionProperty)
+    element.style.setProperty('transform', styled.transform || 'none')
+    if (styled.transformOrigin) element.style.setProperty('transform-origin', styled.transformOrigin)
+    const transition = action.option?.transition
+    const total = transition
+      ? Number(transition.duration ?? 0) + Number(transition.delay ?? 0)
+      : 0
+    const next = (): void => {
+      if (cancelled) return
+      clearWait()
+      index += 1
+      apply()
+    }
+    if (total <= 0) {
+      queueMicrotask(next)
+      return
+    }
+    listener = (event: Event) => {
+      if (event.target === element) next()
+    }
+    element.addEventListener('transitionend', listener)
+    // `transitionend` does not fire when the computed value did not change.
+    timer = setTimeout(next, total + 80)
+  }
+  apply()
+}
+
+const applyAnimationAttribute = (element: Element, raw: string): void => {
+  const host = element as HTMLElement
+  if (typeof host.style === 'undefined') return
+  if (raw && raw[0] !== '{' && raw[0] !== '[') {
+    // Legacy/Taro values are already CSS declarations.
+    host.style.cssText = `${host.style.cssText};${raw}`
+    return
+  }
+  let parsed: unknown
+  try {
+    parsed = raw ? JSON.parse(raw) : undefined
+  } catch {
+    return
+  }
+  const actions = (parsed as { actions?: unknown } | undefined)?.actions
+  if (!Array.isArray(actions) || actions.length === 0) return
+  runAnimationActions(host, actions as AnimationAction[])
+}
+
+const applyAnimationIfChanged = (element: Element, raw: string): void => {
+  if (animationValues.get(element) === raw) return
+  animationValues.set(element, raw)
+  applyAnimationAttribute(element, raw)
+}
+
+const scanAnimationElements = (container: ParentNode): void => {
+  if (typeof (container as { querySelectorAll?: unknown }).querySelectorAll !== 'function') return
+  for (const element of container.querySelectorAll(`[${ANIMATION_ATTRIBUTE}]`)) {
+    applyAnimationIfChanged(element, element.getAttribute(ANIMATION_ATTRIBUTE) ?? '')
+  }
+}
 
 type AnyComponent = glassEasel.GeneralComponent
 
@@ -713,6 +823,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
   let pageData: Record<string, unknown> = {}
   let componentData: Record<string, Record<string, unknown>> = {}
   let pageFrameRoot: AnyComponent | undefined
+  let animationObserver: MutationObserver | undefined
   let pageFramePageId = ''
   let pageFramePagePath = ''
   let pageFrameComponents: RenderComponentIdentity[] = []
@@ -911,6 +1022,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
    * template to the view ids the logic tree assigned to them, so per-instance
    * data (lifetimes, observers, parents) reaches the right instance.
    */
+  const virtualEventTargets = new WeakSet<object>()
   const bindNestedComponentInstances = (
     strictHints = false,
     applyData = true,
@@ -946,6 +1058,22 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
       // WeChat's view thread consumes `FLOW_CREATE_NODE`); a path mismatch is a
       // hard desync, not something to paper over by matching on path names.
       const found: Array<{ component: AnyComponent; path: string }> = []
+      const seenFound = new Set<AnyComponent>()
+      // A `virtualHost` component has no DOM element of its own, so a DOM walk
+      // cannot see it. Its shadow content is reachable from a child's
+      // `ownerShadowRoot`; detect it there (before the first shadow child) and
+      // keep it in the positional list so event binding/data routing works.
+      const addVirtualHost = (glass: unknown): void => {
+        const node = glass as AnyComponent
+        const host = (node?.ownerShadowRoot?.getHostNode?.() ?? null) as AnyComponent | null
+        if (!host || host === ownerComponent) return
+        if (host.getBackendElement?.()) return
+        const path = (host as { is?: unknown }).is
+        if (typeof path !== 'string' || !componentDefinitions.has(path)) return
+        if (seenFound.has(host)) return
+        seenFound.add(host)
+        found.push({ component: host, path })
+      }
       const walk = (element: Element): void => {
         const children = element.children
         for (let index = 0; index < children.length; index += 1) {
@@ -955,6 +1083,7 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
             getBackendElement?: () => unknown
             ownerShadowRoot?: { getHostNode?: () => unknown } | null
           } | undefined
+          if (glass) addVirtualHost(glass)
           const path = typeof glass?.is === 'string' ? glass.is : ''
           const owner = glass?.ownerShadowRoot?.getHostNode?.()
           const ownerElement = (owner as { getBackendElement?: () => unknown } | undefined)
@@ -990,6 +1119,14 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         ;(component as unknown as { __tinyNodeId?: string }).__tinyNodeId = item.id
         component.getBackendElement()?.setAttribute?.(TINY_ENGINE_NAMING.nodeIdAttribute, item.id)
         componentPathByComponent.set(component, found[item.index]!.path)
+        const definition = componentDefinitions.get(found[item.index]!.path)
+        if (definition?.options?.virtualHost && !virtualEventTargets.has(component as object)) {
+          const flowNode = currentTree.get(item.id)
+          if (flowNode?.type === 'element' && (flowNode.events?.length ?? 0) > 0) {
+            virtualEventTargets.add(component as object)
+            attachEvents(flowNode, component)
+          }
+        }
         nodes.set(item.id, component)
         idByComponent.set(component, item.id)
         const data = componentData[item.id]
@@ -3281,11 +3418,34 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
     rootElement?.classList?.add(TINY_ENGINE_NAMING.scopeMarkerClass)
     if (options.attach !== false) glassEasel.Element.pretendAttached(page)
     mounted = true
+    // `animation="{{...}}"` is serialized to a host attribute by the template
+    // runtime; run its action sequence when it appears and for the initial tree.
+    animationObserver?.disconnect()
+    if (
+      rootElement
+      && typeof MutationObserver !== 'undefined'
+      && typeof (rootElement as { querySelectorAll?: unknown }).querySelectorAll === 'function'
+    ) {
+      animationObserver = new MutationObserver((records) => {
+        for (const record of records) {
+          if (record.attributeName !== ANIMATION_ATTRIBUTE) continue
+          const target = record.target as Element
+          if (typeof target.getAttribute !== 'function') continue
+          applyAnimationIfChanged(target, target.getAttribute(ANIMATION_ATTRIBUTE) ?? '')
+        }
+      })
+      animationObserver.observe(rootElement, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: [ANIMATION_ATTRIBUTE],
+      })
+    }
     bindNestedComponentInstances(false, false)
     queueMicrotask(() => {
       bindNestedComponentInstances(true, false)
       queuePageFrameWxsProps()
       queuePageFrameTouchMoveGuards()
+      if (rootElement) scanAnimationElements(rootElement)
     })
     emitPageReRender()
   }
@@ -3786,6 +3946,29 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         applyComponentDataToNodes(componentData)
       })
       mounted = true
+      // `animation="{{...}}"` values arrive as serialized attributes from the
+      // template runtime; observe them on the page frame subtree and run the
+      // WeChat action sequence. The initial scan covers nodes created before
+      // the observer was attached.
+      animationObserver?.disconnect()
+      if (rootElement && typeof MutationObserver !== 'undefined') {
+        animationObserver = new MutationObserver((records) => {
+          for (const record of records) {
+            if (record.attributeName !== ANIMATION_ATTRIBUTE) continue
+            const target = record.target as Element
+            if (typeof target.getAttribute !== 'function') continue
+            applyAnimationIfChanged(target, target.getAttribute(ANIMATION_ATTRIBUTE) ?? '')
+          }
+        })
+        animationObserver.observe(rootElement, {
+          subtree: true,
+          attributes: true,
+          attributeFilter: [ANIMATION_ATTRIBUTE],
+        })
+        queueMicrotask(() => {
+          if (rootElement) scanAnimationElements(rootElement)
+        })
+      }
       emitPageReRender()
     },
     applyPatches,

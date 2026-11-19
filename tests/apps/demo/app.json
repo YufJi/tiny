@@ -8,7 +8,8 @@
     "pages/wxs-runtime/wxs-runtime",
     "pages/router/router",
     "pages/reorder/reorder",
-    "pages/timing/timing"
+    "pages/timing/timing",
+    "pages/virtual/virtual"
   ],
   "window": {
     "navigationBarTitleText": "P0 demo"

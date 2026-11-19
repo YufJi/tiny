@@ -11,6 +11,8 @@ Page({
     longStatus: 'idle',
     copyStatus: 'idle',
     groupStatus: 'idle',
+    animStatus: 'idle',
+    animationData: {},
   },
 
   onLoad() {
@@ -32,6 +34,15 @@ Page({
 
   onLongPress() {
     this.setData({ longStatus: 'press' })
+  },
+
+  onAnimate() {
+    const animation = wx.createAnimation({
+      duration: 0,
+      timingFunction: 'linear',
+    })
+    animation.scale(2, 2).rotate(90).step()
+    this.setData({ animationData: animation.export(), animStatus: 'running' })
   },
 
   onCopy() {

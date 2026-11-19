@@ -1,0 +1,2 @@
+<view id="vh-inner" class="vh-inner" bindtap="onInner">vh {{label}}</view>
+<view id="vh-slot" class="vh-slot"><slot /></view>

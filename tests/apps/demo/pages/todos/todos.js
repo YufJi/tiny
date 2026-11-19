@@ -65,6 +65,10 @@ Page({
     wx.navigateTo({ url: '../wxs-runtime/wxs-runtime' })
   },
 
+  openVirtual() {
+    wx.navigateTo({ url: '/pages/virtual/virtual' })
+  },
+
   openReorder() {
     wx.navigateTo({ url: '../reorder/reorder' })
   },

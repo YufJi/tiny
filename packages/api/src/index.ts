@@ -27,6 +27,8 @@ export type {
   SystemInfo,
 } from './host'
 export type { AssetUrlResolver } from '@tiny/manifest'
+export { animationToStyle } from './animation'
+export type { AnimationAction, AnimationExport, AnimationStyle } from './animation'
 export type {
   CanvasMeasurement,
   CanvasNodeHandle,

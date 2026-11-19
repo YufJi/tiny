@@ -23,6 +23,9 @@
   <view id="copy-probe" class="tap-box" bindtap="onCopy">copy probe</view>
   <text class="copy-status">copy: {{copyStatus}}</text>
   <text class="group-status">group: {{groupStatus}}</text>
+  <view id="anim-box" class="anim-box" animation="{{animationData}}">anim</view>
+  <view id="animate-probe" class="tap-box" bindtap="onAnimate">Animate</view>
+  <text class="anim-status">anim: {{animStatus}}</text>
   <text class="timing-status">timing: {{status}}</text>
   <button bindtap="bump">Bump</button>
   <button bindtap="back">Back</button>

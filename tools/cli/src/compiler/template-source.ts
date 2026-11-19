@@ -4,33 +4,6 @@
  * browser host cannot express into plain CSS/DOM concepts.
  */
 
-/**
- * Mini-program `animation="{{data}}"` attributes become inline styles. The
- * runtime animation API exports a CSS declaration string, so rewriting the
- * attribute lets the browser run the transition without a dedicated backend
- * animation channel.
- */
-export function rewriteAnimationAttributes(source: string): string {
-  return source.replace(
-    /<([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)\/?>/g,
-    (match, tag: string, attributes: string) => {
-      const animation = attributes.match(/\sanimation\s*=\s*(["'])([\s\S]*?)\1/)
-      if (!animation) return match
-      const value = animation[2]!
-      let nextAttributes = attributes.replace(animation[0], '')
-      const style = nextAttributes.match(/\sstyle\s*=\s*(["'])([\s\S]*?)\1/)
-      if (style) {
-        const existing = style[2]!
-        const separator = existing.trimEnd().endsWith(';') ? '' : ';'
-        nextAttributes = nextAttributes.replace(style[0], ` style="${existing}${separator}${value}"`)
-      } else {
-        nextAttributes = `${nextAttributes} style="${value}"`
-      }
-      return `<${tag}${nextAttributes}>`
-    },
-  )
-}
-
 const TAG_CLASS_SKIP = new Set(['import', 'include', 'template', 'block', 'wxs', 'slot'])
 
 /**
