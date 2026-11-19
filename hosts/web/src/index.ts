@@ -46,6 +46,10 @@ export {
 } from './render/tree'
 export { HOST_CORE_API_KEYS } from './api-capabilities'
 export {
+  createRecorderHandlers,
+  type RecorderHandlerOptions,
+} from './recorder'
+export {
   createAudioHandlers,
   type AudioElementLike,
   type AudioHandlerOptions,

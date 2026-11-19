@@ -5,6 +5,7 @@ import { describeApi } from './catalog'
 import { createWorkletApi } from './worklet'
 import { createAnalyticsApi } from './analytics'
 import { createInnerAudioApi } from './inner-audio'
+import { createRecorderApi } from './recorder'
 import { createLocationApi } from './location'
 import { createMediaApi } from './media'
 import { createMediaPickerApi } from './media-picker'
@@ -93,6 +94,7 @@ export function createApiHost(
     ...createAnalyticsApi(),
     ...createMediaPickerApi(apiContext),
     ...createInnerAudioApi(apiContext),
+    ...createRecorderApi(apiContext),
     ...createMediaApi(),
     ...createWorkerApi(apiContext),
     ...createCompatStubs(),

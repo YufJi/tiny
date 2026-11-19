@@ -221,7 +221,6 @@ function buildComponentCapabilities(): Readonly<Record<string, CanIUseCapability
 export const STUB_APIS: ReadonlySet<string> = new Set([
   'worklet',
   'reportAnalytics',
-  'getRecorderManager',
   'getBackgroundAudioManager',
   'createContext',
   'getScreenBrightness',

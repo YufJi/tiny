@@ -215,7 +215,7 @@ export const API_CATALOG = {
   saveVideoToPhotosAlbum: { status: 'partial', host: 'media.saveVideoToPhotosAlbum' },
 
   // --- media.ts: manager shapes exist, no audio backend -------------------
-  getRecorderManager: { status: 'stub' },
+  getRecorderManager: { status: 'partial', host: 'recorder.start' },
   getBackgroundAudioManager: { status: 'stub' },
   createInnerAudioContext: { status: 'partial', host: 'audio.create' },
 

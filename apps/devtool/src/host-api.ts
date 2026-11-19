@@ -5,6 +5,7 @@ import {
   createNetworkHandlers,
   createAudioHandlers,
   createDeviceHandlers,
+  createRecorderHandlers,
   createSensorHandlers,
   createWorkerHandlers,
   createTempFileRegistry,
@@ -73,6 +74,10 @@ function createApiHandlers(
     ...createSensorHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
     ...createDeviceHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
     ...createAudioHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
+    ...createRecorderHandlers({
+      emit: options.emitGlobalEvent ?? (() => undefined),
+      registry: tempFiles,
+    }),
     ...createWorkerHandlers({
       resolveWorkerUrl: options.resolveWorkerUrl ?? ((workerPath) => workerPath),
       emit: options.emitGlobalEvent ?? (() => undefined),

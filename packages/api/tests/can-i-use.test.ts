@@ -50,7 +50,6 @@ describe('canIUse schema families', () => {
     for (const name of [
       'worklet',
       'reportAnalytics',
-      'getRecorderManager',
       'getBackgroundAudioManager',
       'createContext',
       'getScreenBrightness',
@@ -62,6 +61,7 @@ describe('canIUse schema families', () => {
     expect(host.canIUse!('getFileSystemManager')).toBe(true)
     expect(host.canIUse!('createWorker')).toBe(true)
     expect(host.canIUse!('createInnerAudioContext')).toBe(true)
+    expect(host.canIUse!('getRecorderManager')).toBe(true)
     expect(host.canIUse!('request')).toBe(true)
     expect(host.canIUse!('createAnimation')).toBe(true)
     expect(host.canIUse!('setClipboardData')).toBe(true)

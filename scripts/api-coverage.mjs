@@ -25,7 +25,7 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 /** Numbers the roadmap quotes; only raise them as work lands. */
 const BASELINE = {
   present: 162,
-  semantic: 134,
+  semantic: 135,
   demoMissing: 50,
   inert: 0,
 }
@@ -128,6 +128,7 @@ const browserHandlers = new Set([
   ...readHostHandlers('hosts/web/src/sensors.ts', HANDLER_KEY),
   ...readHostHandlers('hosts/web/src/device-extras.ts', HANDLER_KEY),
   ...readHostHandlers('hosts/web/src/audio.ts', HANDLER_KEY),
+  ...readHostHandlers('hosts/web/src/recorder.ts', HANDLER_KEY),
   ...readHostHandlers('hosts/web/src/workers.ts', HANDLER_KEY),
   ...readHostHandlers('native/host-core/src/host/core.rs', /"([a-z][a-zA-Z]*\.[a-zA-Z]+)"/g),
 ])

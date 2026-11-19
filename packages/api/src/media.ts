@@ -61,13 +61,6 @@ function audioManager(): Record<string, unknown> {
 
 export function createMediaApi(): ApiHost {
   return {
-    getRecorderManager: () => ({
-      ...eventTarget(),
-      start: () => undefined,
-      stop: () => undefined,
-      pause: () => undefined,
-      resume: () => undefined,
-    }),
     getBackgroundAudioManager: () => audioManager(),
   }
 }
