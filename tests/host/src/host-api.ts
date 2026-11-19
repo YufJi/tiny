@@ -12,10 +12,36 @@ let toastElement: HTMLElement | null = null
  * These run in the host realm (the page that owns the iframes), so DOM,
  * fetch, clipboard and navigator access stay out of the core runtime.
  */
+/**
+ * Host-owned identity used by `wx.login` / `wx.getUserProfile` and the scope
+ * APIs. The values are mocks: they keep prototype flows moving instead of
+ * failing, and a real backend can replace them without touching `@tiny/api`.
+ */
+export type HostIdentity = {
+  /** Login code handed to the app; defaults to a random per-call code. */
+  code?: string
+  /** Fields merged over the mock profile. */
+  userInfo?: Record<string, unknown>
+  /** Scopes granted before the app calls `wx.authorize`. */
+  authSetting?: Record<string, boolean>
+}
+
 export function createTestHostApiHandlers(
   storage: StorageValues = {},
   getSystemInfo: () => SystemInfo,
+  identity: HostIdentity = {},
 ): HostApiHandlers {
+  const authSetting: Record<string, boolean> = { ...identity.authSetting }
+  const userInfo = {
+    nickName: 'Tiny User',
+    avatarUrl: '',
+    gender: 0,
+    country: '',
+    province: '',
+    city: '',
+    language: 'zh_CN',
+    ...identity.userInfo,
+  }
   return {
     'keyboard.hide': () => ({ errMsg: 'hideKeyboard:ok' }),
     'system.info': () => getSystemInfo(),
@@ -25,24 +51,23 @@ export function createTestHostApiHandlers(
     'clipboard.set': (params) => setClipboard(String(params.data ?? '')),
     'clipboard.get': () => getClipboard(),
     'device.vibrate': (params) => vibrate(Number(params.duration ?? 15)),
-    'settings.get': () => ({ authSetting: {}, errMsg: 'getSetting:ok' }),
-    'settings.open': () => ({ authSetting: {}, errMsg: 'openSetting:ok' }),
-    'login': () => ({ code: createLoginCode(), errMsg: 'login:ok' }),
+    'identity.checkSession': () => ({ errMsg: 'checkSession:ok' }),
+    'identity.authorize': (params) => {
+      const scope = String(params.scope ?? '')
+      if (!scope) return { errMsg: 'authorize:fail invalid scope' }
+      authSetting[scope] = true
+      return { errMsg: 'authorize:ok' }
+    },
+    'settings.get': () => ({ authSetting: { ...authSetting }, errMsg: 'getSetting:ok' }),
+    'settings.open': () => ({ authSetting: { ...authSetting }, errMsg: 'openSetting:ok' }),
+    'login': () => ({ code: identity.code ?? createLoginCode(), errMsg: 'login:ok' }),
     'toast.show': (params) => showToast(params),
     'ui.toast': (params) => showToast(params),
     'ui.hideToast': () => hideToast(),
     'profile.get': () => ({
-      userInfo: {
-        nickName: 'Tiny User',
-        avatarUrl: '',
-        gender: 0,
-        country: '',
-        province: '',
-        city: '',
-        language: 'zh_CN',
-      },
-      rawData: '{}',
-      signature: '',
+      userInfo: { ...userInfo },
+      rawData: JSON.stringify(userInfo),
+      signature: 'mock-signature',
       encryptedData: '',
       iv: '',
       errMsg: 'getUserProfile:ok',

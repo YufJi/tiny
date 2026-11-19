@@ -48,13 +48,7 @@ describe('canIUse schema families', () => {
   test('does not claim installed stub APIs', () => {
     const { host } = createContext()
     for (const name of [
-      'authorize',
-      'checkSession',
-      'login',
-      'getUserProfile',
-      'getUserInfo',
       'getFileSystemManager',
-      'createCanvasContext',
       'worklet',
       'reportAnalytics',
       'getRecorderManager',
@@ -71,6 +65,11 @@ describe('canIUse schema families', () => {
     expect(host.canIUse!('request')).toBe(true)
     expect(host.canIUse!('createAnimation')).toBe(true)
     expect(host.canIUse!('setClipboardData')).toBe(true)
+    // Identity APIs are host-backed mocks, not inert stubs: a false negative
+    // here would send apps down their "old base library" fallback path.
+    for (const name of ['login', 'checkSession', 'authorize', 'getUserProfile', 'getSetting']) {
+      expect(host.canIUse!(name)).toBe(true)
+    }
   })
 
   test('answers API method/param probes the engine itself guarantees', () => {

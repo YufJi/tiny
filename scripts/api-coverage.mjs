@@ -25,8 +25,9 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 /** Numbers the roadmap quotes; only raise them as work lands. */
 const BASELINE = {
   present: 109,
-  semantic: 72,
+  semantic: 78,
   demoMissing: 61,
+  inert: 11,
 }
 
 const EXCLUDED_SCOPES = new Set(['out'])
@@ -195,6 +196,9 @@ if (process.argv.includes('--check')) {
   if (semantic < BASELINE.semantic) failures.push(`semantic ${semantic} < ${BASELINE.semantic}`)
   if (demoMissing.length > BASELINE.demoMissing) {
     failures.push(`demo missing ${demoMissing.length} > ${BASELINE.demoMissing}`)
+  }
+  if (inertButDeclared.length > BASELINE.inert) {
+    failures.push(`inert but declared ${inertButDeclared.length} > ${BASELINE.inert}`)
   }
   if (failures.length > 0) {
     console.error(`\ncoverage regression: ${failures.join('; ')}`)

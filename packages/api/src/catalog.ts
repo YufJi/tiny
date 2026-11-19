@@ -25,6 +25,12 @@ export type ApiDescriptor = {
   status: ApiStatus
   /** Host `api` domain handler key; absent for service-realm-only APIs. */
   host?: string
+  /**
+   * Values come from a host-owned mock rather than a real platform. The call
+   * shape, `errMsg` and fields still match WeChat, so flows are not blocked;
+   * see the mock boundary in `docs/api-roadmap.md` §0.
+   */
+  mock?: true
 }
 
 export const API_CATALOG = {
@@ -114,13 +120,15 @@ export const API_CATALOG = {
   getClipboardData: { status: 'real', host: 'clipboard.get' },
   vibrateShort: { status: 'partial', host: 'device.vibrate' },
   vibrateLong: { status: 'partial', host: 'device.vibrate' },
-  getSetting: { status: 'partial', host: 'settings.get' },
-  openSetting: { status: 'stub', host: 'settings.open' },
-  authorize: { status: 'stub' },
-  checkSession: { status: 'stub' },
-  login: { status: 'stub', host: 'login' },
-  getUserProfile: { status: 'stub', host: 'profile.get' },
-  getUserInfo: { status: 'stub', host: 'profile.get' },
+  // Identity is host-owned and mockable: the host answers with a code / profile
+  // so prototype flows keep moving. Not stubs — `canIUse` must say true.
+  getSetting: { status: 'real', host: 'settings.get', mock: true },
+  openSetting: { status: 'real', host: 'settings.open', mock: true },
+  authorize: { status: 'real', host: 'identity.authorize', mock: true },
+  checkSession: { status: 'real', host: 'identity.checkSession', mock: true },
+  login: { status: 'real', host: 'login', mock: true },
+  getUserProfile: { status: 'real', host: 'profile.get', mock: true },
+  getUserInfo: { status: 'real', host: 'profile.get', mock: true },
 
   // --- encoding.ts: pure service, no host ---------------------------------
   base64ToArrayBuffer: { status: 'real' },
