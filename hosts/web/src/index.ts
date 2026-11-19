@@ -45,6 +45,11 @@ export {
   type GlassRenderTreeOptions,
 } from './render/tree'
 export { HOST_CORE_API_KEYS } from './api-capabilities'
+export {
+  createPageIntrospectionHandlers,
+  type FrameLike,
+  type PageIntrospectionOptions,
+} from './page-introspection'
 export { createEnvHandlers, type EnvHandlerOptions } from './host-env'
 export {
   createSocketHandlers,

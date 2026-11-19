@@ -23,6 +23,7 @@ const BROWSER_SOURCES = [
   'hosts/web/src/socket.ts',
   'hosts/web/src/device-extras.ts',
   'hosts/web/src/host-env.ts',
+  'hosts/web/src/page-introspection.ts',
 ]
 
 function quotedHandlerKeys(source: string): Set<string> {

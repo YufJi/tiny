@@ -126,6 +126,9 @@ export const API_CATALOG = {
   hideLoading: { status: 'real', host: 'ui.hideLoading' },
   showActionSheet: { status: 'real', host: 'ui.actionSheet' },
   loadFontFace: { status: 'real', host: 'font.load' },
+  // Both read the render iframe: same-origin only, so partial.
+  getSelectedTextRange: { status: 'partial', host: 'page.selectedTextRange' },
+  checkIsPictureInPictureActive: { status: 'partial', host: 'page.pipActive' },
 
   // --- tabbar.ts: runtime tabBar, no host round-trip ----------------------
   setTabBarStyle: { status: 'real' },

@@ -30,6 +30,16 @@ export function createUiApi(context: ApiContext): ApiHost {
       context,
       'ui.hideLoading',
     )),
+    getSelectedTextRange: (params: unknown = {}) => runApi(
+      params,
+      'getSelectedTextRange',
+      () => callHost(context, 'page.selectedTextRange'),
+    ),
+    checkIsPictureInPictureActive: (params: unknown = {}) => runApi(
+      params,
+      'checkIsPictureInPictureActive',
+      () => callHost(context, 'page.pipActive'),
+    ),
     loadFontFace: (params: unknown = {}) => runApi(
       params,
       'loadFontFace',

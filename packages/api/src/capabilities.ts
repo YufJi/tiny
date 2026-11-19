@@ -89,6 +89,8 @@ const CALLBACK_APIS = [
   'getAvailableAudioSources',
   'setKeepScreenOn',
   'loadFontFace',
+  'getSelectedTextRange',
+  'checkIsPictureInPictureActive',
   'startLocationUpdate',
   'stopLocationUpdate',
   'startAccelerometer',
