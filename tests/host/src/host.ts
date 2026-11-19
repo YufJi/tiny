@@ -3,6 +3,7 @@ import {
   createEnvHandlers,
   createFileSystemHandlers,
   createPersistentStorage,
+  createTempFileRegistry,
   HOST_CORE_API_KEYS,
 } from '@tiny/host-web'
 import { TestBrowserHost } from './test-host'
@@ -37,7 +38,8 @@ const getSystemInfo = () => ({
 })
 
 await init()
-const fileSystem = createFileSystemHandlers()
+const tempFiles = createTempFileRegistry()
+const fileSystem = createFileSystemHandlers({ registry: tempFiles })
 const env = createEnvHandlers()
 const apiHandlers = createTestHostApiHandlers(storage, getSystemInfo, {
   appId: app.id,
@@ -48,6 +50,7 @@ const apiHandlers = createTestHostApiHandlers(storage, getSystemInfo, {
   ),
   fileSystem,
   env,
+  tempFiles,
 })
 const syncApiHandlers = createTestHostSyncApiHandlers(storage, getSystemInfo, {
   appId: app.id,

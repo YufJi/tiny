@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { createFileSystemHandlers } from '../src/file-system'
+import { createTempFileRegistry } from '../src/media-files'
 
 function encode(text: string): string {
   return btoa(text)
@@ -75,5 +76,41 @@ describe('host file system', () => {
     fs['fs.writeFile']({ path: 'wxfile://usr/f.txt', base64: encode('f') })
     expect(fs['fs.access']({ path: 'wxfile://usr/d' })).toMatchObject({ errMsg: 'access:ok' })
     expect(fs['fs.access']({ path: 'wxfile://usr/f.txt' })).toMatchObject({ errMsg: 'access:ok' })
+  })
+
+  test('copies, renames and appends bytes', () => {
+    const fs = createFileSystemHandlers()
+    fs['fs.mkdir']({ path: 'wxfile://usr/d', recursive: true })
+    fs['fs.writeFile']({ path: 'wxfile://usr/d/a.txt', base64: encode('hello') })
+    fs['fs.copyFile']({ srcPath: 'wxfile://usr/d/a.txt', destPath: 'wxfile://usr/d/b.txt' })
+    expect(decode(String(fs['fs.readFile']({ path: 'wxfile://usr/d/b.txt' }).data))).toBe('hello')
+
+    fs['fs.appendFile']({ path: 'wxfile://usr/d/a.txt', base64: encode('!') })
+    expect(decode(String(fs['fs.readFile']({ path: 'wxfile://usr/d/a.txt' }).data))).toBe('hello!')
+
+    fs['fs.rename']({ oldPath: 'wxfile://usr/d/b.txt', newPath: 'wxfile://usr/c.txt' })
+    expect(fs['fs.access']({ path: 'wxfile://usr/d/b.txt' })).toMatchObject({
+      errMsg: 'access:fail no such file or directory',
+    })
+    expect(fs['fs.access']({ path: 'wxfile://usr/c.txt' })).toMatchObject({ errMsg: 'access:ok' })
+  })
+
+  test('copies a temp file into the user tree with saveFile', async () => {
+    let counter = 0
+    const registry = createTempFileRegistry(() => `blob:test/${++counter}`)
+    const entry = registry.add(new Blob(['saved-bytes']), 'photo.png')
+    const fs = createFileSystemHandlers({ registry })
+    const result = await fs['fs.saveFile']({ tempUrl: entry.url })
+    expect(result).toMatchObject({ errMsg: 'saveFile:ok' })
+    const saved = String((result as { savedFilePath: string }).savedFilePath)
+    expect(saved.startsWith('wxfile://usr/saved/')).toBe(true)
+    expect(decode(String(fs['fs.readFile']({ path: saved }).data))).toBe('saved-bytes')
+  })
+
+  test('saveFile fails without a registry or a known temp file', async () => {
+    const fs = createFileSystemHandlers()
+    await expect(fs['fs.saveFile']({ tempUrl: 'blob:x' })).resolves.toMatchObject({
+      errMsg: 'saveFile:fail file registry is not available in this host',
+    })
   })
 })

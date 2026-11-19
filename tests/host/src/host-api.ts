@@ -59,6 +59,8 @@ export type TestHostApiOptions = {
    */
   fileSystem?: Record<string, (params: Record<string, unknown>) => unknown>
   env?: Record<string, (params: Record<string, unknown>) => unknown>
+  /** Temp files shared with the file system's `saveFile`. */
+  tempFiles?: TempFileRegistry
 }
 
 export type HostIdentity = {
@@ -77,7 +79,7 @@ export function createTestHostApiHandlers(
 ): HostApiHandlers {
   const identity = options.identity ?? {}
   const authSetting: Record<string, boolean> = { ...identity.authSetting }
-  const tempFiles = createTempFileRegistry()
+  const tempFiles = options.tempFiles ?? createTempFileRegistry()
   const pick = options.pickFiles ?? pickFiles
   const onChange = options.onStorageChange ?? (() => undefined)
   const userInfo = {

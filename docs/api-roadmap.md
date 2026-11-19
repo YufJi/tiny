@@ -50,8 +50,8 @@
 
 ## 1. 结论
 
-1. **面够了，语义不够。** 在范围内的 349 个名字里，表里已有 182 个（52%），但端到端可用（A）只有 124 个
-   （另有 5 个宿主扩展）、半可用（B）26 个、纯桩（C）27 个——**语义覆盖 44.4%**，167 个名字缺失。
+1. **面够了，语义不够。** 在范围内的 349 个名字里，表里已有 184 个（53%），但端到端可用（A）只有 126 个
+   （另有 5 个宿主扩展）、半可用（B）26 个、纯桩（C）27 个——**语义覆盖 45.0%**，165 个名字缺失。
 2. **“假成功”已清零。** 2026-11-19 的 11 个在范围内“`canIUse` 说 true 但什么都不做”的 API，已按
    “真实现 / 诚实失败 / 声明不支持”三选一处理；`api:coverage` 的 honesty 段现在为 0。
 3. **官方 demo 在范围内的缺口是 42 个**（另 12 个落在排除分类）。这是唯一能“跑一遍就知道有没有退步”的短周期目标。
@@ -68,9 +68,9 @@
 | --- | ---: | --- |
 | 微信 3.17.5 `wx.*` 名字 | 499 | 基础库内嵌 canIUse 矩阵的方法表 |
 | 在范围 / 排除 | 349 / 150 | 按 §0 的分类 |
-| tiny 表内名字（在范围） | 182 | 178 core + 5 扩展，扣掉 6 个排除分类 |
-| 端到端可用 A / 半可用 B / 纯桩 C | 124 / 26 / 27 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
-| 缺失（在范围） | 167 | 设备 55、媒体 31、界面 29、基础 7、网络 5、路由 14、位置 5、画布 2…… |
+| tiny 表内名字（在范围） | 184 | 180 core + 5 扩展，扣掉 6 个排除分类 |
+| 端到端可用 A / 半可用 B / 纯桩 C | 126 / 26 / 27 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
+| 缺失（在范围） | 165 | 设备 55、媒体 31、界面 29、基础 7、网络 5、路由 14、位置 5、画布 2…… |
 | 依赖宿主 handler 的 API | 45 | 其余 65 个是 service 侧逻辑 |
 | iOS 返回 `fail not implemented` | 25 / 45 | 其中 3 个属于排除分类 |
 | 官方 demo 调用到的唯一 API | 154 | `tests/apps/wechat-demo/**` 静态扫描 |
@@ -80,8 +80,8 @@
 
 ### 2.1 三个数字的含义
 
-- **名字覆盖** 182/349 = 52%。只说明 `typeof wx.foo === 'function'` 成立，不代表能用。
-- **语义覆盖** (A + B + 5 扩展)/349 = 44.4%。A 是有宿主 handler 且真的干活；B 是 handler 在但返回罐头数据。
+- **名字覆盖** 184/349 = 53%。只说明 `typeof wx.foo === 'function'` 成立，不代表能用。
+- **语义覆盖** (A + B + 5 扩展)/349 = 45.0%。A 是有宿主 handler 且真的干活；B 是 handler 在但返回罐头数据。
 - **demo 命中** 61 个缺口里，设备 31、媒体 10、网络 8、界面 3、位置 3、跳转 3、基础 2、画布 1。
 
 ### 2.2 诚实性（已清零）
@@ -211,7 +211,8 @@ acceptance host 的 storage 落 `localStorage`（按 appId 分区），刷新不
 `getFileSystemManager` 已从 fail stub 转成真实管理器：`access`/`readFile`/`writeFile`/`mkdir`/`readdir`/
 `stat`/`unlink`/`rmdir` 及 8 个 `*Sync` 变体，二进制走 base64 过桥，`Stats` 带 `isFile()`/`isDirectory()`。
 宿主是内存 VFS（10MB 上限，`wxfile://usr/...` 树；`wxfile://tmp` 与 `..` 逃逸一律失败）。
-未做：`copyFile`/`rename`/`appendFile`/`saveFile`/`getFileInfo`/fd 系列/`unzip`。
+已补：`copyFile`/`rename`/`appendFile`（含 Sync）、`saveFile`（把临时文件搬进 `wxfile://usr/saved/`）、
+`openDocument`（blob URL 新窗口）、`saveFileToDisk`（下载）。未做：`getFileInfo`（digest）、fd 系列、`unzip`。
 
 - 数据缓存：持久化（浏览器 IndexedDB/localStorage，iOS UserDefaults 已有）、
   `batchGetStorage`/`batchSetStorage`（4 个）。

@@ -6,6 +6,10 @@ function createHost() {
   const calls: Array<{ method: string; params: Record<string, unknown>; sync: boolean }> = []
   const store = new Map<string, string>()
   const handlers: Record<string, (params: Record<string, unknown>) => unknown> = {
+    'fs.copyFile': (params) => ({ errMsg: 'copyFile:ok', src: params.srcPath, dest: params.destPath }),
+    'fs.rename': (params) => ({ errMsg: 'rename:ok', old: params.oldPath, next: params.newPath }),
+    'fs.appendFile': (params) => ({ errMsg: 'appendFile:ok', base64: params.base64 }),
+    'fs.saveFile': (params) => ({ savedFilePath: 'wxfile://usr/saved/a.png', errMsg: 'saveFile:ok', temp: params.tempUrl }),
     'fs.writeFile': (params) => {
       store.set(String(params.path), String(params.base64))
       return { errMsg: 'writeFile:ok' }
@@ -115,5 +119,40 @@ describe('file system manager', () => {
       method: 'fs.rmdir',
       params: { path: 'wxfile://usr/dir', recursive: true },
     })
+  })
+
+  test('copy, rename, append and save reach the host', async () => {
+    const { host, calls } = createHost()
+    const fs = host.getFileSystemManager()
+    await fs.copyFile({ srcPath: 'wxfile://usr/a', destPath: 'wxfile://usr/b' })
+    await fs.rename({ oldPath: 'wxfile://usr/b', newPath: 'wxfile://usr/c' })
+    await fs.appendFile({ filePath: 'wxfile://usr/c', data: 'hi' })
+    await expect(fs.saveFile({ tempFilePath: 'blob:temp' })).resolves.toMatchObject({
+      savedFilePath: 'wxfile://usr/saved/a.png',
+    })
+
+    expect(calls.map((call) => call.method)).toEqual([
+      'fs.copyFile',
+      'fs.rename',
+      'fs.appendFile',
+      'fs.saveFile',
+    ])
+    expect(calls[2].params).toMatchObject({ path: 'wxfile://usr/c', base64: 'aGk=' })
+  })
+
+  test('the sync variants use the synchronous channel', () => {
+    const { host, calls } = createHost()
+    const fs = host.getFileSystemManager()
+    fs.copyFileSync('wxfile://usr/a', 'wxfile://usr/b')
+    fs.renameSync('wxfile://usr/b', 'wxfile://usr/c')
+    fs.appendFileSync('wxfile://usr/c', 'x')
+    expect(calls.map((call) => call.sync)).toEqual([true, true, true])
+  })
+
+  test('openDocument and saveFileToDisk forward to the host', async () => {
+    const { host, calls } = createHost()
+    await host.openDocument({ filePath: 'blob:doc', fileType: 'pdf' })
+    await host.saveFileToDisk({ filePath: 'blob:doc' })
+    expect(calls.map((call) => call.method)).toEqual(['file.openDocument', 'file.saveToDisk'])
   })
 })

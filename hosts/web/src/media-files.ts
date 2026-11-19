@@ -157,6 +157,8 @@ export function createMediaHandlers(
     'media.chooseMessageFile': (params) => chooseMessageFile(options.registry, pick, params),
     'media.compressImage': (params) => compressImage(options.registry, options.compress, params),
     'media.cropImage': (params) => cropImage(options.registry, options.crop, params),
+    'file.openDocument': (params) => openDocument(options.registry, params),
+    'file.saveToDisk': (params) => saveToDisk(options.registry, params),
     'media.previewImage': (params) => previewImage(params),
     'media.previewMedia': (params) => previewMedia(params),
     'media.getImageInfo': (params) => imageInfo(options.registry, params),
@@ -585,4 +587,31 @@ function cropWithCanvas(): ((src: string, rect: CropRect) => Promise<Blob>) | un
       }, 'image/jpeg', 0.92)
     })
   }
+}
+
+
+function openDocument(registry: TempFileRegistry, params: HandlerParams): HandlerResult {
+  const filePath = String(params.filePath ?? '')
+  if (!filePath) return { errMsg: 'openDocument:fail filePath is required' }
+  if (typeof window === 'undefined') return { errMsg: 'openDocument:fail no window' }
+  const entry = registry.get(filePath)
+  const url = entry?.url ?? (/^(https?:|blob:|data:)/.test(filePath) ? filePath : '')
+  if (!url) return { errMsg: `openDocument:fail file not found: ${filePath}` }
+  window.open(url, '_blank')
+  return { errMsg: 'openDocument:ok' }
+}
+
+function saveToDisk(registry: TempFileRegistry, params: HandlerParams): HandlerResult {
+  const filePath = String(params.filePath ?? '')
+  if (!filePath) return { errMsg: 'saveFileToDisk:fail filePath is required' }
+  if (typeof document === 'undefined') return { errMsg: 'saveFileToDisk:fail no document' }
+  const entry = registry.get(filePath)
+  const anchor = document.createElement('a')
+  anchor.href = entry?.url ?? filePath
+  anchor.download = entry?.name || fileNameFromPath(filePath)
+  anchor.style.display = 'none'
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  return { errMsg: 'saveFileToDisk:ok' }
 }

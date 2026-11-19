@@ -221,4 +221,14 @@ describe('media handlers', () => {
       errMsg: 'cropImage:fail width and height must be positive',
     })
   })
+
+  test('openDocument and saveFileToDisk fail honestly without a window', async () => {
+    const handlers = createMediaHandlers({ registry: createRegistry() })
+    expect(handlers['file.openDocument']({ filePath: 'blob:1' })).toEqual({
+      errMsg: 'openDocument:fail no window',
+    })
+    expect(handlers['file.saveToDisk']({ filePath: 'blob:1' })).toEqual({
+      errMsg: 'saveFileToDisk:fail no document',
+    })
+  })
 })

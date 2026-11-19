@@ -69,6 +69,8 @@ const CALLBACK_APIS = [
   'batchGetStorage',
   'batchSetStorage',
   'getLocation',
+  'openDocument',
+  'saveFileToDisk',
   'getFuzzyLocation',
   'canvasGetImageData',
   'canvasPutImageData',

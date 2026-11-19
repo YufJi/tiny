@@ -1,6 +1,7 @@
 import type { HostApiHandlers, StorageValues, SyncApiHandlers, SystemInfo } from '@tiny/api'
 import {
   createFileSystemHandlers,
+  createTempFileRegistry,
   createMediaHandlers,
   createNetworkHandlers,
   createAudioHandlers,
@@ -58,9 +59,11 @@ export function createDevtoolApiHost(options: DevtoolApiOptions): DevtoolApiHost
   const storage = options.storage ?? {}
   // Shared so the async and sync channels see one file system and one
   // permission cache.
+  const tempFiles = createTempFileRegistry()
   const shared = {
-    fileSystem: createFileSystemHandlers(),
+    fileSystem: createFileSystemHandlers({ registry: tempFiles }),
     env: createEnvHandlers(),
+    tempFiles,
   }
   return {
     apiHandlers: createApiHandlers(storage, options, shared),
@@ -71,6 +74,7 @@ export function createDevtoolApiHost(options: DevtoolApiOptions): DevtoolApiHost
 type SharedHandlers = {
   fileSystem: Record<string, (params: Record<string, unknown>) => unknown>
   env: Record<string, (params: Record<string, unknown>) => unknown>
+  tempFiles: ReturnType<typeof createTempFileRegistry>
 }
 
 function createApiHandlers(
@@ -80,10 +84,9 @@ function createApiHandlers(
 ): HostApiHandlers {
   const getSystemInfo = options.getSystemInfo
   const authSetting: Record<string, boolean> = {}
-  const tempFiles = createTempFileRegistry()
   return {
-    ...createMediaHandlers({ registry: tempFiles, pick: options.pickFiles }),
-    ...createNetworkHandlers({ registry: tempFiles }),
+    ...createMediaHandlers({ registry: shared.tempFiles, pick: options.pickFiles }),
+    ...createNetworkHandlers({ registry: shared.tempFiles }),
     ...shared.fileSystem,
     ...shared.env,
     ...createSensorHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
@@ -92,7 +95,7 @@ function createApiHandlers(
     ...createSocketHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
     ...createRecorderHandlers({
       emit: options.emitGlobalEvent ?? (() => undefined),
-      registry: tempFiles,
+      registry: shared.tempFiles,
     }),
     ...createWorkerHandlers({
       resolveWorkerUrl: options.resolveWorkerUrl ?? ((workerPath) => workerPath),

@@ -275,6 +275,8 @@ export const API_CATALOG = {
 
   // --- filesystem.ts ------------------------------------------------------
   getFileSystemManager: { status: 'real' },
+  openDocument: { status: 'real', host: 'file.openDocument' },
+  saveFileToDisk: { status: 'real', host: 'file.saveToDisk' },
 } as const satisfies Record<string, ApiDescriptor>
 
 export type ApiCatalog = typeof API_CATALOG

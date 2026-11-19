@@ -78,6 +78,16 @@ function assertSync<T>(result: T, apiName: string): T {
 export function createFileSystemApi(context: ApiContext): ApiHost {
   return {
     getFileSystemManager: () => createFileSystemManager(context),
+    openDocument: (params: unknown = {}) => runApi(params, 'openDocument', () => callHost(
+      context,
+      'file.openDocument',
+      params as Params,
+    )),
+    saveFileToDisk: (params: unknown = {}) => runApi(params, 'saveFileToDisk', () => callHost(
+      context,
+      'file.saveToDisk',
+      params as Params,
+    )),
   }
 }
 
@@ -123,6 +133,43 @@ function createFileSystemManager(context: ApiContext): Record<string, unknown> {
       recursive: params.recursive === true,
     })),
 
+    copyFile: (params: Params = {}) => runApi(params, 'copyFile', () => call('copyFile', {
+      srcPath: String(params.srcPath ?? ''),
+      destPath: String(params.destPath ?? ''),
+    })),
+    copyFileSync: (srcPath: unknown, destPath: unknown) => {
+      assertSync(callSync('copyFile', {
+        srcPath: String(srcPath ?? ''),
+        destPath: String(destPath ?? ''),
+      }), 'copyFile')
+      return undefined
+    },
+    rename: (params: Params = {}) => runApi(params, 'rename', () => call('rename', {
+      oldPath: String(params.oldPath ?? ''),
+      newPath: String(params.newPath ?? ''),
+    })),
+    renameSync: (oldPath: unknown, newPath: unknown) => {
+      assertSync(callSync('rename', {
+        oldPath: String(oldPath ?? ''),
+        newPath: String(newPath ?? ''),
+      }), 'rename')
+      return undefined
+    },
+    appendFile: (params: Params = {}) => runApi(params, 'appendFile', () => call('appendFile', {
+      path: readPath(params),
+      base64: encodeBase64(toBytes(params.data, params.encoding)),
+    })),
+    appendFileSync: (filePath: unknown, data: unknown, encoding?: unknown) => {
+      assertSync(callSync('appendFile', {
+        path: String(filePath ?? ''),
+        base64: encodeBase64(toBytes(data, encoding)),
+      }), 'appendFile')
+      return undefined
+    },
+    saveFile: (params: Params = {}) => runApi(params, 'saveFile', () => call('saveFile', {
+      tempUrl: String(params.tempFilePath ?? ''),
+      ...(params.filePath ? { filePath: String(params.filePath) } : {}),
+    })),
     accessSync: (filePath: unknown) => {
       assertSync(callSync('access', { path: String(filePath ?? '') }), 'access')
       return undefined

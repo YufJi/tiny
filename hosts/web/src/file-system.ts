@@ -8,6 +8,7 @@
  * landing in the wrong place.
  */
 import type { StorageValues } from '@tiny/api'
+import type { TempFileRegistry } from './media-files'
 
 type HandlerParams = Record<string, unknown>
 type HandlerResult = Record<string, unknown>
@@ -23,11 +24,14 @@ const MAX_BYTES = 10 * 1024 * 1024
 export type FileSystemHandlerOptions = {
   /** Share the WebView's storage area? Kept for future persistence. */
   storage?: StorageValues
+  /** Temp files, so `saveFile` can move a media blob into the user tree. */
+  registry?: TempFileRegistry
 }
 
 export function createFileSystemHandlers(
-  _options: FileSystemHandlerOptions = {},
-): Record<string, (params: HandlerParams) => HandlerResult> {
+  options: FileSystemHandlerOptions = {},
+): Record<string, (params: HandlerParams) => HandlerResult | Promise<HandlerResult>> {
+  const registry = options.registry
   const files = new Map<string, FileEntry>()
   const directories = new Set<string>(['/'])
 
@@ -159,6 +163,54 @@ export function createFileSystemHandlers(
         }
       }
       return fail('stat', 'no such file or directory')
+    },
+    'fs.copyFile': (params) => {
+      const source = normalize(params.srcPath)
+      const destination = normalize(params.destPath)
+      if (source === null || destination === null) return fail('copyFile', 'no such file or directory')
+      const entry = files.get(source)
+      if (!entry) return fail('copyFile', 'no such file or directory')
+      if (!directories.has(parentOf(destination))) return fail('copyFile', 'no such file or directory')
+      files.set(destination, { bytes: entry.bytes.slice(), modifiedAt: Date.now() })
+      return { errMsg: 'copyFile:ok' }
+    },
+    'fs.rename': (params) => {
+      const source = normalize(params.oldPath)
+      const destination = normalize(params.newPath)
+      if (source === null || destination === null) return fail('rename', 'no such file or directory')
+      const entry = files.get(source)
+      if (!entry) {
+        return fail('rename', directories.has(source) ? 'is a directory' : 'no such file or directory')
+      }
+      if (!directories.has(parentOf(destination))) return fail('rename', 'no such file or directory')
+      files.delete(source)
+      files.set(destination, entry)
+      return { errMsg: 'rename:ok' }
+    },
+    'fs.appendFile': (params) => {
+      const path = normalize(params.path)
+      if (path === null) return fail('appendFile', 'no such file or directory')
+      if (!directories.has(parentOf(path))) return fail('appendFile', 'no such file or directory')
+      const addition = bytesOf(String(params.base64 ?? ''))
+      const existing = files.get(path)
+      const merged = new Uint8Array((existing?.bytes.byteLength ?? 0) + addition.byteLength)
+      if (existing) merged.set(existing.bytes, 0)
+      merged.set(addition, existing?.bytes.byteLength ?? 0)
+      files.set(path, { bytes: merged, modifiedAt: Date.now() })
+      return { errMsg: 'appendFile:ok' }
+    },
+    'fs.saveFile': async (params) => {
+      if (!registry) return fail('saveFile', 'file registry is not available in this host')
+      const entry = registry.get(String(params.tempUrl ?? ''))
+      if (!entry) return fail('saveFile', 'no such temp file')
+      directories.add('/saved')
+      const requested = params.filePath ? normalize(params.filePath) : null
+      const name = String(params.fileName ?? entry.name ?? 'saved')
+      const path = requested ?? `/saved/${name}`
+      if (!directories.has(parentOf(path))) return fail('saveFile', 'no such file or directory')
+      const buffer = await entry.blob.arrayBuffer()
+      files.set(path, { bytes: new Uint8Array(buffer), modifiedAt: Date.now() })
+      return { savedFilePath: `${USER_ROOT}${path}`, errMsg: 'saveFile:ok' }
     },
     'fs.unlink': (params) => {
       const path = normalize(params.path)
