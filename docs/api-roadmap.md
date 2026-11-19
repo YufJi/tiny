@@ -339,3 +339,18 @@ MVP 边界：`createWorker(path)` → `postMessage`/`onMessage`/`terminate`；wo
 | iOS 宿主能力长期落后 | `canIUse` 在 iOS 上继续失真 | W0 的宿主能力上报作为硬门 |
 | 分类归口靠键名近似 | 分母与优先级可能偏差 | W0 用官方文档目录校正，偏差超 5% 就重算 |
 | WebSocket 走 bridge 的流式改造 | 影响 bridge 协议稳定性 | 单独 ADR，先做 `onChunkReceived` 验证通道 |
+
+## 附录 A：剩余 149 个缺口的归因（2026-11-19）
+
+继续堆 API 层的收益已经很小：剩下的缺口大多不在 `@tiny/api`，而在组件、devtool UI 或浏览器能力边界。
+
+| 原因 | 数量 | 代表 API | 建议 |
+| --- | ---: | --- | --- |
+| 浏览器无对应能力 | 71 | 蓝牙 30+、WiFi/NFC/HCE/Beacon 20+、`createTCPSocket`/`createUDPSocket`、`sendSms`、通讯录/日历、录屏、`getBackgroundFetchData` | 不实现；W8 只产出能力矩阵 |
+| 需要内置组件或宿主 UI 承载 | 19 | `createCameraContext`/`createVideoContext`/`createLivePlayerContext`、`createWebAudioContext`、`createMapContext`、`createOffscreenCanvas`、`editImage`/`openVideoEditor` | 与组件波次一起做，不在 API 层硬造 |
+| 需要页面 chrome | 25 | `setTopBarText`/`setBackgroundColor`/`setBackgroundTextStyle`/`hideHomeButton`/`setWindowSize`、window/key 事件、`enableAlertBeforeUnload`、preload 系列 | devtool 预览层 + 能力上报；浏览器诚实失败 |
+| 自定义路由语义未确认 | 14 | `onAppRoute`/`onBeforePageLoad` 等 | 先在微信模拟器确认再实现 |
+| 跨小程序生态 | 7 | `navigateToMiniProgram`/`openEmbeddedMiniProgram` | 宿主插件接口，浏览器无目标 |
+| 其他未排期 | 13 | `updateWeChatApp`、旧版 `playVoice`/`startRecord`、`setInnerAudioOption`、`loadBuiltInFontFace`、`createCacheManager`、音频中断事件 | 逐项评估，优先把旧版音频映射到 innerAudio |
+
+其中「浏览器无对应能力」的 71 个不会因为继续补齐而减少；`api:coverage` 的语义覆盖再往上走，需要先做组件与 devtool 的基础设施，而不是继续加表项。
