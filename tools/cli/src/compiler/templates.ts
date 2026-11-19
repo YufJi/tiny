@@ -6,10 +6,7 @@ import { diagnostic, writeFileWithSourceMap } from '../utils'
 import { matchesConfiguredExtension, withoutConfiguredExtension } from './extensions'
 import { outputPath, type CompilerContext } from './context'
 import type { Project } from './project'
-import {
-  injectScopeClasses,
-  rewriteAnimationAttributes,
-} from './template-source'
+import { injectScopeClasses } from './template-source'
 
 const TEMPLATE_OUTPUT = 'templates.js'
 
@@ -40,9 +37,8 @@ export async function compileTemplates(
       TINY_ENGINE_NAMING.tagClassPrefix,
       TINY_ENGINE_NAMING.scopeMarkerClass,
     )
-    const source = rewriteAnimationAttributes(markedSource)
     try {
-      const warnings = group.addTmpl(templatePath, source)
+      const warnings = group.addTmpl(templatePath, markedSource)
       // Template import/include aliases include the configured extension.
       group.addTmplAlias(relativeFile, templatePath)
       for (const extension of context.extensions.template) {

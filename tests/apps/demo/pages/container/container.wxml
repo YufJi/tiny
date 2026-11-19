@@ -1,0 +1,9 @@
+<page-container show="{{true}}" position="bottom" round overlay>
+  <view id="container-panel" class="panel">
+    <text>Panel content</text>
+    <button bindtap="close">Close</button>
+  </view>
+</page-container>
+<view class="page">
+  <text class="title">Behind the container</text>
+</view>

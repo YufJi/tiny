@@ -46,7 +46,7 @@ export type RenderElement = {
    * logic tree so per-instance data (lifetimes, observers, parents) can cross
    * the bridge even though the shadow tree itself is built on the render side.
    */
-  componentInstances?: Array<{ id: RenderNodeId; path: string }>
+  componentInstances?: Array<{ id: RenderNodeId; path: string; wxsProps?: string }>
 }
 
 export type RenderNode = RenderText | RenderElement
@@ -62,4 +62,12 @@ export type RenderNode = RenderText | RenderElement
 export type RenderComponentIdentity = {
   id: RenderNodeId
   path: string
+  /**
+   * Raw `change:prop` bindings of this component instance.
+   *
+   * The render pageframe owns the WXS runtime, so it needs the same binding
+   * table the service template produced. Carrying it on the identity keeps the
+   * mount element snapshot out of the WXS prop path.
+   */
+  wxsProps?: string
 }

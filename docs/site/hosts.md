@@ -30,7 +30,7 @@ order: 6
 | 线程启动 | `bootServiceEntry` / `bootRenderEntry` | service 需要 JS 全局；render 需要 `TreeRenderer` | service 加载 templates 并创建逻辑树；render 消费 tree flow/patch；canvas 和资源由宿主注入 |
 | Web 宿主适配 | `@tiny/host-web` | window、iframe/WebView、MessageChannel、document | iframe/WebView 线程入口、端口、DOM 渲染树、DOM canvas、资源 URL、页面生命周期 |
 | 内置组件 | `@tiny/host-web-components` | DOM 和 CSS | 39 个 tiny-* 定义、共享 behaviors、模板和基础 CSS；不负责线程启动 |
-| 宿主 API | `tests/host` · `apps/devtool` · iOS native | 应用/平台自己的环境 | network、clipboard、toast、modal、storage 等 handler，由应用显式注入 |
+| 宿主 API | `tests/host` · `apps/devtool` · iOS native | 应用/平台自己的环境 | network、clipboard、toast、modal、storage 等 handler，由应用显式注入；未实现的 handler 必须返回 `<method>:fail not implemented`（iOS host-core 的默认分支），`runApi` 会把 resolved 的 `:fail` 结果路由到 `fail`/`complete`，不得伪造 `ok` |
 | 应用宿主 | `tests/host` · `apps/devtool` | 静态资源服务器 / Vite | 选择应用、加载 manifest、提供界面或自动化钩子、调用 bootstrap |
 
 ```text

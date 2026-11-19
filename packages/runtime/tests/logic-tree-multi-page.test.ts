@@ -162,13 +162,13 @@ describe('logic tree with multiple mounted pages', () => {
     const first = tree.snapshotRenderTree('page-1') as unknown as RenderView | null
     const probe = findById(first, 'probe')
     expect(probe).toBeDefined()
-    // Elements are addressed by a component-scoped locator; `probe` is the
-    // page root's first child.
-    const locator = `${first!.id}#0`
 
     changes.length = 0
-    expect(tree.dispatchViewEvent({
-      viewId: locator,
+    // Element ids stay render-local (R2); the pageframe reports the owning
+    // component (here the page root) plus the handler name.
+    expect(tree.dispatchTemplateHandler({
+      componentId: first!.id!,
+      handler: 'onTap',
       name: 'tap',
       pageId: 'page-1',
       detail: { x: 1, y: 1 },
@@ -219,25 +219,6 @@ describe('logic tree with multiple mounted pages', () => {
     expect(componentId).toMatch(/^page-1:/)
     expect(tree.glass.getMountedComponentByComponentId(componentId!)).toBe(lazy)
   })
-  test('keeps page locators after another page is snapshotted', async () => {
-    const tree = createTree(() => {}, PAGE_OPTIONS)
-    tree.mountPage(FIRST_PAGE, { value: 'first' }, 'page-1')
-    tree.mountPage(SECOND_PAGE, { value: 'second' }, 'page-2')
-    await tree.glass.whenRendered()
-
-    const first = tree.snapshotRenderTree('page-1') as unknown as RenderView | null
-    const locator = `${first!.id}#0`
-    // Snapshotting the second page used to overwrite the locator tables of the
-    // first, so its events could no longer be resolved after navigating back.
-    tree.snapshotRenderTree('page-2')
-    expect(tree.dispatchViewEvent({
-      viewId: locator,
-      name: 'tap',
-      pageId: 'page-1',
-      detail: { x: 1, y: 1 },
-    })).toBe(true)
-  })
-
   test('keeps a page tree manager per page and releases only the unmounted page', async () => {
     const tree = createTree(() => undefined, PAGE_OPTIONS)
     tree.mountPage(FIRST_PAGE, { value: 'first' }, 'page-1')

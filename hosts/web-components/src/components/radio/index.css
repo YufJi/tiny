@@ -23,8 +23,8 @@ tiny-radio[hidden] {
   width: 22px;
 }
 .tiny-radio-input.tiny-radio-input-checked {
-  background-color: #09bb07;
-  border-color: #09bb07;
+  background-color: #07c160;
+  border-color: #07c160;
 }
 .tiny-radio-input.tiny-radio-input-checked::before {
   color: #fff;

@@ -193,7 +193,7 @@ describe('logic tree runtime options', () => {
     expect(parentView).toBeDefined()
     const pageQuery = tree.query('page-1', '#parent', false)
     // Element identity is a locator now; `viewId` stays the logic-layer id.
-    expect(pageQuery[0]?.locator).toMatch(/^view-\d+#\d+$/)
+    expect(pageQuery[0]?.viewId).toMatch(/^view-\d+$/)
     expect(pageQuery[0]?.viewId).toBeDefined()
 
     // Nodes inside a component shadow tree are evaluated by the render thread,

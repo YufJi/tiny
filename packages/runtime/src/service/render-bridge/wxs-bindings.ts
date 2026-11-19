@@ -1,54 +1,28 @@
-import type { WxsBindingMessage } from '../../tree-protocol/protocol'
-
 /**
- * Per-page WXS binding decisions produced by the logic tree.
+ * Per-page WXS event bindings produced by the logic tree.
  *
- * Bindings are registered with the logic view id and flushed after every tree
- * update with the node's current render identity (components keep their shared
- * id, elements become locators). Keeping this state in one small store makes
- * the lifecycle explicit: register, flush, drop with the page.
+ * The render pageframe executes WXS handlers from its own template runtime, so
+ * the only remaining service-side consumer is the custom-event forwarding gate:
+ * `tree.customEvent` is only sent for pages that actually bind that event.
  */
 export class WxsBindingStore {
-  private readonly byPage = new Map<string, Map<string, WxsBindingMessage>>()
+  private readonly eventsByPage = new Map<string, Set<string>>()
 
-  register(pageId: string, key: string, binding: WxsBindingMessage): void {
-    let bindings = this.byPage.get(pageId)
-    if (!bindings) {
-      bindings = new Map()
-      this.byPage.set(pageId, bindings)
+  register(pageId: string, event: string): void {
+    let events = this.eventsByPage.get(pageId)
+    if (!events) {
+      events = new Set()
+      this.eventsByPage.set(pageId, events)
     }
-    bindings.set(key, binding)
+    events.add(event)
   }
 
   /** Whether the page has at least one WXS binding for this event name. */
   hasEvent(pageId: string, event: string): boolean {
-    const bindings = this.byPage.get(pageId)
-    if (!bindings) return false
-    for (const binding of bindings.values()) {
-      if (binding.event === event) return true
-    }
-    return false
-  }
-
-  /**
-   * Resolve every binding to the node's current render identity and emit it.
-   * Bindings whose logic node no longer exists are skipped.
-   */
-  flush(
-    pageId: string,
-    resolveViewId: (logicViewId: string) => string | undefined,
-    emit: (binding: WxsBindingMessage) => void,
-  ): void {
-    const bindings = this.byPage.get(pageId)
-    if (!bindings) return
-    for (const binding of bindings.values()) {
-      const viewId = resolveViewId(binding.viewId)
-      if (!viewId) continue
-      emit({ ...binding, viewId })
-    }
+    return this.eventsByPage.get(pageId)?.has(event) ?? false
   }
 
   clear(pageId: string): void {
-    this.byPage.delete(pageId)
+    this.eventsByPage.delete(pageId)
   }
 }

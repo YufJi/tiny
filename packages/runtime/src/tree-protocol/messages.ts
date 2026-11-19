@@ -7,7 +7,10 @@ export const TREE_PROTOCOL = Object.freeze({
   ack: 'ack',
   event: 'event',
   eventReturn: 'eventReturn',
+  /** Host core finished a page (re-send the flow so late definitions apply). */
   ready: 'ready',
+  /** The pageframe mounted the page and finished its first render. */
+  pageReady: 'pageReady',
   inspectTree: 'inspectTree',
   measure: 'measure',
   animate: 'animate',
@@ -15,7 +18,6 @@ export const TREE_PROTOCOL = Object.freeze({
   hostAction: 'hostAction',
   hostRequest: 'hostRequest',
   wxsEffect: 'wxsEffect',
-  wxsBinding: 'wxsBinding',
   customEvent: 'customEvent',
 } as const)
 
@@ -51,24 +53,6 @@ export type EventReturnMessage = {
   pageId?: string
   eventToken: string
   result: unknown
-}
-
-/**
- * Stable key for a WXS event binding. The service registers it, the render
- * tree consumes it; both sides must derive the same key.
- */
-export function wxsBindingKey(viewId: string, event: string): string {
-  return `${viewId}\u0000${event}`
-}
-
-export type WxsBindingMessage = {
-  viewId: string
-  event: string
-  moduleId?: string
-  exportPath?: string[]
-  catch?: boolean
-  capture?: boolean
-  mutated?: boolean
 }
 
 export type WxsRenderEffect =

@@ -68,6 +68,33 @@ The browser stage verifies:
     loading spinner are asserted. `wechat-parity` adds a 44-case DevTools style matrix.
 18. Runtime state diagnostics observe the todos → add-todo → router → semantics → todos
     page transitions.
+19. The `Reorder` page keeps the tapped element's identity across a keyed `wx:for`
+    rotation: after rotating, tapping the same element again reports the same
+    `event.target.id`/`dataset` and the new `currentTarget.dataset.index`.
+20. The `Timing` page proves both ordering contracts: `onLoad` observes a
+    component before its `ready` ran, `ready` measures a non-zero width, and a
+    `setData` completion's selector query sees the new width. It also renders
+    static, interpolated and `style:` inline `rpx` (each computed width is
+    `innerWidth / 7.5`) and keeps a `url("/a-10rpx.png")` path untouched.
+    It also asserts `event.mark` inheritance (inner mark + ancestor mark), that
+    a 450 ms press on a plain view still fires `tap`, and that a longpress
+    listener emits `longtap`/`longpress` and consumes the tap. Finally a
+    `groupSetData` callback proves data ownership: after mutating the object it
+    passed to `setData`, the rendered value is unchanged, the Date prototype
+    survived, and the callback's `this` is the page. It also runs
+    `animation="{{actions}}"` through `wx.createAnimation().export()` and
+    checks the computed transform (P0-12).
+21. The `Virtual host` page declares `options.virtualHost` and checks that the
+    component has no host element in the DOM, its children are inserted into the
+    parent, and a custom event from the component reaches the page binding.
+
+The runtime unit suite also holds the tree-protocol payload budget
+(`packages/runtime/tests/tree-payload-budget.test.ts`). It mounts a 2000-row
+pageframe (4001 render nodes) and asserts that both a data-only update and a
+one-component structural update stay under 5% of the `mount-only` payload;
+current values are 0.02% and 0.06%, against 86% for the legacy `renderHints`
+path. The same test asserts the default data-only mount carries no element
+tree (58,478 vs 415,647 characters for the `mount-only` flow).
 
 ## Existing test app stage (mini)
 

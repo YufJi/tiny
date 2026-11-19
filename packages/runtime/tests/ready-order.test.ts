@@ -73,6 +73,49 @@ function createTemplates() {
 }
 
 describe('component ready order', () => {
+  test('defers first-mount ready until the pageframe acknowledges', () => {
+    const manifest = createManifest()
+    const ready: string[] = []
+    const definitions = new Map([
+      [HOST, normalizeComponentDefinition({
+        properties: { inner: { type: Boolean, value: true } },
+        lifetimes: {
+          ready() {
+            ready.push('host')
+          },
+        },
+      }, HOST)],
+      [CHILD, normalizeComponentDefinition({
+        properties: { tag: { type: String, value: '' } },
+        lifetimes: {
+          ready() {
+            const self = this as unknown as { data: { tag: string } }
+            ready.push(`child:${self.data.tag}`)
+          },
+        },
+      }, CHILD)],
+    ])
+    const tree = new LogicTreeAdapter({
+      manifest,
+      templates: createTemplates(),
+      componentDefinitions: definitions,
+      // The bridge owns the acknowledgement; this stub just records that the
+      // mount path deferred ready instead of firing it during `mountPage`.
+      afterRender: () => {},
+    })
+    tree.registerComponentSchemas(
+      buildComponentSchemas(manifest.components, definitions),
+    )
+    tree.mountPage(PAGE, {
+      showHost: true,
+      showChild: true,
+      showInner: true,
+    }, 'page-1')
+    expect(ready).toEqual([])
+    tree.flushPageReady('page-1')
+    expect(ready).toEqual(['child:inner', 'host', 'child:slot'])
+  })
+
   test('matches WeChat for template and slot children under wx:if', async () => {
     const manifest = createManifest()
     const ready: string[] = []

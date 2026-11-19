@@ -116,12 +116,21 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
         ;(this as unknown as {
           backgroundRepeatChanged: (value: string) => void
         }).backgroundRepeatChanged(String(this.data.backgroundRepeat ?? 'no-repeat'))
-        ;(this as unknown as { modeChanged: (value: string) => void })
-          .modeChanged(String(this.data.mode ?? 'scaleToFill'))
         if (this.data.src) {
           ;(this as unknown as { _initialize: (lazy: boolean) => void })
             ._initialize(Boolean(this.data.lazyLoad))
         }
+      },
+      ready() {
+        // The template applies the host's inline width/height after `attached`;
+        // recapture them before the first mode pass, otherwise aspect modes
+        // clear the author's size and fall back to the 320x240 default.
+        const runtime = this as unknown as ImageRuntime
+        const host = runtime.getBackendElement?.()
+        if (host?.style?.width) runtime._originalWidth = host.style.width
+        if (host?.style?.height) runtime._originalHeight = host.style.height
+        ;(this as unknown as { modeChanged: (value: string) => void })
+          .modeChanged(String(this.data.mode ?? 'scaleToFill'))
       },
       detached() {
         const runtime = this as unknown as ImageRuntime
@@ -209,8 +218,8 @@ export function defineImage(ctx: BuiltinContext): BuiltinDefinition {
         const host = runtime.getBackendElement?.()
         if (host?.style) {
           if (next !== 'widthFix' && next !== 'heightFix') {
-            host.style.height = runtime._originalHeight ?? ''
-            host.style.width = runtime._originalWidth ?? ''
+            if (runtime._originalHeight) host.style.height = runtime._originalHeight
+            if (runtime._originalWidth) host.style.width = runtime._originalWidth
           }
         }
         if (div?.style) {

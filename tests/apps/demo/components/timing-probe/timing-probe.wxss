@@ -1,0 +1,5 @@
+.probe-box {
+  width: 120px;
+  padding: 8px;
+  background: #eef3ff;
+}

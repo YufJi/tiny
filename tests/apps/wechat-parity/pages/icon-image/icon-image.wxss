@@ -1,0 +1,18 @@
+.page {
+  padding: 12px;
+}
+.title {
+  display: block;
+  font-size: 14px;
+  margin: 10px 0 6px;
+}
+.icons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.case {
+  display: block;
+  margin: 4px 0;
+  background: #eee;
+}

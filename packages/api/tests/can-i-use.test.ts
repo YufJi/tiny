@@ -12,7 +12,7 @@ function createContext(options: { syncHost?: boolean; apiNamespaces?: string[] }
     pixelRatio: 2,
     windowWidth: 390,
     windowHeight: 844,
-    SDKVersion: '3.0.0',
+    SDKVersion: '3.17.5',
     platform: 'devtools',
   }
   const context = {
@@ -43,6 +43,34 @@ describe('canIUse schema families', () => {
     expect(host.canIUse!('notAnApi')).toBe(false)
     // Host-added entries are just table names.
     expect(host.canIUse!('hostOnlyApi')).toBe(false)
+  })
+
+  test('does not claim installed stub APIs', () => {
+    const { host } = createContext()
+    for (const name of [
+      'authorize',
+      'checkSession',
+      'login',
+      'getUserProfile',
+      'getUserInfo',
+      'getFileSystemManager',
+      'createCanvasContext',
+      'worklet',
+      'reportAnalytics',
+      'getRecorderManager',
+      'getBackgroundAudioManager',
+      'createInnerAudioContext',
+      'createContext',
+      'getScreenBrightness',
+      'createWorker',
+    ]) {
+      expect(host.canIUse!(name)).toBe(false)
+      expect(host.canIUse!(`wx.${name}`)).toBe(false)
+    }
+    // Host-backed APIs are not stubs.
+    expect(host.canIUse!('request')).toBe(true)
+    expect(host.canIUse!('createAnimation')).toBe(true)
+    expect(host.canIUse!('setClipboardData')).toBe(true)
   })
 
   test('answers API method/param probes the engine itself guarantees', () => {

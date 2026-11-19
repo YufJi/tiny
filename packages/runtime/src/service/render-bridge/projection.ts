@@ -9,12 +9,19 @@ import {
 } from '../../shared/assets'
 import { cloneJsonSafe } from '../../shared/data'
 import type { StyleLoader } from '../../shared/template'
-import { buildComponentFlow, collectComponentIdentities } from '../../tree-protocol/flow'
+import {
+  buildComponentFlow,
+  collectComponentIdentities,
+  collectComponentOwners,
+} from '../../tree-protocol/flow'
 import {
   TREE_PROTOCOL,
   type ComponentDefinitionPayload,
+  type ComponentFlowDelta,
   type PageFrameMount,
+  type RenderComponentIdentity,
   type RenderNode,
+  type TreePatchPayload,
 } from '../../tree-protocol/protocol'
 import type { LogicTreeAdapter } from '../logic-tree/adapter'
 import { buildComponentSchemas } from './component-schema'
@@ -65,6 +72,12 @@ export class RenderProjection {
     string,
     Map<string, ComponentDefinitionPayload>
   >()
+  /**
+   * Definition paths already installed in each page's render thread. The
+   * render side merges definitions by path, so an update only needs the paths
+   * it has never seen (lazy package registration, first use of a component).
+   */
+  private readonly sentDefinitions = new Map<string, Set<string>>()
 
   constructor(
     private readonly options: RenderProjectionOptions,
@@ -103,6 +116,9 @@ export class RenderProjection {
     logicTree.registerComponentSchemas(added)
     this.definitionPayloads = null
     this.pageDefinitionPayloads.clear()
+    for (const schema of added) {
+      for (const sent of this.sentDefinitions.values()) sent.delete(schema.path)
+    }
     return added
   }
 
@@ -122,14 +138,21 @@ export class RenderProjection {
     ack: string[] | undefined,
     wxsModules: WxsModuleTable | undefined,
     pageData: Record<string, unknown> | undefined,
+    options: { includeTree?: boolean } = {},
   ): Record<string, unknown> | null {
     const logicTree = this.getLogicTree()
     if (!logicTree) return null
     const root = logicTree.snapshotRenderTree(pageId)
     if (!root) return null
+    const includeTree = options.includeTree !== false
     const tabRoot = logicTree.snapshotTabBarTree(pageId)
     const tabFrame = tabRoot ? this.tabBarFrame(pageId, tabRoot) : undefined
     const pagePath = logicTree.pagePathFor(pageId)
+    const messages = cloneJsonSafe(this.treeFlow(root, pageId, includeTree))
+    this.markDefinitionsSent(pageId)
+    const componentOwners = includeTree
+      ? undefined
+      : [...collectComponentOwners(root)].map(([id, instances]) => ({ id, instances }))
     return {
       pageId,
       pagePath,
@@ -147,8 +170,9 @@ export class RenderProjection {
       ...(this.hasPlaceholders
         ? { placeholders: cloneJsonSafe(this.placeholders) }
         : {}),
-      messages: cloneJsonSafe(this.treeFlow(root, pageId)),
+      messages,
       componentFlow: cloneJsonSafe(collectComponentIdentities(root)),
+      ...(componentOwners ? { componentOwners: cloneJsonSafe(componentOwners) } : {}),
       ...(tabFrame ? { tabFrame: cloneJsonSafe(tabFrame) } : {}),
       ...(wxsModules ? { wxsModules: cloneJsonSafe(wxsModules) } : {}),
       ...(pageData ? { pageData: cloneJsonSafe(pageData) } : {}),
@@ -158,24 +182,40 @@ export class RenderProjection {
     }
   }
 
+  /**
+   * Build one data-only update batch.
+   *
+   * `delta` is the component-identity change for this batch; the element tree
+   * is never part of the payload. `hints`/`componentFlow` exist only for the
+   * `renderHints: 'always'` compatibility mode used by the byte benchmark and
+   * as a rollback switch.
+   */
   buildPatch(
     pageId: string,
-    snapshot: RenderNode,
-    structural: boolean,
-    componentData: Record<string, Record<string, unknown>>,
-    tabFrame: PageFrameMount | undefined,
-    pageData: Record<string, unknown> | undefined,
-    pageDataPatches: Array<Record<string, unknown>> | undefined,
-    ack: string[] | undefined,
-  ): Record<string, unknown> {
+    options: {
+      delta?: ComponentFlowDelta
+      hints?: RenderNode
+      componentData?: Record<string, Record<string, unknown>>
+      tabFrame?: PageFrameMount
+      pageData?: Record<string, unknown>
+      pageDataPatches?: Array<Record<string, unknown>>
+      ack?: string[]
+    },
+  ): TreePatchPayload {
+    const delta = this.withNewDefinitions(pageId, options.delta)
+    const componentData = options.componentData ?? {}
+    const pageDataPatches = options.pageDataPatches
+    const pageData = options.pageData
+    const hints = options.hints
     return {
       pageId,
-      ...(structural
+      ...(hints
         ? {
-          renderHints: cloneJsonSafe(snapshot),
-          componentFlow: cloneJsonSafe(collectComponentIdentities(snapshot)),
+          renderHints: cloneJsonSafe(hints),
+          componentFlow: cloneJsonSafe(collectComponentIdentities(hints)),
         }
         : {}),
+      ...(delta ? { componentFlowDelta: cloneJsonSafe(delta) } : {}),
       ...(!pageDataPatches?.length && pageData
         ? { pageData: cloneJsonSafe(pageData) }
         : {}),
@@ -185,8 +225,8 @@ export class RenderProjection {
       ...(pageDataPatches?.length
         ? { pageDataPatches: cloneJsonSafe(pageDataPatches) }
         : {}),
-      ...(tabFrame ? { tabFrame: cloneJsonSafe(tabFrame) } : {}),
-      ...(ack ? { ack } : {}),
+      ...(options.tabFrame ? { tabFrame: cloneJsonSafe(options.tabFrame) } : {}),
+      ...(options.ack ? { ack: options.ack } : {}),
     }
   }
 
@@ -261,8 +301,51 @@ export class RenderProjection {
     return pageDefinitions
   }
 
-  private treeFlow(root: RenderNode, pageId?: string): ReturnType<typeof buildComponentFlow> {
-    return buildComponentFlow(root, this.renderDefinitions(pageId))
+  private treeFlow(
+    root: RenderNode,
+    pageId?: string,
+    includeTree = true,
+  ): ReturnType<typeof buildComponentFlow> {
+    return buildComponentFlow(root, this.renderDefinitions(pageId), { includeTree })
+  }
+
+  /** The mount flow carries every page-visible definition. */
+  private markDefinitionsSent(pageId: string): void {
+    this.sentDefinitions.set(pageId, new Set(this.renderDefinitions(pageId).keys()))
+  }
+
+  /**
+   * Attach definitions the render thread has not installed yet.
+   *
+   * A newly created component can belong to a definition the pageframe never
+   * received: a lazily loaded package, or a component whose first instance is
+   * created by a later `setData`. The render side merges by path, so each path
+   * crosses at most once per page.
+   */
+  private withNewDefinitions(
+    pageId: string,
+    delta: ComponentFlowDelta | undefined,
+  ): ComponentFlowDelta | undefined {
+    if (!delta?.owners?.length) return delta
+    const paths: string[] = []
+    for (const owner of delta.owners) {
+      for (const instance of owner.add ?? []) paths.push(instance.path)
+    }
+    if (paths.length === 0) return delta
+    const definitions = this.renderDefinitions(pageId)
+    let sent = this.sentDefinitions.get(pageId)
+    if (!sent) {
+      sent = new Set()
+      this.sentDefinitions.set(pageId, sent)
+    }
+    const define: ComponentDefinitionPayload[] = []
+    for (const path of new Set(paths)) {
+      const definition = definitions.get(path)
+      if (!definition || sent.has(path)) continue
+      sent.add(path)
+      define.push(definition)
+    }
+    return define.length > 0 ? { ...delta, define } : delta
   }
 
   private pageMethodNames(pagePath: string): string[] {

@@ -308,8 +308,10 @@ describe('setData completion ordering', () => {
     const rendered: Rendered = { pageText: '', componentText: '', log: [] }
     let failRender = false
     const { service, connector, host } = setup(rendered, {
-      setPageData(data: Record<string, unknown>) {
-        if (typeof data.label === 'string') rendered.pageText = data.label
+      applyPageDataPatches(patches: Array<Record<string, unknown>>) {
+        for (const patch of patches) {
+          if (typeof patch.label === 'string') rendered.pageText = patch.label
+        }
         if (!failRender) return
         rendered.log.push('render-throw')
         throw new Error('render boom')

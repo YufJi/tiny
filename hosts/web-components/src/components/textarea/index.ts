@@ -171,6 +171,7 @@ export function defineTextarea(ctx: BuiltinContext): BuiltinDefinition {
       },
       ready() {
         this.bindKeyboardActivation()
+        this.syncKeyboardValue()
       },
       detached() {
         const instance = this as unknown as TextareaHostRuntime

@@ -4,7 +4,14 @@
     "pages/b/b",
     "pages/button/button",
     "pages/flow/flow",
-    "pages/move/move"
+    "pages/move/move",
+    "pages/form-controls/form-controls",
+    "pages/inputs/inputs",
+    "pages/picker-view/picker-view",
+    "pages/icon-image/icon-image",
+    "pages/visual-batch/visual-batch",
+    "pages/container/container",
+    "pages/cover-batch/cover-batch"
   ],
   "window": {
     "navigationBarTitleText": "Tiny WXS parity"

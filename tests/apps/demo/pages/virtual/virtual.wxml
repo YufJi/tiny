@@ -1,0 +1,9 @@
+<view class="page">
+  <view id="vh-outer" class="vh-outer">
+    <virtual-host id="vh" label="probe" bind:inner="onVhInnerEvent">
+      <view id="vh-light" class="vh-light">light</view>
+    </virtual-host>
+  </view>
+  <text class="vh-inner-status">vh-inner: {{vhInnerEvent}}</text>
+  <button bindtap="back">Back</button>
+</view>

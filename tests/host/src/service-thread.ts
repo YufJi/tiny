@@ -13,7 +13,7 @@ const manifest = await fetchJson<RuntimeManifest>(`${generatedBase}/manifest.jso
 // Device identity is a host fact here: the service iframe has no viewport, so
 // it mirrors the geometry the test host declares in `host.ts`.
 const HOST_DEVICE = {
-  SDKVersion: '3.0.0',
+  SDKVersion: '3.17.5',
   brand: 'devtools',
   model: 'iPhone 13',
   system: 'iOS 16.0',

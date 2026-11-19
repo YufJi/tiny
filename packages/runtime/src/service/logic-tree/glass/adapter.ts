@@ -28,6 +28,7 @@ import {
 import type { MiniProgramComponentSchema } from '../../../component/schema'
 import type { StyleLoader, TemplateRegistry } from '../../../shared/template'
 import { toJsonSafe } from '../../../shared/events'
+import { cloneDataValue } from '../../../shared/data'
 import type {
   AssetUrlResolver,
   ProtocolRelativeUrlResolver,
@@ -63,6 +64,14 @@ export type GlassEaselAdapterOptions = {
   componentHandleFactory?: (component: glassEasel.GeneralComponent) => unknown
   /** Called after logic-tree page/component data changes. */
   onLogicDataChange?: (pageId: string) => void
+  /**
+   * The raw `setData` patch applied to a page root.
+   *
+   * Page handlers call glass's `setData` directly, so this is the only place
+   * that still sees the original patch. The bridge records it and sends it to
+   * the render pageframe instead of re-deriving a diff of the whole page data.
+   */
+  onPageDataPatch?: (pageId: string, patch: Record<string, unknown>) => void
   /** Touch payload currently being dispatched by the logic tree. */
   logicTouchState?: () => { touches?: unknown[]; changedTouches?: unknown[] }
   logicIntersectionFactory?: (
@@ -140,6 +149,7 @@ export class GlassEaselRuntimeAdapter {
   private readonly logicComponentDefinitions?: GlassEaselAdapterOptions['logicComponentDefinitions']
   private readonly componentHandleFactory?: GlassEaselAdapterOptions['componentHandleFactory']
   private readonly onLogicDataChange?: GlassEaselAdapterOptions['onLogicDataChange']
+  private readonly onPageDataPatch?: GlassEaselAdapterOptions['onPageDataPatch']
   private readonly pageIdsByComponent = new WeakMap<object, string>()
   /**
    * Page-root relations. glass-easel links relations through the light tree;
@@ -163,6 +173,7 @@ export class GlassEaselRuntimeAdapter {
     this.logicComponentDefinitions = options.logicComponentDefinitions
     this.componentHandleFactory = options.componentHandleFactory
     this.onLogicDataChange = options.onLogicDataChange
+    this.onPageDataPatch = options.onPageDataPatch
     this.onCustomEvent = options.onCustomEvent
     this.afterRender = options.afterRender
     this.frameworkProperties = new GlassFrameworkProperties({
@@ -634,8 +645,10 @@ export class GlassEaselRuntimeAdapter {
     }
     component.setData(data)
     glassEasel.Element.pretendAttached(component)
-    if (pageId) this.triggerPendingReady(pageId)
-    else this.triggerReady(component)
+    // `ready` for a page's components is deferred: the adapter flushes it from
+    // the pageframe mount acknowledgement (P0-2). A component mounted without a
+    // page id has no frame to wait for.
+    if (!pageId) this.triggerReady(component)
     return component
   }
 
@@ -769,7 +782,10 @@ export class GlassEaselRuntimeAdapter {
    * layer applied the update, so it goes through the render bridge (or glass's
    * own render pass when there is no render tree).
    */
-  private ensureSetDataCallback(component: glassEasel.GeneralComponent): void {
+  private ensureSetDataCallback(
+    component: glassEasel.GeneralComponent,
+    pageRoot = false,
+  ): void {
     if (this.setDataCallbackComponents.has(component)) return
     this.setDataCallbackComponents.add(component)
     const target = component as unknown as {
@@ -777,7 +793,17 @@ export class GlassEaselRuntimeAdapter {
     }
     const original = target.setData.bind(component)
     target.setData = (data: never, callback?: () => void): void => {
-      original(data)
+      // WeChat's default `dataDeepCopy: simple`: data belongs to the component
+      // from here on, so a caller mutating its object afterwards must not
+      // change the rendered tree. Dates/functions survive this clone.
+      const cloned = cloneDataValue(data)
+      original(cloned)
+      if (pageRoot) {
+        const pageId = this.pageIdOf(component)
+        if (pageId) {
+          this.onPageDataPatch?.(pageId, cloned as unknown as Record<string, unknown>)
+        }
+      }
       if (typeof callback !== 'function') return
       const pageId = this.pageIdOf(component)
       if (this.afterRender && pageId) {
@@ -822,7 +848,7 @@ export class GlassEaselRuntimeAdapter {
     const logicMode = Boolean(this.logicComponentDefinitions)
     const instanceFields: Record<string, unknown> = { ...(initialFields ?? {}) }
     if (logicMode && component) {
-      this.ensureSetDataCallback(component)
+      this.ensureSetDataCallback(component, framework?.pageRoot === true)
       this.ensureCustomEventForwarding(component)
     }
     if (component && framework) this.frameworkProperties.install(component, framework)

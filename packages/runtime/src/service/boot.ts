@@ -12,7 +12,7 @@ import { PAGE_CONTROL, RUNTIME_CONTROL } from '../tree-protocol/controls'
 import { MiniProgramPageRegistry } from './page/registry'
 import type { MiniProgramPageInstance } from './page/instance'
 import { installMiniProgramGlobals } from './api/globals'
-import { ServiceRenderBridge } from './render-bridge/bridge'
+import { ServiceRenderBridge, type TreeProtocolOptions } from './render-bridge/bridge'
 import { ServicePageStack } from './page/stack'
 import { createServiceRouter } from './page/router'
 import { ServiceTabBar } from './app/tab-bar'
@@ -71,6 +71,13 @@ export type ServiceThreadOptions = {
    * nodes, …); the runtime does not own canvas semantics.
    */
   onPageRelease?: (pageId: string) => void
+  /**
+   * Element-projection mode. The default (`never`) sends no element tree at
+   * all: mount carries component identities, updates are data-only.
+   * `mount-only` keeps the tree on the mount flow; `always` is the legacy
+   * structural-hints behaviour (rollback/benchmark switches).
+   */
+  treeProtocol?: TreeProtocolOptions
 }
 
 export type ServiceThreadRuntime = {
@@ -181,6 +188,7 @@ export function bootServiceThread(options: ServiceThreadOptions): ServiceThreadR
       },
     },
     ...(options.onLogicTreeCreated ? { onLogicTreeCreated: options.onLogicTreeCreated } : {}),
+    ...(options.treeProtocol ? { treeProtocol: options.treeProtocol } : {}),
     onError: (message) => registry.reportError(message),
   })
   const pages = new ServicePageStack({

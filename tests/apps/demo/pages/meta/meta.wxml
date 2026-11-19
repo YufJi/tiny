@@ -1,0 +1,13 @@
+<page-meta page-style="background-color: #eef;" background-color="#112233">
+  <navigation-bar
+    title="Meta title"
+    loading="{{loading}}"
+    front-color="#ffffff"
+    background-color="#07c160"
+  />
+</page-meta>
+<view class="page">
+  <text class="meta-state">meta: {{loading}}</text>
+  <button bindtap="toggleLoading">Toggle loading</button>
+  <button bindtap="back">Back</button>
+</view>

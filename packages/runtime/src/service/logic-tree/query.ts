@@ -5,8 +5,6 @@ import type { LogicBackendContext, LogicBackendElement } from './backend'
 export type QueryNodeSnapshot = {
   /** Logic-layer node identity, present for service-side query results. */
   viewId?: string
-  /** Component-scoped locator of an element (render-side addressing). */
-  locator?: string
   id: string
   dataset: Record<string, unknown>
   left: number
@@ -104,7 +102,6 @@ export function snapshotLogicNode(
   for (const [key, value] of node.dataset) dataset[key] = value
   return {
     viewId: backend.ensureViewId(node),
-    ...(backend.locatorOf(node) ? { locator: backend.locatorOf(node) } : {}),
     id: node.id,
     dataset,
     left: 0,
@@ -149,7 +146,6 @@ export function createLogicSelectorQuery(
   root: LogicBackendElement,
   measure?: (viewIds: string[]) => Promise<Record<string, ViewRect>>,
   queryView?: (request: QueryViewRequest) => Promise<QueryViewResult>,
-  measureLocators?: (locators: string[]) => Promise<Record<string, ViewRect>>,
 ): Record<string, unknown> {
   const selections: Selection[] = []
   let execCallback: ((results: unknown[]) => void) | undefined
@@ -164,13 +160,7 @@ export function createLogicSelectorQuery(
       const viewIds = [...new Set(perSelection.flatMap(({ nodes }) => (
         nodes.map((node) => node.viewId).filter((value): value is string => Boolean(value))
       )))]
-      const locators = [...new Set(perSelection.flatMap(({ nodes }) => (
-        nodes.map((node) => node.locator).filter((value): value is string => Boolean(value))
-      )))]
       const rects = measure && viewIds.length > 0 ? await measure(viewIds) : {}
-      const locatorRects = measureLocators && locators.length > 0
-        ? await measureLocators(locators)
-        : {}
       const scopeId = queryView ? backend.ensureViewId(root) : undefined
       const results: unknown[] = []
       for (const { selection, nodes } of perSelection) {
@@ -180,8 +170,7 @@ export function createLogicSelectorQuery(
             .catch(() => [] as QueryViewResult)
           : []
         const withRects = nodes.map((node, index) => {
-          const rect = (node.viewId ? rects[node.viewId] : undefined)
-            ?? (node.locator ? locatorRects[node.locator] : undefined)
+          const rect = node.viewId ? rects[node.viewId] : undefined
           if (rect) return { ...node, ...rect }
           const fallback = scoped[index]
           return fallback ? { ...node, ...fallback } : node

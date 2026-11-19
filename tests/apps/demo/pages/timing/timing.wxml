@@ -1,0 +1,47 @@
+<view class="page">
+  <text class="title">Timing</text>
+  <view id="box" class="box" style="width: {{width}}px"></view>
+  <text class="onload-status">onload-ready: {{onLoadReady}}</text>
+  <view id="rpx-static" class="rpx-box" style="width:100rpx;height:20rpx"></view>
+  <view id="rpx-dynamic" class="rpx-box" style="width:{{rpxWidth}}rpx;height:20rpx"></view>
+  <view id="rpx-bound" class="rpx-box" style:width="{{rpxWidth}}rpx" style:height="20rpx"></view>
+  <view
+    id="rpx-url"
+    class="rpx-box"
+    style='width:20rpx;height:20rpx;background-image:url("/a-10rpx.png")'
+  ></view>
+  <timing-probe id="probe" bind:ready-rect="onProbeReady" />
+  <text class="probe-status">probe-ready: {{probeReady}} rect: {{probeWidth}}</text>
+  <view id="mark-outer" class="tap-box" mark:from="outer" bindtap="onMark">
+    <view id="mark-inner" mark:role="inner">mark target</view>
+  </view>
+  <text class="mark-status">mark: {{markStatus}}</text>
+  <view id="slow-tap" class="tap-box" bindtap="onSlowTap">slow tap</view>
+  <text class="slow-status">slow: {{slowStatus}}</text>
+  <view id="long-press" class="tap-box" bindlongpress="onLongPress">long press</view>
+  <text class="long-status">long: {{longStatus}}</text>
+  <view id="copy-probe" class="tap-box" bindtap="onCopy">copy probe</view>
+  <text class="copy-status">copy: {{copyStatus}}</text>
+  <text class="group-status">group: {{groupStatus}}</text>
+  <view id="anim-box" class="anim-box" animation="{{animationData}}">anim</view>
+  <view id="animate-probe" class="tap-box" bindtap="onAnimate">Animate</view>
+  <text class="anim-status">anim: {{animStatus}}</text>
+  <switch id="skin-switch" checked />
+  <checkbox id="skin-checkbox" checked />
+  <radio id="skin-radio" checked />
+  <slider id="skin-slider" value="30" />
+  <input id="skin-input" value="input-value" />
+  <input id="skin-input-placeholder" placeholder="placeholder" />
+  <textarea id="skin-textarea" value="textarea-value" />
+  <textarea id="skin-textarea-auto" auto-height value="auto" />
+  <icon id="skin-icon" type="success" />
+  <image id="skin-image" class="skin-image" src="/assets/logo.png" mode="aspectFill" style="width: 80px; height: 40px;" />
+  <picker-view id="skin-picker-view" class="picker-view" value="{{pickerValue}}">
+    <picker-view-column>
+      <view wx:for="{{pickerItems}}" wx:key="*this" class="picker-item">{{item}}</view>
+    </picker-view-column>
+  </picker-view>
+  <text class="timing-status">timing: {{status}}</text>
+  <button bindtap="bump">Bump</button>
+  <button bindtap="back">Back</button>
+</view>

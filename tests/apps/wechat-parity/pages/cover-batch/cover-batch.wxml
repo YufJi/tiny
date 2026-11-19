@@ -1,0 +1,16 @@
+<view class="page">
+  <text class="title">Cover view</text>
+  <cover-view id="cover-view" class="cover-view">Cover view</cover-view>
+  <cover-image id="cover-image" class="cover-image" src="/assets/pic.png" />
+
+  <text class="title">Match media</text>
+  <match-media id="match-yes" class="match-yes" min-width="300">matched</match-media>
+  <match-media id="match-no" class="match-no" min-width="5000">hidden</match-media>
+
+  <text class="title">Root portal</text>
+  <view class="portal-host">
+    <root-portal id="root-portal">
+      <view id="portal-content" class="portal-content">portal content</view>
+    </root-portal>
+  </view>
+</view>

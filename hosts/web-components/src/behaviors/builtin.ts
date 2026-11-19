@@ -3,22 +3,31 @@ import { DEFAULT_BEHAVIOR_SCHEME } from '@tiny/manifest'
 import { BUILTIN_BEHAVIOR_IDS } from './ids'
 
 export const PUBLIC_BUILTIN_BEHAVIOR_NAMES = [
-  'componentExport',
   'formField',
-  'formFieldButton',
   'formFieldGroup',
+  'formFieldButton',
   'labelTarget',
+  'proxySwiper',
+  'proxySwiperItem',
+  'proxyScrollView',
+  'componentExport',
+  'translate',
+  // Tiny extension.
   'styleFilter',
 ] as const
 
 export type PublicBuiltinBehaviorName = (typeof PUBLIC_BUILTIN_BEHAVIOR_NAMES)[number]
 
 const PUBLIC_BUILTIN_BEHAVIOR_SUFFIX: Record<PublicBuiltinBehaviorName, string> = {
-  componentExport: 'component-export',
   formField: 'form-field',
-  formFieldButton: 'form-field-button',
   formFieldGroup: 'form-field-group',
+  formFieldButton: 'form-field-button',
   labelTarget: 'label-target',
+  proxySwiper: 'proxy-swiper',
+  proxySwiperItem: 'proxy-swiper-item',
+  proxyScrollView: 'proxy-scroll-view',
+  componentExport: 'component-export',
+  translate: 'translate',
   styleFilter: 'style-filter',
 }
 
@@ -157,7 +166,14 @@ export function createPublicBuiltinBehaviors(
   }
   // Marker-only ids: the render side attaches them so `hasBehavior` and
   // marker identity work, but they carry no properties/methods.
-  for (const id of [ids.styleFilter, ids.componentExport]) {
+  for (const id of [
+    ids.proxySwiper,
+    ids.proxySwiperItem,
+    ids.proxyScrollView,
+    ids.translate,
+    ids.styleFilter,
+    ids.componentExport,
+  ]) {
     behaviors[id] = space.defineBehavior({ is: id })
   }
 

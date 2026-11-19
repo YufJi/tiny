@@ -230,13 +230,83 @@ describe('identity parity', () => {
       detail: { x: 3 },
       id: 'card',
       dataset: { kind: 'primary' },
+      mark: { from: 'card', role: 'probe' },
     })
     expect(ran).toBe(true)
     expect(handled).toHaveLength(1)
     expect(handled[0]).toMatchObject({
       type: 'tap',
       detail: { x: 3 },
+      mark: { from: 'card', role: 'probe' },
       currentTarget: { id: 'card', dataset: { kind: 'primary' } },
+    })
+  })
+
+  test('uses the render-resolved target instead of the service locator map', async () => {
+    const manifest = createManifest()
+    const handled: Array<Record<string, unknown>> = []
+    const definitions = new Map([
+      [CARD, normalizeComponentDefinition({
+        properties: { label: { type: String, value: '' } },
+        methods: {
+          onTap(event: Record<string, unknown>) {
+            handled.push(event)
+          },
+        },
+      }, CARD)],
+      [BADGE, normalizeComponentDefinition({}, BADGE)],
+    ])
+    const tree = new LogicTreeAdapter({
+      manifest,
+      templates: createTemplates(),
+      componentDefinitions: definitions,
+    })
+    tree.registerComponentSchemas(buildComponentSchemas(manifest.components, definitions))
+    tree.mountPage(PAGE, { label: 'hello' }, 'page-target')
+    await tree.glass.whenRendered()
+
+    const card = findComponent(tree.snapshotRenderTree('page-target'), 'card')
+    expect(card?.type).toBe('element')
+
+    tree.dispatchTemplateHandler({
+      componentId: card!.id,
+      handler: 'onTap',
+      name: 'tap',
+      id: 'card',
+      dataset: { kind: 'primary' },
+      // A stale locator: after a reorder the map can still describe the old
+      // child order. The render-provided target must win.
+      targetId: 'page-1#99.0',
+      targetNode: {
+        nodeId: 'r:1',
+        id: 'inner',
+        dataset: { role: 'target' },
+        offsetLeft: 1,
+        offsetTop: 2,
+        offsetWidth: 3,
+        offsetHeight: 4,
+      },
+      currentTarget: { offsetLeft: 10, offsetTop: 20, offsetWidth: 30, offsetHeight: 40 },
+    })
+
+    expect(handled).toHaveLength(1)
+    expect(handled[0]).toMatchObject({
+      target: {
+        id: 'inner',
+        dataset: { role: 'target' },
+        offsetLeft: 1,
+        offsetTop: 2,
+        offsetWidth: 3,
+        offsetHeight: 4,
+      },
+      currentTarget: {
+        id: 'card',
+        dataset: { kind: 'primary' },
+        offsetLeft: 10,
+        offsetTop: 20,
+        offsetWidth: 30,
+        offsetHeight: 40,
+      },
     })
   })
 

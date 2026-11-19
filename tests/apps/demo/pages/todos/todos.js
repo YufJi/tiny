@@ -65,6 +65,34 @@ Page({
     wx.navigateTo({ url: '../wxs-runtime/wxs-runtime' })
   },
 
+  openCover() {
+    wx.navigateTo({ url: '/pages/cover/cover' })
+  },
+
+  openVisual() {
+    wx.navigateTo({ url: '/pages/visual/visual' })
+  },
+
+  openContainer() {
+    wx.navigateTo({ url: '/pages/container/container' })
+  },
+
+  openMeta() {
+    wx.navigateTo({ url: '/pages/meta/meta' })
+  },
+
+  openVirtual() {
+    wx.navigateTo({ url: '/pages/virtual/virtual' })
+  },
+
+  openReorder() {
+    wx.navigateTo({ url: '../reorder/reorder' })
+  },
+
+  openTiming() {
+    wx.navigateTo({ url: '../timing/timing' })
+  },
+
   onCustom(event) {
     this.setData({ customDetail: event.detail.text })
   },

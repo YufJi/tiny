@@ -45,8 +45,8 @@ tiny-switch[hidden] {
   width: 30px;
 }
 .tiny-switch-input.tiny-switch-input-checked {
-  background-color: #04be02;
-  border-color: #04be02;
+  background-color: #07c160;
+  border-color: #07c160;
 }
 .tiny-switch-input.tiny-switch-input-checked::before {
   transform: scale(0);

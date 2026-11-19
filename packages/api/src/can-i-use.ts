@@ -1,5 +1,6 @@
 import { BUILTIN_COMPONENT_TAGS } from '@tiny/manifest'
 import type { ApiContext } from './context'
+import { STUB_APIS } from './capabilities'
 import { callHostSync } from './run-api'
 
 /**
@@ -70,6 +71,9 @@ export function createCanIUse(
     }
 
     if (context.hasApi?.(head) ?? false) {
+      // Installed but stub-only names must not look implemented to feature
+      // detection (`authorize`, `login`, fail-only file system, ...).
+      if (STUB_APIS.has(head)) return false
       if (rest.length > 0 && !API_METHODS.has(rest[0]!)) return false
       if (isSystemSnapshotApi(head)) {
         const resolved = snapshotFieldSupported(systemInfoSnapshot(context), head, rest)

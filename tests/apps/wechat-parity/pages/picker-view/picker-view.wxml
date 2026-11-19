@@ -1,0 +1,16 @@
+<view class="page">
+  <text class="title">Picker view</text>
+
+  <picker-view class="case" id="picker-view" value="{{value}}" indicator-style="height: 34px;">
+    <picker-view-column>
+      <view wx:for="{{years}}" wx:key="*this" class="picker-item">{{item}}</view>
+    </picker-view-column>
+    <picker-view-column>
+      <view wx:for="{{months}}" wx:key="*this" class="picker-item">{{item}}</view>
+    </picker-view-column>
+  </picker-view>
+
+  <picker id="picker" range="{{years}}" value="1">
+    <view class="picker-trigger">Picker: {{years[1]}}</view>
+  </picker>
+</view>

@@ -1,5 +1,4 @@
 import { DIAGNOSTIC_CODES, TINY_ENGINE_NAMING } from '@tiny/manifest'
-import type { WxsBindingMessage } from '../../tree-protocol/protocol'
 import type { LogicBackendElement } from '../logic-tree/backend'
 import type { LogicTreeAdapter } from '../logic-tree/adapter'
 import { findLogicNodeByElement } from '../logic-tree/backend'
@@ -35,8 +34,8 @@ export type WxsEventHostOptions = {
   getPage: (pageId: string) => WxsPageHost | undefined
   /** Re-diff the page after a WXS mutation so the render thread picks it up. */
   requestRenderUpdate: (pageId: string) => void
-  /** Publish a dynamic binding decision to render. */
-  onBinding?: (pageId: string, binding: WxsBindingMessage) => void
+  /** Record a WXS-bound event for the page (custom-event forwarding gate). */
+  onBinding?: (pageId: string, event: string) => void
   onDiagnostic?: (pageId: string, code: string, message: string, details?: unknown) => void
 }
 
@@ -98,15 +97,7 @@ export function installWxsEventHost(options: WxsEventHostOptions): () => void {
       if (!tree || !node) return false
       const pageId = tree.pageIdFor(element)
       if (!pageId) return false
-      const binding: WxsBindingMessage = {
-        viewId: tree.ensureViewId(node),
-        event,
-        ...(origin ? { moduleId: origin.moduleId, exportPath: origin.exportPath } : {}),
-        ...(isCatch ? { catch: true } : {}),
-        ...(isCapture ? { capture: true } : {}),
-        ...(isMutated ? { mutated: true } : {}),
-      }
-      options.onBinding?.(pageId, binding)
+      options.onBinding?.(pageId, event)
       // `true` means the render tree owns the handler: `Q.B` must not attach
       // the WXS function in the logic tree. WeChat executes WXS input events in
       // the view layer as well; the input component's service forwarding only

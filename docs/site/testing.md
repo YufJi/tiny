@@ -165,12 +165,15 @@ fixture 不是单元测试里的假数据，而是完整的小程序源码或预
 | `vant` | 13 个页面 | Vant Weapp 的 dashboard、button、calendar、cascader 等页面，调试器逐个预览 | 是（调试器） |
 | `weui` | 54 个页面 | WeUI 的表单、按钮和示例页，调试器逐个预览 | 是（调试器） |
 
-`wechat-parity` 先用 `pnpm compile:wechat-parity` 生成 Tiny 产物，再运行
+`wechat-parity` 先用 `pnpm compile:wechat-parity` 生成 Tiny 产物，在 5199 启动测试宿主
+（`pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --port 5199 --host 127.0.0.1`，
+与浏览器验收同一入口），并在微信开发者工具里打开 fixture
+（`wechatide open_project_window --project tests/apps/wechat-parity`），再运行
 `pnpm parity:wechat:compare`。比较脚本会分别调用 Tiny 测试宿主和微信开发者工具
 CLI，采集 A 首屏、双组件 property 更新、WXS 事件、B 导航、返回 A、reLaunch，宿主内模板子组件与
 slot 子组件的创建/销毁，以及 keyed `wx:for` 重排共十六个检查点；随机 key 会被规范化，
 页面文本、事件状态、同页组件 WXS 计数、lifecycle（含 `moved`）、relation linked/unlinked/linkFailed 回调顺序必须逐字一致。原始和规范化报告写入
-`tests/host/generated/parity/`。微信侧要求开发者工具已登录并打开该 fixture。
+`tests/host/generated/parity/`。微信侧要求开发者工具已登录并打开该 fixture。2026-11-18 在 R1/R2 收尾后重跑：16 个检查点 1:1，0 difference。
 
 `pnpm parity:wechat:button` 会编译同一 fixture、启动测试宿主，并分别读取微信模拟器
 和 Tiny 渲染帧的 `getComputedStyle`，逐项比较 button 的 44 种 type/plain/disabled/

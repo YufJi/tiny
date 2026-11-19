@@ -144,19 +144,19 @@ describe('selector query geometry', () => {
     expect(plays[0]?.scopeId).toBeTruthy()
     expect(plays[0]?.viewIds).toHaveLength(1)
   })
-  test('measures page-level elements by locator', async () => {
+  test('measures page-level elements through the scoped view query', async () => {
     const { manifest, templates } = createFixture()
-    const locatorCalls: string[][] = []
+    const queries: Array<{ selector: string; all: boolean; scopeId?: string }> = []
     const tree = new LogicTreeAdapter({
       manifest,
       templates,
+      // Only components/roots have a shared view id, so an element has no
+      // id-based rect; the render-side scoped query is the element measure
+      // path (element ids stay render-local).
       measureView: async () => ({}),
-      measureLocators: async (locators) => {
-        locatorCalls.push(locators)
-        return Object.fromEntries(locators.map((locator) => [locator, RECT]))
-      },
-      queryView: async () => {
-        throw new Error('queryView must not be used when locators resolve')
+      queryView: async (request) => {
+        queries.push(request)
+        return [RECT]
       },
     })
     tree.registerComponentSchemas(buildComponentSchemas(manifest.components, new Map([
@@ -167,7 +167,8 @@ describe('selector query geometry', () => {
 
     const value = await runQuery(tree, 'page-locator', '#page-node') as Record<string, unknown>
     expect(value).toMatchObject({ left: 10, top: 20, width: 20, height: 20 })
-    expect(locatorCalls.length).toBeGreaterThan(0)
-    expect(locatorCalls[0]?.[0]).toMatch(/^view-\d+#\d+$/)
+    expect(queries).toHaveLength(1)
+    expect(queries[0]).toMatchObject({ selector: '#page-node', all: false })
+    expect(queries[0]?.scopeId).toMatch(/^view-\d+$/)
   })
 })

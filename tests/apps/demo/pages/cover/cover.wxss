@@ -1,0 +1,7 @@
+.page { padding: 12px; }
+.title { display: block; font-size: 13px; margin: 10px 0 4px; }
+.cover-view { width: 120px; height: 40px; background: #07c160; color: #fff; }
+.cover-image { width: 80px; height: 40px; }
+.match-yes { background: #eee; }
+.portal-content { background: #dfd; width: 120px; }
+.portal-host { background: #fdd; min-height: 20px; }

@@ -62,15 +62,50 @@ export function installMiniProgramGlobals(
   // Third-party bundles probe these while booting; report them as absent
   // instead of synthesizing unsupported-API handlers for them.
   const opaqueProperties = new Set(registry.compatibility.opaqueGlobals)
+  // Properties runtimes/bundlers probe for introspection. They are not APIs;
+  // keep the probe silent instead of turning it into an UNSUPPORTED_API.
+  const silentProperties = new Set([
+    'then',
+    'catch',
+    'finally',
+    'toJSON',
+    'inspect',
+    '__esModule',
+  ])
+  const reportedUnsupported = new Set<string>()
+  const hasOwn = (target: object, property: PropertyKey): boolean => (
+    Object.prototype.hasOwnProperty.call(target, property)
+  )
+  // The table is a normal object, so `wx.hasOwnProperty(...)` / `toString()`
+  // keep working even though only API names are own properties.
+  const hasInheritedObjectMethod = (property: PropertyKey): boolean => (
+    typeof property === 'string' && property in Object.prototype
+  )
+  // WeChat exposes only APIs it implements: an unknown name reads as
+  // `undefined`, so `typeof wx.foo === 'function'` and `'foo' in wx` are both
+  // honest. Diagnostics still report the first access so the debugger can show
+  // what the app asked for.
   const apiProxy = new Proxy(apiHost, {
     get(target, property) {
       if (typeof property !== 'string') return Reflect.get(target, property)
-      if (property in target) return Reflect.get(target, property)
+      if (silentProperties.has(property)) return undefined
+      // Bundler globals (`webpackJsonp`, `cloud`, `env`, ...) are real
+      // properties once a bundle assigns them; only unknown reads are opaque.
+      if (hasOwn(target, property)) return Reflect.get(target, property)
       if (opaqueProperties.has(property)) return undefined
-      return () => {
+      if (hasInheritedObjectMethod(property)) return Reflect.get(target, property)
+      if (!reportedUnsupported.has(property)) {
+        reportedUnsupported.add(property)
         onUnsupportedApi?.(property)
-        return undefined
       }
+      return undefined
+    },
+    has(target, property) {
+      return hasOwn(target, property) || hasInheritedObjectMethod(property)
+    },
+    getOwnPropertyDescriptor(target, property) {
+      if (!hasOwn(target, property)) return undefined
+      return Reflect.getOwnPropertyDescriptor(target, property)
     },
     set(target, property, value) {
       return Reflect.set(target, property, value)

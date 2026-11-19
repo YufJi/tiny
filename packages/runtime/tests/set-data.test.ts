@@ -22,6 +22,30 @@ function createPage(
 }
 
 describe('setData', () => {
+  test('copies initial Page data, keeping Date prototypes and function values', () => {
+    const nested = { n: 1 }
+    const when = new Date('2020-01-02T00:00:00.000Z')
+    const fn = () => 1
+    const { page } = createPage({ data: { nested, when, fn } })
+    nested.n = 2
+    when.setFullYear(2000)
+    expect((page.data.nested as { n: number }).n).toBe(1)
+    expect(page.data.when).toBeInstanceOf(Date)
+    expect((page.data.when as Date).toISOString()).toBe('2020-01-02T00:00:00.000Z')
+    expect(page.data.fn).toBe(fn)
+  })
+
+  test('groupSetData calls back with the page instance as this', () => {
+    const { page } = createPage()
+    let same = false
+    page.groupSetData(function (this: unknown) {
+      same = this === page
+      ;(this as { setData: (patch: DataPatch) => void }).setData({ a: 2 })
+    })
+    expect(same).toBe(true)
+    expect(page.data.a).toBe(2)
+  })
+
   test('applies the patch synchronously but runs the callback after the render acknowledgement', () => {
     const pending: PendingCompletion[] = []
     const { page, patches } = createPage(undefined, {

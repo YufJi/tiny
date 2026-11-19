@@ -3,6 +3,7 @@ tiny-picker-view {
 }
 .tiny-picker-view-wrapper {
   display: flex;
+  height: 100%;
   overflow: hidden;
   position: relative;
 }

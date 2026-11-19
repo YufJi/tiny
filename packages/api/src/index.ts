@@ -1,5 +1,9 @@
 import type { ApiContext, ApiHost } from './context'
 import { createCanvasApi } from './canvas'
+import { createWorkletApi } from './worklet'
+import { createAnalyticsApi } from './analytics'
+import { createMediaApi } from './media'
+import { createCompatStubs } from './compat-stubs'
 import { createDeviceApi } from './device'
 import { createEncodingApi } from './encoding'
 import { createFileSystemApi } from './filesystem'
@@ -27,6 +31,8 @@ export type {
   SystemInfo,
 } from './host'
 export type { AssetUrlResolver } from '@tiny/manifest'
+export { animationToStyle } from './animation'
+export type { AnimationAction, AnimationExport, AnimationStyle } from './animation'
 export type {
   CanvasMeasurement,
   CanvasNodeHandle,
@@ -73,6 +79,10 @@ export function createApiHost(
     ...createEncodingApi(apiContext),
     ...createShareApi(apiContext),
     ...createCanvasApi(apiContext),
+    ...createWorkletApi(),
+    ...createAnalyticsApi(),
+    ...createMediaApi(),
+    ...createCompatStubs(),
     ...createQueryApi(apiContext),
     ...createFileSystemApi(),
     ...extensions,

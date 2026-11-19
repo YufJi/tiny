@@ -1,6 +1,7 @@
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
 import { DIAGNOSTIC_CODES, type Manifest, type PageArtifact } from '@tiny/manifest'
 import type {
+  ComponentFlowDelta,
   RenderAnimationRequest,
   RenderClearAnimationRequest,
   RenderEventGeometry,
@@ -8,6 +9,7 @@ import type {
   RenderPatch,
 } from '../../tree-protocol/protocol'
 import { diffRenderTree } from '../../tree-protocol/diff'
+import { diffComponentOwners } from '../../tree-protocol/flow'
 import type { AssetUrlResolver, ProtocolRelativeUrlResolver } from '../../shared/assets'
 import { normalizeAnimationFrames, animationTimingOptions } from '../../tree-protocol/animation'
 import * as glassEasel from 'glass-easel'
@@ -45,9 +47,8 @@ export type LogicTreeAdapterOptions = {
   templates: TemplateRegistry
   pageOptions?: ReadonlyMap<string, { methods?: Record<string, (...args: unknown[]) => unknown> }>
   componentDefinitions?: ReadonlyMap<string, NormalizedComponentDefinition>
+  /** Geometry of nodes addressed by their shared component/page id. */
   measureView?: (viewIds: string[]) => Promise<Record<string, ViewRect>>
-  /** Geometry of elements addressed by component-scoped locators. */
-  measureLocators?: (locators: string[]) => Promise<Record<string, ViewRect>>
   /** Scoped render query for nodes that have no render-side node id. */
   queryView?: (request: QueryViewRequest & { pageId?: string }) => Promise<QueryViewResult>
   loadStyle?: (outputPath: string) => string
@@ -58,6 +59,8 @@ export type LogicTreeAdapterOptions = {
   /** Runtime page kind, derived from the actual registration. */
   isComponentPage?: (path: string) => boolean
   onDataChange?: (pageId: string) => void
+  /** Raw `setData` patch a page root applied, before the render batch. */
+  onPageDataPatch?: (pageId: string, patch: Record<string, unknown>) => void
   onDiagnostic?: (diagnostic: import('../../shared/diagnostics').RuntimeDiagnostic) => void
   /** Report a handler/observer error raised inside glass-easel. */
   onError?: (pageId: string | undefined, message: string, details?: unknown) => void
@@ -124,8 +127,8 @@ export class LogicTreeAdapter {
   private componentSchemas: MiniProgramComponentSchema[] = []
   private componentDefinitions?: ReadonlyMap<string, NormalizedComponentDefinition>
   private readonly styledPages = new Set<string>()
+  private readonly afterRender?: LogicTreeAdapterOptions['afterRender']
   private readonly measureView?: (viewIds: string[]) => Promise<Record<string, ViewRect>>
-  private readonly measureLocators?: (locators: string[]) => Promise<Record<string, ViewRect>>
   private readonly queryView?: (request: QueryViewRequest & { pageId?: string }) => Promise<QueryViewResult>
   private readonly customTabBarPath?: string
   private readonly tabBarPagePaths = new Set<string>()
@@ -151,7 +154,6 @@ export class LogicTreeAdapter {
     this.resolveProtocolRelativeUrl = options.resolveProtocolRelativeUrl
     this.isComponentPage = options.isComponentPage
     this.measureView = options.measureView
-    this.measureLocators = options.measureLocators
     this.queryView = options.queryView
     this.viewIntersection = options.viewIntersection
     this.viewAnimation = options.viewAnimation
@@ -179,6 +181,7 @@ export class LogicTreeAdapter {
         }
       }
     }
+    this.afterRender = options.afterRender
     this.glass = new GlassEaselRuntimeAdapter({
       backend: this.backend as unknown as glassEasel.GeneralBackendContext,
       manifest: options.manifest,
@@ -194,6 +197,7 @@ export class LogicTreeAdapter {
       logicQueryFactory: (component) => this.createSelectorQueryFor(component),
       componentHandleFactory: (component) => this.componentHandle(component),
       onLogicDataChange: options.onDataChange,
+      ...(options.onPageDataPatch ? { onPageDataPatch: options.onPageDataPatch } : {}),
       ...(options.afterRender ? { afterRender: options.afterRender } : {}),
       logicTouchState: () => this.getActiveTouches(),
       logicIntersectionFactory: (component, observerOptions) => (
@@ -225,8 +229,9 @@ export class LogicTreeAdapter {
     this.backend.setScopeNameResolver(
       (scopeId) => this.glass.componentSpace.styleScopeManager.queryName(scopeId),
     )
-    // The logic layer must not lose Date prototypes or function values while
-    // copying data; glass-easel's default strategy flattens Date to {}.
+    // The kernel owns the WeChat `"simple"` copy (`cloneDataValue`) at the
+    // setData/initial-data boundaries; glass keeps references so Date and
+    // function values are not flattened by its built-in strategy.
     this.glass.componentSpace.updateComponentOptions({
       dataDeepCopy: glassEasel.DeepCopyKind.None,
       propertyPassingDeepCopy: glassEasel.DeepCopyKind.None,
@@ -261,6 +266,8 @@ export class LogicTreeAdapter {
       )
     }
     this.activePageId = pageId
+    // `data` is the page instance's own copy (P0-10); glass must receive that
+    // same object because its data factory may be evaluated more than once.
     const page = this.glass.mountPage(path, data, pageId)
     this.reportMissingComponents(path)
     if (styleStart !== undefined) {
@@ -277,6 +284,10 @@ export class LogicTreeAdapter {
     if (renderTree) pageTree.recordRenderTree(renderTree)
     const tabBarTree = this.snapshotTabBarTree(pageId)
     if (tabBarTree) pageTree.recordTabBarRenderTree(tabBarTree)
+    // With a render bridge, component `ready` waits for the pageframe's mount
+    // acknowledgement (`tree.ready`), i.e. the first render. A standalone
+    // logic tree has no frame, so it keeps the synchronous path.
+    if (!this.afterRender) this.glass.triggerPendingReady(pageId)
     return renderTree
   }
 
@@ -290,12 +301,16 @@ export class LogicTreeAdapter {
     try {
       this.pageTrees.get(pageId)?.clear()
       this.pageTrees.delete(pageId)
-      this.backend.clearPageLocators(pageId)
       this.glass.unmountPage(pageId)
       if (this.activePageId === pageId) this.activePageId = undefined
     } finally {
       this.wxsRuntime?.releasePage?.(pageId)
     }
+  }
+
+  /** Run component `ready` callbacks deferred until the pageframe rendered. */
+  flushPageReady(pageId: string): void {
+    this.glass.triggerPendingReady(pageId)
   }
 
   /** Deliver a page lifetime to the page's service-side components. */
@@ -531,12 +546,14 @@ export class LogicTreeAdapter {
   }
 
   /**
-   * Render-facing identity: components keep their shared view id, elements are
-   * addressed by a component-scoped locator.
+   * Render-facing identity.
+   *
+   * Element ids stay render-local (R2): the service only ever hands out the
+   * shared id of a component or the page root. Element queries/animations are
+   * addressed by a component scope + selector, never by a cross-thread node id.
    */
   renderIdentity(node: LogicBackendElement): string {
-    if (node.nodeType === 'component') return this.backend.ensureViewId(node)
-    return this.backend.locatorOf(node) ?? this.backend.ensureViewId(node)
+    return this.backend.ensureViewId(node)
   }
 
   /** Ensure a logic node has a stable render view id. */
@@ -634,6 +651,27 @@ export class LogicTreeAdapter {
     if (!snapshot) throw new Error(`logic page is not mounted: ${pageId}`)
     const previous = pageTree.advanceRenderTree(snapshot)
     return { snapshot, patches: previous ? diffRenderTree(previous, snapshot) : [] }
+  }
+
+  /**
+   * Advance the render snapshot and project only the component identities that
+   * changed since the previous batch.
+   *
+   * This is the hot path for `setData`: the pageframe re-evaluates its own
+   * template from the data patch, so the service only owes it (a) the data and
+   * (b) the identity of any component the pageframe is about to create or
+   * destroy. The element tree itself never crosses the bridge.
+   */
+  updateComponentFlow(pageId: string): {
+    snapshot: RenderNode
+    delta: ComponentFlowDelta | undefined
+  } {
+    const pageTree = this.pageTrees.get(pageId)
+    if (!pageTree) throw new Error(`logic page is not mounted: ${pageId}`)
+    const snapshot = this.snapshotRenderTree(pageId)
+    if (!snapshot) throw new Error(`logic page is not mounted: ${pageId}`)
+    const previous = pageTree.advanceRenderTree(snapshot)
+    return { snapshot, delta: diffComponentOwners(previous, snapshot) }
   }
 
   /** Diff the independent tabBar root against its previous snapshot. */
@@ -811,7 +849,6 @@ export class LogicTreeAdapter {
       this.queryView
         ? (request) => this.queryView!({ ...request, ...(pageId ? { pageId } : {}) })
         : undefined,
-      this.measureLocators,
     )
   }
 
@@ -964,7 +1001,18 @@ export class LogicTreeAdapter {
     changedTouches?: unknown[]
     id?: string
     dataset?: Record<string, unknown>
+    mark?: Record<string, unknown>
     targetId?: string
+    /** Render-resolved target node; preferred over the `targetId` lookup. */
+    targetNode?: {
+      nodeId?: string
+      id?: string
+      dataset?: Record<string, unknown>
+      offsetLeft?: number
+      offsetTop?: number
+      offsetWidth?: number
+      offsetHeight?: number
+    }
     currentTarget?: { offsetLeft?: number; offsetTop?: number; offsetWidth?: number; offsetHeight?: number }
     target?: { offsetLeft?: number; offsetTop?: number; offsetWidth?: number; offsetHeight?: number }
   }, onListenerReturn?: (result: unknown) => void): boolean {
@@ -988,20 +1036,35 @@ export class LogicTreeAdapter {
       ? this.backend.findByViewId(payload.targetId)
       : undefined
     const targetGeometry = payload.target
-    const targetShape = targetNode
+    // The render thread resolved the target itself (id/dataset/geometry).
+    // `targetId` is only a legacy fallback for hosts that still send it.
+    const renderedTarget = payload.targetNode
+    const targetShape = renderedTarget
       ? {
-          id: targetNode.id,
-          dataset: Object.fromEntries(targetNode.dataset),
-          offsetLeft: targetGeometry?.offsetLeft ?? 0,
-          offsetTop: targetGeometry?.offsetTop ?? 0,
-          offsetWidth: targetGeometry?.offsetWidth ?? 0,
-          offsetHeight: targetGeometry?.offsetHeight ?? 0,
+          id: renderedTarget.id ?? '',
+          dataset: renderedTarget.dataset ?? {},
+          offsetLeft: renderedTarget.offsetLeft ?? 0,
+          offsetTop: renderedTarget.offsetTop ?? 0,
+          offsetWidth: renderedTarget.offsetWidth ?? 0,
+          offsetHeight: renderedTarget.offsetHeight ?? 0,
         }
-      : currentTargetShape
+      : targetNode
+        ? {
+            id: targetNode.id,
+            dataset: Object.fromEntries(targetNode.dataset),
+            offsetLeft: targetGeometry?.offsetLeft ?? 0,
+            offsetTop: targetGeometry?.offsetTop ?? 0,
+            offsetWidth: targetGeometry?.offsetWidth ?? 0,
+            offsetHeight: targetGeometry?.offsetHeight ?? 0,
+          }
+        : currentTargetShape
     const event = {
       type: payload.name,
       timeStamp: Date.now(),
       detail: payload.detail ?? {},
+      // `mark:` values of the target's ancestor chain; WeChat exposes the same
+      // object on every event before the listener runs.
+      mark: payload.mark ?? {},
       target: targetShape,
       currentTarget: currentTargetShape,
       touches: payload.touches ?? [],

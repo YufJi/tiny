@@ -269,8 +269,12 @@ async function main() {
     console.log(`WeChat/Tiny button style matrix is 1:1 (${wechat.length} combinations)`)
   } finally {
     if (server) {
-      if (process.platform === 'win32') server.child.kill()
-      else process.kill(-server.child.pid, 'SIGTERM')
+      try {
+        if (process.platform === 'win32') server.child.kill()
+        else process.kill(-server.child.pid, 'SIGTERM')
+      } catch {
+        // The child already exited; nothing to clean up.
+      }
     }
   }
 }

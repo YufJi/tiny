@@ -6,7 +6,14 @@
     "pages/scroll/scroll",
     "pages/touch-lock/touch-lock",
     "pages/wxs-runtime/wxs-runtime",
-    "pages/router/router"
+    "pages/router/router",
+    "pages/reorder/reorder",
+    "pages/timing/timing",
+    "pages/virtual/virtual",
+    "pages/meta/meta",
+    "pages/visual/visual",
+    "pages/container/container",
+    "pages/cover/cover"
   ],
   "window": {
     "navigationBarTitleText": "P0 demo"
@@ -22,7 +29,8 @@
     "semantic-child": "./components/semantic-child/semantic-child",
     "nested-style-parent": "./components/nested-style-parent/nested-style-parent",
     "wxs-probe": "./components/wxs-probe/wxs-probe",
-    "router-probe": "./components/router-probe/router-probe"
+    "router-probe": "./components/router-probe/router-probe",
+    "timing-probe": "./components/timing-probe/timing-probe"
   },
   "componentFramework": "glass-easel",
   "renderer": "webview"

@@ -101,10 +101,12 @@ export function definePickerView(ctx: BuiltinContext): BuiltinDefinition {
       },
       _getPickerHeight(): number {
         const runtime = this as unknown as PickerViewRuntime
-        if (runtime._pickerHeight === null || runtime._pickerHeight === undefined) {
-          runtime._pickerHeight = Number(runtime.getBackendElement?.()?.offsetHeight ?? 0)
-        }
-        return runtime._pickerHeight
+        const measured = Number(runtime.getBackendElement?.()?.offsetHeight ?? 0)
+        // `attached` can run before the host's inline height is laid out; keep
+        // the cached value only once it is real, otherwise retry from
+        // `_initColumns`.
+        if (measured > 0) runtime._pickerHeight = measured
+        return Math.max(0, measured, Number(runtime._pickerHeight ?? 0))
       },
       _getIndicatorHeight(): number {
         const column = this._getColumns()[0]
@@ -138,12 +140,17 @@ export function definePickerView(ctx: BuiltinContext): BuiltinDefinition {
         const height = this._getPickerHeight()
         const indicatorHeight = this._getIndicatorHeight()
         columns.forEach((column, index) => {
-          this._setColumnStyles(column, height, indicatorHeight)
+          // Even before layout gives the host a height, seed the current item
+          // and translate so headless hosts and the first frame are usable.
+          if (height > 0) this._setColumnStyles(column, height, indicatorHeight)
           column._setCurrent?.(Number(values[index] ?? 0))
           column.setData?.({ immediateChange: Boolean(this.data.immediateChange) })
           column._init?.()
         })
         this._valueChanged(this.data.value)
+        if (height <= 0 && attempt < 20) {
+          setTimeout(() => this._initColumns(attempt + 1), 16)
+        }
       },
       _valueChanged(value: unknown) {
         const values = Array.isArray(value) ? value : []

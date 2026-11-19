@@ -163,7 +163,13 @@ export function createDomTextareaHost(ctx: BuiltinContext): TextareaHostMethods 
     },
 
     syncKeyboardValue(this: TextareaHostComponent, _cursorOverride?: number): void {
-      // The DOM textarea already owns its live selection.
+      // The native `<textarea>` displays its value property, not the `value`
+      // attribute the template binds. Keep the property in sync for initial
+      // values, programmatic setData and resets.
+      const element = this.textareaElement()
+      if (!element) return
+      const next = String(this.data.value ?? '')
+      if (element.value !== next) element.value = next
     },
 
     nativeViewSpec(this: TextareaHostComponent): null {

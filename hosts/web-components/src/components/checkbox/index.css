@@ -24,7 +24,7 @@ tiny-checkbox[hidden] {
   width: 22px;
 }
 .tiny-checkbox-input.tiny-checkbox-input-checked {
-  color: #09bb07;
+  color: #07c160;
 }
 .tiny-checkbox-input.tiny-checkbox-input-checked::before {
   content: "\EA08";

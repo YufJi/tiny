@@ -5,7 +5,11 @@ import type {
   ViewEventPayload,
   ViewIntersectionEntry,
 } from '../logic-tree/events'
-import { QUERY_CONTROL, TREE_PROTOCOL } from '../../tree-protocol/protocol'
+import {
+  QUERY_CONTROL,
+  TREE_PROTOCOL,
+  type RenderEventTarget,
+} from '../../tree-protocol/protocol'
 
 export type RenderWxsEffect = {
   kind: 'callMethod' | 'triggerEvent'
@@ -26,7 +30,10 @@ export type RenderWxsEffect = {
 export type RenderInboundHost = {
   getLogicTree: () => LogicTreeAdapter | null
   isMounted: (pageId: string) => boolean
+  /** Re-send the page flow so definitions that arrived late are applied. */
   sendFlow: (pageId: string) => void
+  /** Run component `ready` callbacks once the pageframe mounted the page. */
+  flushPageReady: (pageId: string) => void
   reportError: (message: string) => void
   dispatchWxsEffect: (pageId: string, effect: RenderWxsEffect) => void
   /** The render thread reflected a batch; run its `setData` completions. */
@@ -69,7 +76,14 @@ export function attachRenderInbound(
 
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.ready, (message) => {
     if (!host.getLogicTree() || !message.pageId || !host.isMounted(message.pageId)) return
+    // The host core emits this after a page finished. Re-sending the flow is
+    // what lets a lazily loaded package swap its placeholder for the real
+    // component (the flow carries the now-registered definitions).
     host.sendFlow(message.pageId)
+  })
+  connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.pageReady, (message) => {
+    if (!host.getLogicTree() || !message.pageId || !host.isMounted(message.pageId)) return
+    host.flushPageReady(message.pageId)
   })
 
   connection.onEvent(TREE_PROTOCOL.domain, TREE_PROTOCOL.ack, (message) => {
@@ -99,7 +113,9 @@ function handleTemplateEvent(
     changedTouches?: unknown[]
     id?: string
     dataset?: Record<string, unknown>
+    mark?: Record<string, unknown>
     targetId?: string
+    targetNode?: RenderEventTarget
     eventToken?: string
     currentTarget?: {
       offsetLeft?: number
@@ -126,7 +142,9 @@ function handleTemplateEvent(
       ...(payload.changedTouches ? { changedTouches: payload.changedTouches } : {}),
       ...(payload.id ? { id: payload.id } : {}),
       ...(payload.dataset ? { dataset: payload.dataset } : {}),
+      ...(payload.mark ? { mark: payload.mark } : {}),
       ...(payload.targetId ? { targetId: payload.targetId } : {}),
+      ...(payload.targetNode ? { targetNode: payload.targetNode } : {}),
       ...(payload.currentTarget ? { currentTarget: payload.currentTarget } : {}),
       ...(payload.target ? { target: payload.target } : {}),
     }, (result) => {

@@ -11,6 +11,7 @@ import { createAnimationStub } from './animation'
 export function createCanvasApi(context: ApiContext): ApiHost {
   return {
     createAnimation: (options: unknown = {}) => createAnimationStub(options),
+    createContext: () => createCanvasContextStub(),
     createCanvasContext: (canvasId: unknown = 'canvas') => {
       const legacy = context.canvas?.createLegacyCanvasContext(
         String(canvasId || 'canvas'),

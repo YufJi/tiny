@@ -1,0 +1,5 @@
+.page { padding: 12px; }
+.panel {
+  background: #fff;
+  padding: 12px;
+}

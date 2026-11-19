@@ -1,0 +1,1 @@
+<view id="probe-box" class="probe-box">probe ready: {{readyCount}} rect: {{rectWidth}}</view>

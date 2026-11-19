@@ -1,0 +1,10 @@
+.vh-outer {
+  padding: 8px;
+  background: #eef;
+}
+.vh-inner,
+.vh-slot {
+  padding: 8px;
+  margin-bottom: 4px;
+  background: #dfd;
+}

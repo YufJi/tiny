@@ -304,7 +304,7 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       })
       assert.ok(iconMetrics.fontFamily.includes('weui'), 'icon should use the weui font')
       assert.equal(iconMetrics.fontSize, '23px', 'icon default size mismatch')
-      assert.equal(iconMetrics.color, 'rgb(9, 187, 7)', 'icon success color mismatch')
+      assert.equal(iconMetrics.color, 'rgb(7, 193, 96)', 'icon success color mismatch')
       assert.notEqual(iconMetrics.content, 'none', 'icon should render a font glyph')
       assert.equal(iconMetrics.width, 23, 'icon width mismatch')
       const imageLoaded = await render.waitForFunction(
@@ -899,10 +899,402 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       await waitForText('Tiny Glass-easel P0')
     })
 
+    await step('keep the tapped target identity across a keyed reorder', async () => {
+      currentStep = 'keep the tapped target identity across a keyed reorder'
+      await tapToPage('Reorder', 'Reorder')
+      await waitForText('reorder: idle')
+      // The label is the event target; its parent item is the currentTarget.
+      await render.locator('#label-b').click()
+      await waitForText('reorder: label-b:b:1')
+      await byText(render, 'Rotate', { exact: true }).first().click()
+      // Rotate moves B to index 0. The same DOM node (and WXML id) must still
+      // resolve to the same logical node; only currentTarget.dataset.index
+      // changes.
+      await render.locator('#label-b').click()
+      await waitForText('reorder: label-b:b:0')
+      await byText(render, 'Back', { exact: true }).first().click()
+      await waitForText('Tiny Glass-easel P0')
+    })
+
+    await step('complete setData after render and run ready after the mount render', async () => {
+      currentStep = 'complete setData after render and run ready after the mount render'
+      await tapToPage('Timing', 'Timing')
+      // P0-2: the component ready callback is deferred until the pageframe
+      // mounted and rendered the page, so onLoad still sees readyCount 0.
+      await waitForText('onload-ready: 0')
+      let probeText = ''
+      const probeDeadline = Date.now() + 3000
+      while (Date.now() < probeDeadline) {
+        probeText = await text()
+        const match = /probe-ready: (\d+) rect: (\d+)/.exec(probeText)
+        if (match && Number(match[1]) === 1 && Number(match[2]) > 0) break
+        await page.waitForTimeout(50)
+      }
+      assert.match(
+        probeText,
+        /probe-ready: 1 rect: [1-9]\d*/,
+        'component ready did not observe a rendered layout',
+      )
+      // P0-5: inline style rpx is converted to vw in the pageframe (static,
+      // interpolated and style: bindings); P0-6: url() content is untouched.
+      const rpx = await render.evaluate(() => {
+        const innerWidth = window.innerWidth
+        const widthOf = (id) => document.querySelector(id)?.getBoundingClientRect().width ?? -1
+        return {
+          innerWidth,
+          widths: ['#rpx-static', '#rpx-dynamic', '#rpx-bound'].map(widthOf),
+          url: getComputedStyle(document.querySelector('#rpx-url')).backgroundImage,
+        }
+      })
+      const expectedRpx = rpx.innerWidth / 7.5
+      for (const width of rpx.widths) {
+        assert.ok(
+          Math.abs(width - expectedRpx) < 1,
+          `inline rpx width ${width} != ${expectedRpx} (viewport ${rpx.innerWidth})`,
+        )
+      }
+      assert.ok(rpx.url.includes('10rpx'), `url() rpx was rewritten: ${rpx.url}`)
+      // P0-7: mark values on the target's ancestor chain reach `event.mark`.
+      await render.locator('#mark-inner').click()
+      await waitForText('mark: outer/inner')
+      // P0-8: a slow press on a view without a longpress listener is still a
+      // tap; a view that binds longpress emits longtap/longpress and consumes
+      // the tap.
+      const press = async (selector, holdMs) => {
+        const box = await render.locator(selector).boundingBox()
+        assert.ok(box, `${selector} has no bounding box`)
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+        await page.mouse.down()
+        await page.waitForTimeout(holdMs)
+        await page.mouse.up()
+      }
+      await press('#slow-tap', 450)
+      await waitForText('slow: tap')
+      await press('#long-press', 450)
+      await waitForText('long: press')
+      assert.ok(
+        !(await text()).includes('long: tap'),
+        'longpress listener still let the tap through',
+      )
+      // R4: form-control tokens match the WeChat 3.17.5 simulator (#07c160).
+      const formColors = await render.evaluate(() => {
+        const style = (selector, property, pseudo) => {
+          const element = document.querySelector(selector)
+          return element ? getComputedStyle(element, pseudo).getPropertyValue(property) : ''
+        }
+        return {
+          switch: style('.tiny-builtin-switch--tiny-switch-input', 'background-color'),
+          checkbox: style('.tiny-builtin-checkbox--tiny-checkbox-input', 'color'),
+          radio: style('.tiny-builtin-radio--tiny-radio-input', 'background-color'),
+          slider: style('.tiny-builtin-slider--tiny-slider-track', 'background-color'),
+        }
+      })
+      assert.deepEqual(formColors, {
+        switch: 'rgb(7, 193, 96)',
+        checkbox: 'rgb(7, 193, 96)',
+        radio: 'rgb(7, 193, 96)',
+        slider: 'rgb(7, 193, 96)',
+      })
+      // R4: input/textarea hosts follow the 3.17.5 simulator (1.4rem input,
+      // 300x150 textarea, hidden overflow, 20px auto-height) and the native
+      // textarea displays its value property.
+      const fields = await render.evaluate(() => {
+        const input = document.querySelector('#skin-input')
+        const nativeInput = input?.querySelector('input')
+        const textarea = document.querySelector('#skin-textarea')
+        const nativeTextarea = textarea?.querySelector('textarea')
+        const auto = document.querySelector('#skin-textarea-auto')
+        const placeholderInput = document.querySelector('#skin-input-placeholder')
+        const placeholder = getComputedStyle(
+          placeholderInput?.querySelector('[class*="tiny-input-placeholder"]') ?? document.body,
+        ).color
+        return {
+          inputHeight: input?.getBoundingClientRect().height ?? 0,
+          inputOverflow: input ? getComputedStyle(input).overflow : '',
+          nativeInputValue: nativeInput?.value ?? '',
+          placeholder,
+          textareaHeight: textarea?.getBoundingClientRect().height ?? 0,
+          textareaOverflow: textarea ? getComputedStyle(textarea).overflow : '',
+          nativeTextareaValue: nativeTextarea?.value ?? '',
+          autoHeight: auto?.getBoundingClientRect().height ?? 0,
+        }
+      })
+      assert.ok(Math.abs(fields.inputHeight - 22.4) < 0.1, `input height ${fields.inputHeight}`)
+      assert.equal(fields.inputOverflow, 'hidden')
+      assert.equal(fields.nativeInputValue, 'input-value')
+      assert.equal(fields.placeholder, 'rgb(153, 153, 153)')
+      assert.equal(fields.textareaHeight, 150)
+      assert.equal(fields.textareaOverflow, 'hidden')
+      assert.equal(fields.nativeTextareaValue, 'textarea-value')
+      assert.ok(Math.abs(fields.autoHeight - 20) < 1, `textarea auto height ${fields.autoHeight}`)
+      // R4: picker-view columns were zero-height until the wrapper and the
+      // deferred height measurement were fixed; the selected row must be
+      // centered and the mask/indicator must use the 34px item window.
+      const picker = await render.evaluate(() => {
+        const view = document.querySelector('#skin-picker-view')
+        const column = view?.querySelector('tiny-picker-view-column')
+        const content = column?.querySelector('[class*="picker__content"]')
+        const indicator = column?.querySelector('[class*="picker__indicator"]')
+        const items = [...(content?.children ?? [])]
+        const viewRect = view?.getBoundingClientRect()
+        const selected = items[1]?.getBoundingClientRect()
+        return {
+          viewHeight: viewRect?.height ?? 0,
+          columnHeight: column?.getBoundingClientRect().height ?? 0,
+          contentPaddingTop: content ? getComputedStyle(content).paddingTop : '',
+          indicatorTop: indicator ? getComputedStyle(indicator).top : '',
+          selectedCenter: viewRect && selected
+            ? selected.top + selected.height / 2 - viewRect.top
+            : -1,
+          itemHeight: selected?.height ?? 0,
+        }
+      })
+      assert.equal(picker.viewHeight, 200)
+      assert.equal(picker.columnHeight, 200)
+      assert.equal(picker.contentPaddingTop, '83px')
+      assert.equal(picker.indicatorTop, '83px')
+      assert.equal(picker.itemHeight, 34)
+      assert.ok(
+        Math.abs(picker.selectedCenter - 100) < 1,
+        `picker selected row not centered: ${picker.selectedCenter}`,
+      )
+      // R4: WeChat 3.17.5 icons use the weuiv2 glyph font and 3.17.5 green;
+      // aspect modes keep the author's inline image box.
+      const media = await render.evaluate(() => {
+        const glyph = document.querySelector('#skin-icon i')
+        const image = document.querySelector('#skin-image')
+        const imageDiv = image?.querySelector('div')
+        const rect = image?.getBoundingClientRect()
+        return {
+          family: glyph ? getComputedStyle(glyph).fontFamily : '',
+          color: glyph ? getComputedStyle(glyph).color : '',
+          width: rect?.width ?? 0,
+          height: rect?.height ?? 0,
+          backgroundSize: imageDiv ? getComputedStyle(imageDiv).backgroundSize : '',
+        }
+      })
+      assert.ok(media.family.includes('weuiv2'), `icon font family ${media.family}`)
+      assert.equal(media.color, 'rgb(7, 193, 96)')
+      assert.equal(media.width, 80)
+      assert.equal(media.height, 40)
+      assert.equal(media.backgroundSize, 'cover')
+      // P0-9/P0-10: data belongs to the component after setData, Dates survive
+      // the copy, and groupSetData calls back with the caller as `this`.
+      await render.locator('#copy-probe').click()
+      await waitForText('copy: 1/true/true')
+      await waitForText('group: ok')
+      // P0-12: `animation="{{actions}}"` is an object protocol; the host runs
+      // the action sequence instead of stringifying it into a DOM attribute.
+      await render.locator('#animate-probe').click()
+      await waitForText('anim: running')
+      await page.waitForTimeout(300)
+      const animated = await render.locator('#anim-box').evaluate((element) => ({
+        transform: getComputedStyle(element).transform,
+        animation: element.getAttribute('animation'),
+        payload: element.getAttribute('wx-tiny-animation'),
+      }))
+      assert.match(animated.transform, /^matrix\(/, 'animation attribute did not apply a transform')
+      assert.notEqual(animated.transform, 'none')
+      assert.equal(animated.animation, null, 'animation was stringified into a DOM attribute')
+      assert.ok(animated.payload?.includes('actions'), 'serialized animation payload missing')
+      // P0-1: the setData completion issues a selector query that must see the
+      // new width, i.e. the ack waited for the glass render pass.
+      await byText(render, 'Bump', { exact: true }).first().click()
+      await waitForText('timing: width:120')
+      await byText(render, 'Back', { exact: true }).first().click()
+      await waitForText('Tiny Glass-easel P0')
+    })
+
+    await step('flatten virtualHost components and route their custom events', async () => {
+      currentStep = 'flatten virtualHost components and route their custom events'
+      await tapToPage('Virtual host', 'vh probe')
+      await render.waitForFunction(() => {
+        const inner = document.querySelector('#vh-inner')
+        const outer = document.querySelector('#vh-outer')
+        return Boolean(
+          inner
+          && outer
+          && outer.contains(inner)
+          && !document.querySelector('tiny-virtual-host'),
+        )
+      })
+      const virtualHost = await render.evaluate(() => {
+        const host = document.querySelector('tiny-virtual-host')
+        const inner = document.querySelector('#vh-inner')
+        const outer = document.querySelector('#vh-outer')
+        return {
+          host: Boolean(host),
+          inner: Boolean(inner),
+          outer: Boolean(outer),
+          contains: Boolean(outer && inner && outer.contains(inner)),
+          parentTag: inner?.parentElement?.tagName,
+          parentId: inner?.parentElement?.id ?? '',
+        }
+      })
+      assert.equal(virtualHost.host, false, `virtualHost component produced a host element: ${JSON.stringify(virtualHost)}`)
+      assert.ok(
+        virtualHost.contains,
+        `virtualHost children were not flattened into the parent: ${JSON.stringify(virtualHost)}`,
+      )
+      await render.locator('#vh-inner').click()
+      await waitForText('vh-inner: vh-inner')
+      await byText(render, 'Back', { exact: true }).click()
+      await waitForText('Tiny Glass-easel P0')
+    })
+
+    await step('render page-meta and navigation-bar chrome', async () => {
+      currentStep = 'render page-meta and navigation-bar chrome'
+      await tapToPage('Meta', 'meta: false')
+      const meta = await render.evaluate(() => {
+        const root = document.querySelector('tiny-page')
+        return {
+          title: root?.dataset.tinyNavigationTitle ?? '',
+          loading: root?.dataset.tinyNavigationLoading ?? '',
+          background: root ? getComputedStyle(root).backgroundColor : '',
+          navBackground: root
+            ? getComputedStyle(root).getPropertyValue('--tiny-navbar-background-color').trim()
+            : '',
+          navFront: root
+            ? getComputedStyle(root).getPropertyValue('--tiny-navbar-front-color').trim()
+            : '',
+        }
+      })
+      assert.equal(meta.title, 'Meta title')
+      assert.equal(meta.loading, 'false')
+      assert.equal(meta.background, 'rgb(17, 34, 51)')
+      assert.equal(meta.navBackground, '#07c160')
+      assert.equal(meta.navFront, '#ffffff')
+      await byText(render, 'Toggle loading', { exact: true }).click()
+      await waitForText('meta: true')
+      await render.waitForFunction(
+        () => document.querySelector('tiny-page')?.dataset.tinyNavigationLoading === 'true',
+        null,
+        { timeout: 5000 },
+      )
+      const loading = await render.evaluate(
+        () => document.querySelector('tiny-page')?.dataset.tinyNavigationLoading,
+      )
+      assert.equal(loading, 'true')
+      await byText(render, 'Back', { exact: true }).click()
+      await waitForText('Tiny Glass-easel P0')
+    })
+
+    await step('render progress, rich-text, movable-view and swiper', async () => {
+      currentStep = 'render progress, rich-text, movable-view and swiper'
+      await tapToPage('Visual batch', 'Progress')
+      await waitForText('Rich text')
+      const visual = await render.evaluate(() => {
+        const q = (selector) => document.querySelector(selector)
+        const track = q('[class*="progress-bar"]')
+        const bar = q('[class*="progress-inner-bar"]')
+        const info = q('[class*="progress-info"]')
+        const rich = q('tiny-rich-text')
+        const richStyled = rich?.querySelector('[style*="color"]')
+        const movable = q('#movable-view')
+        const swiper = q('#swiper')
+        const dots = [...document.querySelectorAll(
+          '[class*="swiper-dot"]:not([class*="swiper-dots"])',
+        )]
+        const active = dots.find((dot) => String(dot.className).includes('swiper-dot-active'))
+        const trackRect = track?.getBoundingClientRect()
+        const barRect = bar?.getBoundingClientRect()
+        return {
+          progressRatio: trackRect && barRect ? barRect.width / trackRect.width : 0,
+          info: info?.textContent ?? '',
+          richText: rich?.textContent ?? '',
+          richColor: richStyled ? getComputedStyle(richStyled).color : '',
+          movableTransform: movable ? getComputedStyle(movable).transform : '',
+          swiperHeight: swiper?.getBoundingClientRect().height ?? 0,
+          dotCount: dots.length,
+          activeIndex: active ? dots.indexOf(active) : -1,
+        }
+      })
+      assert.ok(Math.abs(visual.progressRatio - 0.3) < 0.02, `progress ${visual.progressRatio}`)
+      assert.equal(visual.info, '30%')
+      assert.equal(visual.richText, 'Rich text')
+      assert.equal(visual.richColor, 'rgb(7, 193, 96)')
+      assert.equal(visual.movableTransform, 'matrix(1, 0, 0, 1, 30, 20)')
+      assert.equal(visual.swiperHeight, 100)
+      assert.equal(visual.dotCount, 3)
+      assert.equal(visual.activeIndex, 1)
+      await byText(render, 'Back', { exact: true }).click()
+      await waitForText('Tiny Glass-easel P0')
+    })
+
+    await step('render a page-container overlay and bottom panel', async () => {
+      currentStep = 'render a page-container overlay and bottom panel'
+      await tapToPage('Container', 'Panel content')
+      // Let the page-container enter transition settle before measuring.
+      await page.waitForTimeout(600)
+      const container = await render.evaluate(() => {
+        const overlay = document.querySelector('[class*="weui-overlay"]')
+        const popup = document.querySelector('[class*="weui-popup"]')
+        return {
+          overlayBackground: overlay ? getComputedStyle(overlay).backgroundColor : '',
+          overlayPosition: overlay ? getComputedStyle(overlay).position : '',
+          popupRadius: popup ? getComputedStyle(popup).borderTopLeftRadius : '',
+          popupBottom: popup?.getBoundingClientRect().bottom ?? 0,
+          popupWidth: popup?.getBoundingClientRect().width ?? 0,
+          viewportWidth: window.innerWidth,
+          viewportBottom: window.innerHeight,
+        }
+      })
+      assert.equal(container.overlayBackground, 'rgba(0, 0, 0, 0.7)')
+      assert.equal(container.overlayPosition, 'fixed')
+      assert.equal(container.popupRadius, '20px')
+      assert.equal(container.popupWidth, container.viewportWidth)
+      assert.equal(container.popupBottom, container.viewportBottom)
+      await byText(render, 'Close', { exact: true }).click()
+      await waitForText('Tiny Glass-easel P0')
+    })
+
+    await step('render cover-view, cover-image, match-media and root-portal', async () => {
+      currentStep = 'render cover-view, cover-image, match-media and root-portal'
+      await tapToPage('Cover batch', 'Cover view')
+      const cover = await render.evaluate(() => {
+        const rect = (selector) => {
+          const element = document.querySelector(selector)
+          return element?.getBoundingClientRect().toJSON() ?? null
+        }
+        const portal = document.querySelector('#portal-content')
+        const host = document.querySelector('#root-portal')
+        const image = document.querySelector('#cover-image img')
+        return {
+          coverView: rect('#cover-view'),
+          coverImage: rect('#cover-image'),
+          imageWidth: image?.getBoundingClientRect().width ?? 0,
+          matchYes: {
+            display: getComputedStyle(document.querySelector('#match-yes')).display,
+            width: rect('#match-yes')?.width ?? 0,
+          },
+          matchNo: getComputedStyle(document.querySelector('#match-no')).display,
+          portalInHost: Boolean(host?.contains(portal)),
+          portalParent: portal?.parentElement?.tagName ?? '',
+          portalLeft: rect('#portal-content')?.left ?? -1,
+          portalWidth: rect('#portal-content')?.width ?? 0,
+        }
+      })
+      assert.equal(cover.coverView?.width, 120)
+      assert.equal(cover.coverView?.height, 40)
+      assert.equal(cover.coverImage?.width, 80)
+      assert.equal(cover.coverImage?.height, 40)
+      assert.equal(cover.imageWidth, 80)
+      assert.equal(cover.matchYes.display, 'block')
+      assert.ok(cover.matchYes.width > 300)
+      assert.equal(cover.matchNo, 'none')
+      assert.equal(cover.portalInHost, false)
+      assert.equal(cover.portalParent, 'TINY-ROOT-PORTAL-CONTENT')
+      assert.equal(cover.portalLeft, 0)
+      assert.equal(cover.portalWidth, 120)
+      await byText(render, 'Back', { exact: true }).click()
+      await waitForText('Tiny Glass-easel P0')
+    })
+
     await step('lock page scroll under catchtouchmove', async () => {
       currentStep = 'lock page scroll under catchtouchmove'
-      await byText(render, 'Touch lock', { exact: true }).first().click()
-      await waitForText('Touch lock probe')
+      // A plain click can be dropped while the previous page transition is
+      // still settling; the navigation helper retries from the active page.
+      await tapToPage('Touch lock', 'Touch lock probe')
       await render.evaluate(() => window.scrollTo(0, 200))
       await page.waitForTimeout(50)
       const before = await render.evaluate(() => window.scrollY)
@@ -1256,7 +1648,8 @@ export async function runMiniProgramAcceptance({ baseUrl, app = 'mini', browser 
 
       const animated = await render.evaluate(() => [...document.querySelectorAll('tiny-view, view')].some((element) => {
         const style = element.getAttribute('style') ?? ''
-        return style.includes('transition: all') && getComputedStyle(element).transform !== 'none'
+        return style.includes('transition:')
+          && getComputedStyle(element).transform !== 'none'
       }))
       assert.ok(animated, 'animation data did not produce a transform')
     })
@@ -1773,7 +2166,7 @@ export async function runWechatDemoAcceptance({ baseUrl, app = 'wechat-demo', br
       })
       assert.deepEqual(
         [radioVisual?.tag, radioVisual?.width, radioVisual?.radius, radioVisual?.background],
-        ['div', '22px', '50%', 'rgb(9, 187, 7)'],
+        ['div', '22px', '50%', 'rgb(7, 193, 96)'],
         'radio visual structure does not match WeChat',
       )
       assert.ok(radioVisual?.fontFamily.includes('weui'), 'radio check glyph should use the weui font')

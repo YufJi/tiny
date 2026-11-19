@@ -2,7 +2,7 @@ import { bindHostListeners, unbindHostListeners } from '../../behaviors'
 import type { BuiltinContext, BuiltinDefinition } from '../../types'
 import { builtinDefinitionName } from '../../tags'
 
-const ACTIVE_DEFAULT = '#1AAD19'
+const ACTIVE_DEFAULT = '#07C160'
 const BACKGROUND_DEFAULT = '#E9E9E9'
 const MIN_BLOCK_SIZE = 12
 const MAX_BLOCK_SIZE = 28

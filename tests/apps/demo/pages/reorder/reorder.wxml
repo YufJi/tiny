@@ -1,0 +1,16 @@
+<view class="page">
+  <text class="title">Reorder</text>
+  <view
+    wx:for="{{items}}"
+    wx:key="id"
+    id="item-{{item.id}}"
+    class="item"
+    data-index="{{index}}"
+    bindtap="onTap"
+  >
+    <view id="label-{{item.id}}" class="item-label" data-id="{{item.id}}">{{item.label}}</view>
+  </view>
+  <button bindtap="rotate">Rotate</button>
+  <text class="reorder-status">reorder: {{status}}</text>
+  <button bindtap="back">Back</button>
+</view>

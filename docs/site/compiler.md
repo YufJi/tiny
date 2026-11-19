@@ -31,7 +31,7 @@ compileMiniProgram 会按顺序执行这些阶段。每个阶段只生成产物�
 | 查找组件 |  | 从 app 配置和每个页面、组件的 usingComponents 递归查找，记录全局/局部来源，并检查缺失。 | resolveComponentEntries() |
 | 编译脚本 |  | 从入口沿 import/require 收集可达脚本（含 `miniprogram_npm` 内的传递依赖），转译 TypeScript，补全模块路径（含裸包名），并输出 source map；页面/组件脚本只带一条中性入口路径 hint。 | compileScripts() |
 | 类型检查 |  | 项目有 tsconfig 或显式开启时运行 TypeScript 语义检查，输出 `SCRIPT_TYPE_ERROR`；没有社区 typings 时注入小程序全局声明。 | typecheckScripts() |
-| 编译模板 |  | 把所有模板文件放进同一个 TmplGroup，处理 import/include/template、模板脚本、作用域标记和 animation。 | compileTemplates() |
+| 编译模板 |  | 把所有模板文件放进同一个 TmplGroup，处理 import/include/template、模板脚本、作用域标记和 animation 属性序列化。 | compileTemplates() |
 | 编译样式 |  | app 样式保持全局；页面和组件样式加固定 Tiny class/tag scope；rpx 转成 vw；内联简单 `@import`，并按每个 WXSS 文件把 `url()` 归一化成 app-root 路径。 | compileStyles() |
 | 复制资源 |  | 所有非编译输入文件按原相对路径复制，不做大小或类型判断；资源 URL 在运行时由宿主解析。 | copyAssets() |
 | 生成 manifest 和入口 |  | 汇总产物、runtimeCompatibility 和诊断，写出 manifest.json；按分包拆出 `service.<pkg>.js`，生成 service.js 和 templates.js，并用 esbuild 逐个打包。 | createManifest() · writeEntryArtifacts() |
@@ -185,7 +185,7 @@ export default {
 | ProcGen | proc_gen/tag.ts · expr.ts · writer.ts | 生成 glass-easel 可执行的创建/更新函数 |
 | WXS / SJS | TmplGroup.addScript + AST transform + module table | 模板里可以调用脚本模块，支持相对路径 require；事件由 service/render 双 runtime 执行 |
 | 作用域标记 | injectScopeClasses() | 给每个元素加上 `<tagClassPrefix><tag>`（固定 `tiny-tag-button`），供 tag 选择器使用 |
-| animation | rewriteAnimationAttributes() | 把 `animation="{{...}}"` 改写成内联 style |
+| animation | proc_gen/tag.ts 的 `__tinyAnimation` | 把 `animation="{{...}}"` 序列化成 `wx-tiny-animation`，由 render 侧按 `{actions}` 执行；不再改写 style |
 | 资源引用 | 不处理 | WXML 里的 `src` / `poster` / `style` 原样保留；`image` 等内置组件在运行时按宿主组件/页面路径解析 |
 
 WXS 在编译期完成 globals / `getRegExp` / `getDate` / `.constructor` 改写，并生成外部与内联模块表。所有正式宿主都启用 pageframe，页面和组件 WXML 表达式在 render pageframe 按模板求值；service 逻辑树保留同一份模板用于查询、关系和组件身份索引。WXS 事件尽量在 render 本地执行，无法解析到 WXS handler 时回退 service。具体分工见“运行时”页的 WXS 一节。
@@ -228,7 +228,7 @@ app 样式没有 scope，按全局样式注册。
 :::
 
 :::card{tag="rpx" title="以 750 为基准换算 vw"}
-公式固定为 `value × 100 / 750`，保留 6 位有效数字；`calc()` 里的 rpx 也会换算。
+公式固定为 `value × 100 / 750`，保留 6 位有效数字；`calc()` 里的 rpx 也会换算。WXSS、WXS `setStyle` 和 WXML 内联 `style`（含 `style:prop` 绑定）共用同一个 tokenizer 实现；`url(...)`、引号字符串和注释原样保留，不会被误改。
 :::
 ::::
 

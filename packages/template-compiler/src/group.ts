@@ -10,6 +10,7 @@ import { genLitStr } from './escape'
 import { TmplGroupRef, templateToProcGen } from './proc_gen/tag'
 import { stringifyTemplate } from './stringify/stringifier'
 import { TINY_ENGINE_NAMING } from '@tiny/manifest'
+import { convertRpx } from '@tiny/css-units'
 import wxsAdapterSourceRaw from './runtime/wxs-adapter.js?raw'
 import { transformWxsSource } from './wxs/transform'
 
@@ -28,6 +29,11 @@ export type WxsModuleTable = {
 // ---------------------------------------------------------------------------
 
 const RUNTIME_ITEMS: [string, string][] = [
+  // Inline `style` rpx conversion (P0-5). The body is embedded verbatim into
+  // every compiled template, so it runs in both service and render evaluation.
+  ['__tinyRpx', convertRpx.toString()],
+  // `animation="{{...}}"` is an object protocol, not a DOM attribute value.
+  ['__tinyAnimation', "function(a){return typeof a==='string'?a:JSON.stringify(a)}"],
   ['X', "function(a){return a==null?Object.create(null):a}"],
   ['Y', "function(a){return a==null?'':String(a)}"],
   ['Z', "function(a,b){if(a===true)return true;if(a)return a[b]}"],
