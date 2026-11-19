@@ -12,7 +12,8 @@
     "pages/virtual/virtual",
     "pages/meta/meta",
     "pages/visual/visual",
-    "pages/container/container"
+    "pages/container/container",
+    "pages/cover/cover"
   ],
   "window": {
     "navigationBarTitleText": "P0 demo"

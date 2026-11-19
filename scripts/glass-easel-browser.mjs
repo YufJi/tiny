@@ -1248,6 +1248,48 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       await waitForText('Tiny Glass-easel P0')
     })
 
+    await step('render cover-view, cover-image, match-media and root-portal', async () => {
+      currentStep = 'render cover-view, cover-image, match-media and root-portal'
+      await tapToPage('Cover batch', 'Cover view')
+      const cover = await render.evaluate(() => {
+        const rect = (selector) => {
+          const element = document.querySelector(selector)
+          return element?.getBoundingClientRect().toJSON() ?? null
+        }
+        const portal = document.querySelector('#portal-content')
+        const host = document.querySelector('#root-portal')
+        const image = document.querySelector('#cover-image img')
+        return {
+          coverView: rect('#cover-view'),
+          coverImage: rect('#cover-image'),
+          imageWidth: image?.getBoundingClientRect().width ?? 0,
+          matchYes: {
+            display: getComputedStyle(document.querySelector('#match-yes')).display,
+            width: rect('#match-yes')?.width ?? 0,
+          },
+          matchNo: getComputedStyle(document.querySelector('#match-no')).display,
+          portalInHost: Boolean(host?.contains(portal)),
+          portalParent: portal?.parentElement?.tagName ?? '',
+          portalLeft: rect('#portal-content')?.left ?? -1,
+          portalWidth: rect('#portal-content')?.width ?? 0,
+        }
+      })
+      assert.equal(cover.coverView?.width, 120)
+      assert.equal(cover.coverView?.height, 40)
+      assert.equal(cover.coverImage?.width, 80)
+      assert.equal(cover.coverImage?.height, 40)
+      assert.equal(cover.imageWidth, 80)
+      assert.equal(cover.matchYes.display, 'block')
+      assert.ok(cover.matchYes.width > 300)
+      assert.equal(cover.matchNo, 'none')
+      assert.equal(cover.portalInHost, false)
+      assert.equal(cover.portalParent, 'TINY-ROOT-PORTAL-CONTENT')
+      assert.equal(cover.portalLeft, 0)
+      assert.equal(cover.portalWidth, 120)
+      await byText(render, 'Back', { exact: true }).click()
+      await waitForText('Tiny Glass-easel P0')
+    })
+
     await step('lock page scroll under catchtouchmove', async () => {
       currentStep = 'lock page scroll under catchtouchmove'
       // A plain click can be dropped while the previous page transition is

@@ -1,8 +1,10 @@
 tiny-cover-image {
   display: block;
+  height: 100%;
   line-height: 1.2;
   overflow: hidden;
   pointer-events: auto;
+  width: 100%;
 }
 
 tiny-cover-image[hidden] {

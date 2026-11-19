@@ -5,6 +5,7 @@
   <view id="open-meta" bindtap="openMeta">Meta</view>
   <view id="open-visual" bindtap="openVisual">Visual batch</view>
   <view id="open-container" bindtap="openContainer">Container</view>
+  <view id="open-cover" bindtap="openCover">Cover batch</view>
     <text class="subtitle">marker: {{marker}}</text>
     <text class="custom-detail">custom: {{customDetail}}</text>
     <text class="system">system: {{system.pixelRatio}} / {{system.windowWidth}}x{{system.windowHeight}}</text>

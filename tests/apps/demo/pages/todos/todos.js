@@ -65,6 +65,10 @@ Page({
     wx.navigateTo({ url: '../wxs-runtime/wxs-runtime' })
   },
 
+  openCover() {
+    wx.navigateTo({ url: '/pages/cover/cover' })
+  },
+
   openVisual() {
     wx.navigateTo({ url: '/pages/visual/visual' })
   },

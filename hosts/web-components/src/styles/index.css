@@ -8,6 +8,9 @@
  */
 html {
   height: 100%;
+  /* Root-level default font: root-portal content lives outside <body> and
+     still needs the platform UI font. */
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
 }
 
 body,
@@ -23,6 +26,9 @@ body {
   text-size-adjust: none;
   cursor: default;
   overflow-x: hidden;
+  /* The WebView default outside a mini-program page (e.g. root-portal
+     content moved to documentElement) is the platform UI font. */
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
 }
 
 /* WeChat ships this universal reset inside its stylesheet (WAWebview.css:1735). */
