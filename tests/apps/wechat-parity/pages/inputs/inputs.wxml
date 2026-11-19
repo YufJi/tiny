@@ -1,0 +1,32 @@
+<view class="page">
+  <text class="title">Inputs</text>
+
+  <view class="case" data-key="input-placeholder">
+    <input id="input-placeholder" placeholder="Placeholder text" />
+  </view>
+  <view class="case" data-key="input-value">
+    <input id="input-value" value="Input value" />
+  </view>
+  <view class="case" data-key="input-password">
+    <input id="input-password" password value="secret" />
+  </view>
+  <view class="case" data-key="input-disabled">
+    <input id="input-disabled" value="Disabled" disabled />
+  </view>
+  <view class="case" data-key="input-style">
+    <input id="input-style" placeholder="Styled placeholder" placeholder-style="color: #ff0000;" />
+  </view>
+
+  <view class="case" data-key="textarea-placeholder">
+    <textarea id="textarea-placeholder" placeholder="Textarea placeholder" />
+  </view>
+  <view class="case" data-key="textarea-value">
+    <textarea id="textarea-value" value="Textarea value&#10;second line" />
+  </view>
+  <view class="case" data-key="textarea-auto">
+    <textarea id="textarea-auto" auto-height value="Auto height" />
+  </view>
+  <view class="case" data-key="textarea-disabled">
+    <textarea id="textarea-disabled" value="Disabled textarea" disabled />
+  </view>
+</view>

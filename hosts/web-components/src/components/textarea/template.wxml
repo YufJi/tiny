@@ -15,6 +15,7 @@
     id="native-textarea"
     class="tiny-textarea {{autoHeight ? 'is-auto-height' : ''}} {{disableDefaultPadding ? 'is-no-default-padding' : ''}}"
     value="{{value}}"
+    rows="1"
     disabled="{{disabled}}"
     maxlength="{{maxlength > 0 ? maxlength : -1}}"
     tabindex="0"

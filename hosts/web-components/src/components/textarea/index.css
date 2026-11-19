@@ -5,6 +5,7 @@ tiny-textarea {
   box-sizing: content-box;
   width: 300px;
   height: 150px;
+  overflow: hidden;
 }
 
 tiny-textarea[hidden] {
@@ -13,7 +14,7 @@ tiny-textarea[hidden] {
 
 tiny-textarea[auto-height] {
   height: auto;
-  min-height: 1.4em;
+  min-height: 1.25em;
 }
 
 .tiny-textarea-wrapper {

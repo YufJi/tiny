@@ -40,6 +40,9 @@ describe('batch 4 media built-ins', () => {
     expect(BUILTIN_HOST_STYLES).toContain(
       'tiny-textarea {\n  display: block;\n  cursor: auto;\n  position: relative;\n  box-sizing: content-box;',
     )
-    expect(BUILTIN_HOST_STYLES).toContain('tiny-textarea[auto-height] {\n  height: auto;\n  min-height: 1.4em;')
+    expect(BUILTIN_HOST_STYLES).toContain('overflow: hidden;')
+    // The 3.17.5 simulator measures a one-line auto-height textarea at 20px
+    // (1.25em at the 16px root font), not 1.4em.
+    expect(BUILTIN_HOST_STYLES).toContain('tiny-textarea[auto-height] {\n  height: auto;\n  min-height: 1.25em;')
   })
 })

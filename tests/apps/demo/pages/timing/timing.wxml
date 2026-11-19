@@ -30,6 +30,10 @@
   <checkbox id="skin-checkbox" checked />
   <radio id="skin-radio" checked />
   <slider id="skin-slider" value="30" />
+  <input id="skin-input" value="input-value" />
+  <input id="skin-input-placeholder" placeholder="placeholder" />
+  <textarea id="skin-textarea" value="textarea-value" />
+  <textarea id="skin-textarea-auto" auto-height value="auto" />
   <text class="timing-status">timing: {{status}}</text>
   <button bindtap="bump">Bump</button>
   <button bindtap="back">Back</button>

@@ -995,6 +995,38 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
         radio: 'rgb(7, 193, 96)',
         slider: 'rgb(7, 193, 96)',
       })
+      // R4: input/textarea hosts follow the 3.17.5 simulator (1.4rem input,
+      // 300x150 textarea, hidden overflow, 20px auto-height) and the native
+      // textarea displays its value property.
+      const fields = await render.evaluate(() => {
+        const input = document.querySelector('#skin-input')
+        const nativeInput = input?.querySelector('input')
+        const textarea = document.querySelector('#skin-textarea')
+        const nativeTextarea = textarea?.querySelector('textarea')
+        const auto = document.querySelector('#skin-textarea-auto')
+        const placeholderInput = document.querySelector('#skin-input-placeholder')
+        const placeholder = getComputedStyle(
+          placeholderInput?.querySelector('[class*="tiny-input-placeholder"]') ?? document.body,
+        ).color
+        return {
+          inputHeight: input?.getBoundingClientRect().height ?? 0,
+          inputOverflow: input ? getComputedStyle(input).overflow : '',
+          nativeInputValue: nativeInput?.value ?? '',
+          placeholder,
+          textareaHeight: textarea?.getBoundingClientRect().height ?? 0,
+          textareaOverflow: textarea ? getComputedStyle(textarea).overflow : '',
+          nativeTextareaValue: nativeTextarea?.value ?? '',
+          autoHeight: auto?.getBoundingClientRect().height ?? 0,
+        }
+      })
+      assert.ok(Math.abs(fields.inputHeight - 22.4) < 0.1, `input height ${fields.inputHeight}`)
+      assert.equal(fields.inputOverflow, 'hidden')
+      assert.equal(fields.nativeInputValue, 'input-value')
+      assert.equal(fields.placeholder, 'rgb(153, 153, 153)')
+      assert.equal(fields.textareaHeight, 150)
+      assert.equal(fields.textareaOverflow, 'hidden')
+      assert.equal(fields.nativeTextareaValue, 'textarea-value')
+      assert.ok(Math.abs(fields.autoHeight - 20) < 1, `textarea auto height ${fields.autoHeight}`)
       // P0-9/P0-10: data belongs to the component after setData, Dates survive
       // the copy, and groupSetData calls back with the caller as `this`.
       await render.locator('#copy-probe').click()
