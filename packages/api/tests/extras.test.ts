@@ -58,4 +58,12 @@ describe('device extras', () => {
     events.emit('networkWeakChange', { weakNetwork: false })
     expect(seen).toHaveLength(1)
   })
+
+  test('battery changes arrive through the global event hub', () => {
+    const { host, events } = createHost()
+    const seen: unknown[] = []
+    host.onBatteryInfoChange((value: unknown) => seen.push(value))
+    events.emit('batteryInfoChange', { level: 42, isCharging: true })
+    expect(seen).toEqual([{ level: 42, isCharging: true }])
+  })
 })

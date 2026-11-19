@@ -131,6 +131,8 @@ export type MediaHandlerOptions = {
   pick?: typeof pickFiles
   /** Test/debug seam; defaults to reading the video element metadata. */
   loadVideo?: typeof loadVideoElement
+  /** Test/debug seam; defaults to canvas re-encoding. */
+  compress?: (src: string, quality: number) => Promise<Blob>
 }
 
 type HandlerParams = Record<string, unknown>
@@ -150,6 +152,8 @@ export function createMediaHandlers(
     'media.chooseImage': (params) => chooseImage(options.registry, pick, params),
     'media.chooseMedia': (params) => chooseMedia(options.registry, pick, params),
     'media.chooseVideo': (params) => chooseVideo(options.registry, pick, loadVideo, params),
+    'media.chooseMessageFile': (params) => chooseMessageFile(options.registry, pick, params),
+    'media.compressImage': (params) => compressImage(options.registry, options.compress, params),
     'media.previewImage': (params) => previewImage(params),
     'media.previewMedia': (params) => previewMedia(params),
     'media.getImageInfo': (params) => imageInfo(options.registry, params),
@@ -444,5 +448,70 @@ async function dataUrlToTempFile(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     return { errMsg: `canvasToTempFilePath:fail ${message}` }
+  }
+}
+
+
+async function chooseMessageFile(
+  registry: TempFileRegistry,
+  pick: typeof pickFiles,
+  params: HandlerParams,
+): Promise<HandlerResult> {
+  const count = clampCount(params.count, 10)
+  const picked = await pick({ multiple: count > 1 })
+  const files = picked.slice(0, count)
+  if (files.length === 0) return { errMsg: 'chooseMessageFile:fail cancel' }
+  const entries = files.map((file) => registry.add(file, file.name))
+  return {
+    tempFiles: entries.map((entry) => ({
+      path: entry.url,
+      size: entry.size,
+      name: entry.name,
+      type: entry.type || 'application/octet-stream',
+    })),
+    errMsg: 'chooseMessageFile:ok',
+  }
+}
+
+/**
+ * Re-encode an image through a canvas so the app gets a smaller file. The
+ * quality is WeChat's 0-100 scale; browsers take 0-1.
+ */
+async function compressImage(
+  registry: TempFileRegistry,
+  compress: ((src: string, quality: number) => Promise<Blob>) | undefined,
+  params: HandlerParams,
+): Promise<HandlerResult> {
+  const src = String(params.src ?? '')
+  if (!src) return { errMsg: 'compressImage:fail src is required' }
+  const encode = compress ?? compressWithCanvas()
+  if (!encode) return { errMsg: 'compressImage:fail image encoding is not available in this runtime' }
+  const quality = Math.min(100, Math.max(0, Number(params.quality ?? 80)))
+  try {
+    const blob = await encode(src, quality / 100)
+    const entry = registry.add(blob, 'compressed.jpg')
+    return { tempFilePath: entry.url, errMsg: 'compressImage:ok' }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return { errMsg: `compressImage:fail ${message}` }
+  }
+}
+
+function compressWithCanvas(): ((src: string, quality: number) => Promise<Blob>) | undefined {
+  if (typeof document === 'undefined' || typeof Image === 'undefined') return undefined
+  return async (src, quality) => {
+    const image = await loadImageElement(src)
+    const canvas = document.createElement('canvas')
+    canvas.width = image.naturalWidth || 1
+    canvas.height = image.naturalHeight || 1
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('canvas 2d context is unavailable')
+    context.drawImage(image, 0, 0)
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob)
+        else reject(new Error('canvas encoding failed'))
+      }, 'image/jpeg', quality)
+    })
   }
 }

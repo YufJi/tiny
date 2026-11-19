@@ -20,6 +20,11 @@ type ConnectionLike = {
   downlink?: number
   rtt?: number
 }
+type BatteryLike = {
+  level: number
+  charging: boolean
+  addEventListener?(type: 'levelchange' | 'chargingchange', listener: () => void): void
+}
 type VisualViewportLike = {
   height: number
   addEventListener(type: 'resize', listener: () => void): void
@@ -32,6 +37,7 @@ export type DeviceHandlerOptions = {
   createFontFace?: (family: string, source: string) => FontFaceLike
   fonts?: FontRegistryLike
   connection?: ConnectionLike
+  getBattery?: () => Promise<BatteryLike>
   viewport?: VisualViewportLike
   viewportHeight?: () => number
   now?: () => number
@@ -49,6 +55,18 @@ export function createDeviceHandlers(
 
   let sentinel: WakeLockSentinel | undefined
   let lastViewportHeight: number | undefined
+
+  const getBattery = options.getBattery ?? defaultGetBattery()
+  if (getBattery) {
+    void getBattery().then((battery) => {
+      const emitBattery = (): void => options.emit('batteryInfoChange', {
+        level: Math.round(battery.level * 100),
+        isCharging: battery.charging,
+      })
+      battery.addEventListener?.('levelchange', emitBattery)
+      battery.addEventListener?.('chargingchange', emitBattery)
+    }).catch(() => undefined)
+  }
 
   if (connection && typeof connection.addEventListener === 'function') {
     const onConnectionChange = (): void => {
@@ -117,6 +135,13 @@ export function createDeviceHandlers(
       }
     },
   }
+}
+
+function defaultGetBattery(): (() => Promise<BatteryLike>) | undefined {
+  if (typeof navigator === 'undefined') return undefined
+  const getBattery = (navigator as unknown as { getBattery?: () => Promise<BatteryLike> }).getBattery
+  if (typeof getBattery !== 'function') return undefined
+  return () => getBattery.call(navigator)
 }
 
 function readNavigator<T>(property: string): T | undefined {

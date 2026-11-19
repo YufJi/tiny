@@ -147,4 +147,45 @@ describe('media handlers', () => {
       errMsg: 'canvasToTempFilePath:fail invalid data url',
     })
   })
+
+  test('chooseMessageFile returns name/size/type for picked files', async () => {
+    const registry = createRegistry()
+    const handlers = createMediaHandlers({
+      registry,
+      pick: async () => [file('doc.pdf', 'application/pdf', 'pdf-bytes')],
+    })
+    const result = await handlers['media.chooseMessageFile']({ count: 3 })
+    expect(result.errMsg).toBe('chooseMessageFile:ok')
+    expect(result.tempFiles).toEqual([{
+      path: 'blob:test/1',
+      size: 9,
+      name: 'doc.pdf',
+      type: 'application/pdf',
+    }])
+  })
+
+  test('compressImage re-encodes through the injected encoder', async () => {
+    const registry = createRegistry()
+    const encoded: Array<{ src: string; quality: number }> = []
+    const handlers = createMediaHandlers({
+      registry,
+      compress: async (src, quality) => {
+        encoded.push({ src, quality })
+        return new Blob(['small'], { type: 'image/jpeg' })
+      },
+    })
+    const result = await handlers['media.compressImage']({ src: 'blob:big', quality: 50 })
+    expect(encoded).toEqual([{ src: 'blob:big', quality: 0.5 }])
+    expect(result).toMatchObject({ tempFilePath: 'blob:test/1', errMsg: 'compressImage:ok' })
+  })
+
+  test('compressImage fails without src or an encoder', async () => {
+    const handlers = createMediaHandlers({ registry: createRegistry() })
+    await expect(handlers['media.compressImage']({})).resolves.toMatchObject({
+      errMsg: 'compressImage:fail src is required',
+    })
+    await expect(handlers['media.compressImage']({ src: 'blob:1' })).resolves.toMatchObject({
+      errMsg: expect.stringContaining('compressImage:fail'),
+    })
+  })
 })

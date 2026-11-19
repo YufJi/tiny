@@ -156,4 +156,28 @@ describe('media picker', () => {
     expect(failures).toHaveLength(1)
     expect(failures[0].errMsg).toContain('canvasToTempFilePath:fail')
   })
+
+  test('chooseMessageFile and compressImage forward their parameters', async () => {
+    const { host, calls } = createHost({
+      'media.chooseMessageFile': () => ({
+        tempFiles: [{ path: 'blob:doc', size: 3, name: 'a.pdf', type: 'application/pdf' }],
+        errMsg: 'chooseMessageFile:ok',
+      }),
+      'media.compressImage': (params) => ({
+        tempFilePath: 'blob:small',
+        errMsg: 'compressImage:ok',
+        quality: params.quality,
+      }),
+    })
+    await expect(host.chooseMessageFile({ count: 5 })).resolves.toMatchObject({
+      tempFiles: [{ name: 'a.pdf' }],
+    })
+    await expect(host.compressImage({ src: 'blob:big', quality: 70 })).resolves.toMatchObject({
+      tempFilePath: 'blob:small',
+    })
+    expect(calls.map((call) => call.method)).toEqual([
+      'media.chooseMessageFile',
+      'media.compressImage',
+    ])
+  })
 })

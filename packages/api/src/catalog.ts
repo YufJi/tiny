@@ -129,6 +129,8 @@ export const API_CATALOG = {
 
   // --- network.ts ---------------------------------------------------------
   getNetworkType: { status: 'real', host: 'network.type' },
+  onBatteryInfoChange: { status: 'real' },
+  offBatteryInfoChange: { status: 'real' },
   onNetworkWeakChange: { status: 'real' },
   offNetworkWeakChange: { status: 'real' },
   getBatteryInfo: { status: 'partial', host: 'battery.get' },
@@ -218,6 +220,8 @@ export const API_CATALOG = {
   chooseMedia: { status: 'real', host: 'media.chooseMedia' },
   // A browser cannot capture a thumbnail, the rest of the shape is real.
   chooseVideo: { status: 'partial', host: 'media.chooseVideo' },
+  chooseMessageFile: { status: 'real', host: 'media.chooseMessageFile' },
+  compressImage: { status: 'real', host: 'media.compressImage' },
   previewImage: { status: 'partial', host: 'media.previewImage' },
   previewMedia: { status: 'partial', host: 'media.previewMedia' },
   getImageInfo: { status: 'real', host: 'media.getImageInfo' },

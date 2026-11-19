@@ -114,4 +114,28 @@ describe('network quality and keyboard', () => {
       payload: { height: 300, duration: 0 },
     })
   })
+
+  test('battery changes emit batteryInfoChange', async () => {
+    const emitted: Array<{ name: string; payload?: unknown }> = []
+    const listeners: Array<() => void> = []
+    const battery = {
+      level: 0.42,
+      charging: true,
+      addEventListener(_type: string, listener: () => void) {
+        listeners.push(listener)
+      },
+    }
+    createDeviceHandlers({
+      emit: (name, payload) => emitted.push({ name, payload }),
+      getBattery: async () => battery,
+    })
+    await Promise.resolve()
+    await Promise.resolve()
+    battery.level = 0.31
+    for (const listener of listeners) listener()
+    expect(emitted).toContainEqual({
+      name: 'batteryInfoChange',
+      payload: { level: 31, isCharging: true },
+    })
+  })
 })
