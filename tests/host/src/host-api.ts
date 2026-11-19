@@ -1,4 +1,6 @@
 import type { HostApiHandlers, StorageValues, SyncApiHandlers, SystemInfo } from '@tiny/api'
+import { createMediaHandlers, createTempFileRegistry, pickFiles } from '@tiny/host-web'
+
 
 const OVERLAY_ID = 'tiny-api-overlay'
 const STYLE_ID = 'tiny-api-overlay-style'
@@ -21,6 +23,8 @@ export type TestHostApiOptions = {
   /** Mini-program id reported by `wx.getAccountInfoSync()`. */
   appId?: string
   identity?: HostIdentity
+  /** Test seam: replace the browser file chooser. */
+  pickFiles?: typeof pickFiles
 }
 
 export type HostIdentity = {
@@ -39,6 +43,8 @@ export function createTestHostApiHandlers(
 ): HostApiHandlers {
   const identity = options.identity ?? {}
   const authSetting: Record<string, boolean> = { ...identity.authSetting }
+  const tempFiles = createTempFileRegistry()
+  const pick = options.pickFiles ?? pickFiles
   const userInfo = {
     nickName: 'Tiny User',
     avatarUrl: '',
@@ -58,6 +64,7 @@ export function createTestHostApiHandlers(
     'clipboard.set': (params) => setClipboard(String(params.data ?? '')),
     'clipboard.get': () => getClipboard(),
     'device.vibrate': (params) => vibrate(Number(params.duration ?? 15)),
+    ...createMediaHandlers({ registry: tempFiles, pick }),
     'system.setting': () => ({
       bluetoothEnabled: false,
       locationEnabled: typeof navigator !== 'undefined' && 'geolocation' in navigator,

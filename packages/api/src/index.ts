@@ -4,6 +4,7 @@ import { createCanvasApi } from './canvas'
 import { createWorkletApi } from './worklet'
 import { createAnalyticsApi } from './analytics'
 import { createMediaApi } from './media'
+import { createMediaPickerApi } from './media-picker'
 import { createCompatStubs } from './compat-stubs'
 import { createDeviceApi } from './device'
 import { createEncodingApi } from './encoding'
@@ -83,6 +84,7 @@ export function createApiHost(
     ...createCanvasApi(apiContext),
     ...createWorkletApi(),
     ...createAnalyticsApi(),
+    ...createMediaPickerApi(apiContext),
     ...createMediaApi(),
     ...createCompatStubs(),
     ...createQueryApi(apiContext),

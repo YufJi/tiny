@@ -1,4 +1,5 @@
 import type { HostApiHandlers, StorageValues, SyncApiHandlers, SystemInfo } from '@tiny/api'
+import { createMediaHandlers, createTempFileRegistry, pickFiles } from '@tiny/host-web'
 
 export type DevtoolNavigationAction = 'title' | 'color' | 'loading'
 
@@ -13,6 +14,8 @@ export type DevtoolApiOptions = {
   onNavigation?: (action: DevtoolNavigationAction, params: Record<string, unknown>) => void
   /** `wx.showShareMenu` / `wx.hideShareMenu` visibility for the host menu. */
   onShareMenu?: (visible: boolean) => void
+  /** Test seam: replace the browser file chooser. */
+  pickFiles?: typeof pickFiles
 }
 
 export type DevtoolApiHost = {
@@ -48,7 +51,9 @@ function createApiHandlers(
 ): HostApiHandlers {
   const getSystemInfo = options.getSystemInfo
   const authSetting: Record<string, boolean> = {}
+  const tempFiles = createTempFileRegistry()
   return {
+    ...createMediaHandlers({ registry: tempFiles, pick: options.pickFiles }),
     'keyboard.hide': () => ({ errMsg: 'hideKeyboard:ok' }),
     'system.info': () => getSystemInfo(),
     'system.setting': () => ({

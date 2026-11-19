@@ -163,6 +163,12 @@ export const API_CATALOG = {
   // --- analytics.ts -------------------------------------------------------
   reportAnalytics: { status: 'stub' },
 
+  // --- media-picker.ts: host-owned chooser, temp files and preview --------
+  chooseImage: { status: 'real', host: 'media.chooseImage' },
+  chooseMedia: { status: 'real', host: 'media.chooseMedia' },
+  previewImage: { status: 'partial', host: 'media.previewImage' },
+  getImageInfo: { status: 'real', host: 'media.getImageInfo' },
+
   // --- media.ts: manager shapes exist, no audio backend -------------------
   getRecorderManager: { status: 'stub' },
   getBackgroundAudioManager: { status: 'stub' },

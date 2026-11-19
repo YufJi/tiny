@@ -22,6 +22,17 @@ export {
 } from './render-entry'
 export { installPageLifecycleBridge } from './page-lifecycle'
 export {
+  createMediaHandlers,
+  createTempFileRegistry,
+  loadImageElement,
+  pickFiles,
+  type MediaHandlerOptions,
+  type PickFilesOptions,
+  type TempFile,
+  type TempFileRegistry,
+  type TempFileUrlFactory,
+} from './media-files'
+export {
   createGlassRenderEntry,
   installBuiltinStyles,
   type GlassRenderEntry,
