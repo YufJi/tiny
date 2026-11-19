@@ -223,7 +223,6 @@ export const STUB_APIS: ReadonlySet<string> = new Set([
   'reportAnalytics',
   'getRecorderManager',
   'getBackgroundAudioManager',
-  'createInnerAudioContext',
   'createContext',
   'getScreenBrightness',
   'setScreenBrightness',

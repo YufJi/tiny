@@ -3,6 +3,7 @@ import {
   createFileSystemHandlers,
   createMediaHandlers,
   createNetworkHandlers,
+  createAudioHandlers,
   createDeviceHandlers,
   createSensorHandlers,
   createWorkerHandlers,
@@ -71,6 +72,7 @@ function createApiHandlers(
     ...createFileSystemHandlers(),
     ...createSensorHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
     ...createDeviceHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
+    ...createAudioHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
     ...createWorkerHandlers({
       resolveWorkerUrl: options.resolveWorkerUrl ?? ((workerPath) => workerPath),
       emit: options.emitGlobalEvent ?? (() => undefined),

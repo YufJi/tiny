@@ -52,7 +52,6 @@ describe('canIUse schema families', () => {
       'reportAnalytics',
       'getRecorderManager',
       'getBackgroundAudioManager',
-      'createInnerAudioContext',
       'createContext',
       'getScreenBrightness',
     ]) {
@@ -62,6 +61,7 @@ describe('canIUse schema families', () => {
     // Host-backed APIs are not stubs.
     expect(host.canIUse!('getFileSystemManager')).toBe(true)
     expect(host.canIUse!('createWorker')).toBe(true)
+    expect(host.canIUse!('createInnerAudioContext')).toBe(true)
     expect(host.canIUse!('request')).toBe(true)
     expect(host.canIUse!('createAnimation')).toBe(true)
     expect(host.canIUse!('setClipboardData')).toBe(true)

@@ -46,6 +46,11 @@ export {
 } from './render/tree'
 export { HOST_CORE_API_KEYS } from './api-capabilities'
 export {
+  createAudioHandlers,
+  type AudioElementLike,
+  type AudioHandlerOptions,
+} from './audio'
+export {
   createDeviceHandlers,
   type DeviceHandlerOptions,
 } from './device-extras'

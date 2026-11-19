@@ -217,7 +217,7 @@ export const API_CATALOG = {
   // --- media.ts: manager shapes exist, no audio backend -------------------
   getRecorderManager: { status: 'stub' },
   getBackgroundAudioManager: { status: 'stub' },
-  createInnerAudioContext: { status: 'stub' },
+  createInnerAudioContext: { status: 'partial', host: 'audio.create' },
 
   // --- compat-stubs.ts: platform surface with no backend ------------------
   getScreenBrightness: { status: 'stub' },

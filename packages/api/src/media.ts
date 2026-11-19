@@ -69,6 +69,5 @@ export function createMediaApi(): ApiHost {
       resume: () => undefined,
     }),
     getBackgroundAudioManager: () => audioManager(),
-    createInnerAudioContext: () => audioManager(),
   }
 }
