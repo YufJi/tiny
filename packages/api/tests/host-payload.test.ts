@@ -101,6 +101,25 @@ describe('host API payloads', () => {
     expect(task.abort).toBeTypeOf('function')
   })
 
+  test('a resolved host result with a :fail errMsg reaches fail/complete', async () => {
+    const log: string[] = []
+    const { context } = createContext(() => Promise.resolve({
+      errMsg: 'setClipboardData:fail not implemented',
+    }))
+    const wx = createApiHost(context)
+    wx.setClipboardData!({
+      data: 'hello',
+      success: () => log.push('success'),
+      fail: (value: unknown) => log.push(`fail:${JSON.stringify(value)}`),
+      complete: (value: unknown) => log.push(`complete:${JSON.stringify(value)}`),
+    })
+    await tick()
+    expect(log).toEqual([
+      'fail:{"errMsg":"setClipboardData:fail not implemented"}',
+      'complete:{"errMsg":"setClipboardData:fail not implemented"}',
+    ])
+  })
+
   test('a host failure reaches fail/complete without sending callbacks', async () => {
     const log: string[] = []
     const { context, calls } = createContext(() => Promise.reject(new Error('boom')))

@@ -44,6 +44,15 @@ export function runApi(
   return Promise.resolve()
     .then(task)
     .then((result) => {
+      // Hosts report platform failures as a resolved `{ errMsg: "<api>:fail ..." }`
+      // (the iOS host-core does this for unimplemented handlers); WeChat routes
+      // that through `fail`, not `success`. Rejections still take the catch path.
+      const errMsg = (result as { errMsg?: unknown } | null | undefined)?.errMsg
+      if (typeof errMsg === 'string' && errMsg.includes(':fail')) {
+        callbacks.fail?.(result)
+        callbacks.complete?.(result)
+        return result
+      }
       callbacks.success?.(result)
       callbacks.complete?.(result)
       return result

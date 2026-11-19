@@ -1348,7 +1348,12 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
         nativeKeyboard?.endEditing()
         try core?.platformResult(requestId: requestId, result: ["errMsg": "hideKeyboard:ok"])
       default:
-        try core?.platformResult(requestId: requestId, result: ["errMsg": "\(method):ok"])
+        // An unimplemented host handler is a platform failure, not a fake
+        // success: `request` must not look like it fetched anything, `login`
+        // must not look like it produced a code, etc.
+        try core?.platformResult(requestId: requestId, result: [
+          "errMsg": "\(method):fail not implemented",
+        ])
       }
     } catch {
       fail("HostCore platform result failed: \(error)")
