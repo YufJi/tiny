@@ -200,6 +200,38 @@ function createIOSApiExtensions(
  * `globalThis.__TINY_IOS_APP__` with the compiled app data. The engine is
  * app-agnostic; per-app manifests, templates, scripts and WXSS arrive as data.
  */
+const IOS_HOST_API_KEYS = [
+  'system.info',
+  'system.menuButton',
+  'system.setting',
+  'account.info',
+  'permissions.setting',
+  'storage.get',
+  'storage.set',
+  'storage.remove',
+  'storage.clear',
+  'storage.info',
+  'storage.batchGet',
+  'storage.batchSet',
+  'keyboard.hide',
+  'clipboard.set',
+  'clipboard.get',
+  'identity.checkSession',
+  'identity.authorize',
+  'settings.get',
+  'settings.open',
+  'login',
+  'profile.get',
+  'update.check',
+  'navigate.to',
+  'navigate.back',
+  'navigate.switchTab',
+  'navigate.redirectTo',
+  'navigate.reLaunch',
+  'page.pullDownRefresh',
+  'page.stopPullDownRefresh',
+]
+
 export function startTinyService(app: TinyIOSApp): void {
   installHostShims()
   const host = globalThis as unknown as HostGlobal
@@ -302,6 +334,11 @@ export function startTinyService(app: TinyIOSApp): void {
   })
   const apiContext: ApiContext = {
     connection,
+    // Keys the native side implements (HostCoreRuntime.platformCall, the sync
+    // switch, and the shared Rust core). Keep in sync with the Swift handlers:
+    // `canIUse` answers per host from this list instead of claiming the whole
+    // engine surface on iOS.
+    hostCapabilities: new Set(IOS_HOST_API_KEYS),
     apiName: compatibility.api.global,
     apiNamespaces: [compatibility.api.global, ...compatibility.api.aliases],
     canvas,

@@ -1,3 +1,4 @@
+import CoreLocation
 import Foundation
 import Network
 import UIKit
@@ -21,6 +22,9 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private var smokeNavigationStarted = false
   private var surfaces: [String: NativeRenderSurface] = [:]
   private var storage: [String: Any] = [:]
+  /// Scopes granted through `identity.authorize`, the iOS mock of WeChat's
+  /// permission model.
+  private var authSetting: [String: Bool] = [:]
   private let storagePrefix: String
   private var activePageId: String?
   private var displayedStack: [String] = []
@@ -1299,6 +1303,39 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
         "currentSize": 0,
         "limitSize": 10240,
       ]
+    case "storage.batchGet":
+      let keyList = params["keyList"] as? [String] ?? []
+      result = [
+        "dataList": keyList.map { storage[$0] ?? NSNull() },
+        "errMsg": "batchGetStorage:ok",
+      ]
+    case "storage.batchSet":
+      let kvList = params["kvList"] as? [[String: Any]] ?? []
+      for entry in kvList {
+        guard let key = entry["key"] as? String else { continue }
+        let value = entry["value"] ?? NSNull()
+        storage[key] = value
+        persistStorageValue(key, value)
+      }
+      result = ["errMsg": "batchSetStorage:ok"]
+    case "account.info":
+      result = [
+        "miniProgram": [
+          "appId": app.id,
+          "envVersion": "develop",
+          "version": "0.0.0",
+        ],
+        "plugin": [:],
+      ]
+    case "system.setting":
+      result = [
+        "bluetoothEnabled": false,
+        "locationEnabled": CLLocationManager.locationServicesEnabled(),
+        "wifiEnabled": false,
+        "errMsg": "getSystemSetting:ok",
+      ]
+    case "permissions.setting":
+      result = authorizeSettingPayload()
     default:
       result = ["error": "unsupported synchronous host API: \(method)"]
     }
@@ -1306,6 +1343,41 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
           let text = String(data: data, encoding: .utf8)
     else { return "null" }
     return text
+  }
+
+  /// WeChat mock identity: fields match the real envelope so prototype flows
+  /// keep moving; no WeChat account is involved.
+  private func mockProfile() -> [String: Any] {
+    let userInfo: [String: Any] = [
+      "nickName": "Tiny User",
+      "avatarUrl": "",
+      "gender": 0,
+      "country": "",
+      "province": "",
+      "city": "",
+      "language": "zh_CN",
+    ]
+    return [
+      "userInfo": userInfo,
+      "rawData": "{}",
+      "signature": "mock-signature",
+      "encryptedData": "",
+      "iv": "",
+      "errMsg": "getUserProfile:ok",
+    ]
+  }
+
+  private func authorizeSettingPayload() -> [String: Any] {
+    [
+      "albumAuthorized": "not determined",
+      "bluetoothAuthorized": "not determined",
+      "cameraAuthorized": "not determined",
+      "locationAuthorized": "not determined",
+      "locationReducedAccuracy": false,
+      "microphoneAuthorized": "not determined",
+      "notificationAuthorized": "not determined",
+      "phoneCalendarAuthorized": "not determined",
+    ]
   }
 
   func platformCall(
@@ -1347,6 +1419,43 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       case "keyboard.hide":
         nativeKeyboard?.endEditing()
         try core?.platformResult(requestId: requestId, result: ["errMsg": "hideKeyboard:ok"])
+      case "clipboard.set":
+        UIPasteboard.general.string = params["data"] as? String ?? ""
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "setClipboardData:ok"])
+      case "clipboard.get":
+        try core?.platformResult(requestId: requestId, result: [
+          "data": UIPasteboard.general.string ?? "",
+          "errMsg": "getClipboardData:ok",
+        ])
+      case "identity.checkSession":
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "checkSession:ok"])
+      case "identity.authorize":
+        let scope = params["scope"] as? String ?? ""
+        guard !scope.isEmpty else {
+          try core?.platformResult(requestId: requestId, result: ["errMsg": "authorize:fail invalid scope"])
+          return
+        }
+        authSetting[scope] = true
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "authorize:ok"])
+      case "settings.get":
+        try core?.platformResult(requestId: requestId, result: [
+          "authSetting": authSetting,
+          "errMsg": "getSetting:ok",
+        ])
+      case "settings.open":
+        try core?.platformResult(requestId: requestId, result: [
+          "authSetting": authSetting,
+          "errMsg": "openSetting:ok",
+        ])
+      case "login":
+        try core?.platformResult(requestId: requestId, result: [
+          "code": UUID().uuidString.replacingOccurrences(of: "-", with: ""),
+          "errMsg": "login:ok",
+        ])
+      case "profile.get":
+        try core?.platformResult(requestId: requestId, result: mockProfile())
+      case "update.check":
+        try core?.platformResult(requestId: requestId, result: ["hasUpdate": false, "errMsg": "checkForUpdate:ok"])
       default:
         // An unimplemented host handler is a platform failure, not a fake
         // success: `request` must not look like it fetched anything, `login`
