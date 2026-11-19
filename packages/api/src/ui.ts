@@ -30,6 +30,11 @@ export function createUiApi(context: ApiContext): ApiHost {
       context,
       'ui.hideLoading',
     )),
+    loadFontFace: (params: unknown = {}) => runApi(
+      params,
+      'loadFontFace',
+      () => callHost(context, 'font.load', params as Record<string, unknown>),
+    ),
     showActionSheet: (params: unknown = {}) => runApi(params, 'showActionSheet', () => callHost(
       context,
       'ui.actionSheet',

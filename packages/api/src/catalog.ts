@@ -115,6 +115,7 @@ export const API_CATALOG = {
   showLoading: { status: 'real', host: 'ui.loading' },
   hideLoading: { status: 'real', host: 'ui.hideLoading' },
   showActionSheet: { status: 'real', host: 'ui.actionSheet' },
+  loadFontFace: { status: 'real', host: 'font.load' },
 
   // --- tabbar.ts: runtime tabBar, no host round-trip ----------------------
   setTabBarStyle: { status: 'real' },
@@ -128,6 +129,8 @@ export const API_CATALOG = {
 
   // --- network.ts ---------------------------------------------------------
   getNetworkType: { status: 'real', host: 'network.type' },
+  onNetworkWeakChange: { status: 'real' },
+  offNetworkWeakChange: { status: 'real' },
   getBatteryInfo: { status: 'partial', host: 'battery.get' },
   request: { status: 'partial', host: 'network.request' },
   uploadFile: { status: 'real', host: 'network.uploadFile' },
@@ -160,6 +163,7 @@ export const API_CATALOG = {
   offDeviceMotionChange: { status: 'real' },
 
   // --- device.ts: clipboard, vibration, identity --------------------------
+  setKeepScreenOn: { status: 'real', host: 'device.keepScreenOn' },
   setClipboardData: { status: 'real', host: 'clipboard.set' },
   getClipboardData: { status: 'real', host: 'clipboard.get' },
   vibrateShort: { status: 'partial', host: 'device.vibrate' },

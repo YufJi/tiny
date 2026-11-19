@@ -46,6 +46,10 @@ export {
 } from './render/tree'
 export { HOST_CORE_API_KEYS } from './api-capabilities'
 export {
+  createDeviceHandlers,
+  type DeviceHandlerOptions,
+} from './device-extras'
+export {
   createWorkerHandlers,
   WORKER_BOOTSTRAP,
   wrapWorkerSource,

@@ -3,6 +3,7 @@ import {
   createFileSystemHandlers,
   createMediaHandlers,
   createNetworkHandlers,
+  createDeviceHandlers,
   createSensorHandlers,
   createWorkerHandlers,
   createTempFileRegistry,
@@ -69,6 +70,7 @@ function createApiHandlers(
     ...createNetworkHandlers({ registry: tempFiles }),
     ...createFileSystemHandlers(),
     ...createSensorHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
+    ...createDeviceHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
     ...createWorkerHandlers({
       resolveWorkerUrl: options.resolveWorkerUrl ?? ((workerPath) => workerPath),
       emit: options.emitGlobalEvent ?? (() => undefined),

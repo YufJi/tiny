@@ -50,8 +50,8 @@
 
 ## 1. 结论
 
-1. **面够了，语义不够。** 在范围内的 349 个名字里，表里已有 158 个（45%），但端到端可用（A）只有 102 个
-   （另有 5 个宿主扩展）、半可用（B）22 个、纯桩（C）29 个——**语义覆盖 37.0%**，191 个名字缺失。
+1. **面够了，语义不够。** 在范围内的 349 个名字里，表里已有 162 个（46%），但端到端可用（A）只有 106 个
+   （另有 5 个宿主扩展）、半可用（B）22 个、纯桩（C）29 个——**语义覆盖 38.1%**，187 个名字缺失。
 2. **“假成功”已清零。** 2026-11-19 的 11 个在范围内“`canIUse` 说 true 但什么都不做”的 API，已按
    “真实现 / 诚实失败 / 声明不支持”三选一处理；`api:coverage` 的 honesty 段现在为 0。
 3. **官方 demo 在范围内的缺口是 50 个**（另 12 个落在排除分类）。这是唯一能“跑一遍就知道有没有退步”的短周期目标。
@@ -68,9 +68,9 @@
 | --- | ---: | --- |
 | 微信 3.17.5 `wx.*` 名字 | 499 | 基础库内嵌 canIUse 矩阵的方法表 |
 | 在范围 / 排除 | 349 / 150 | 按 §0 的分类 |
-| tiny 表内名字（在范围） | 158 | 154 core + 5 扩展，扣掉 6 个排除分类 |
-| 端到端可用 A / 半可用 B / 纯桩 C | 102 / 22 / 29 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
-| 缺失（在范围） | 191 | 设备 62、媒体 35、界面 30、基础 8、网络 12、路由 14、位置 6…… |
+| tiny 表内名字（在范围） | 162 | 158 core + 5 扩展，扣掉 6 个排除分类 |
+| 端到端可用 A / 半可用 B / 纯桩 C | 106 / 22 / 29 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
+| 缺失（在范围） | 187 | 设备 58、媒体 35、界面 30、基础 8、网络 12、路由 14、位置 6…… |
 | 依赖宿主 handler 的 API | 45 | 其余 65 个是 service 侧逻辑 |
 | iOS 返回 `fail not implemented` | 25 / 45 | 其中 3 个属于排除分类 |
 | 官方 demo 调用到的唯一 API | 154 | `tests/apps/wechat-demo/**` 静态扫描 |
@@ -80,8 +80,8 @@
 
 ### 2.1 三个数字的含义
 
-- **名字覆盖** 158/349 = 45%。只说明 `typeof wx.foo === 'function'` 成立，不代表能用。
-- **语义覆盖** (A + B + 5 扩展)/349 = 37.0%。A 是有宿主 handler 且真的干活；B 是 handler 在但返回罐头数据。
+- **名字覆盖** 162/349 = 46%。只说明 `typeof wx.foo === 'function'` 成立，不代表能用。
+- **语义覆盖** (A + B + 5 扩展)/349 = 38.1%。A 是有宿主 handler 且真的干活；B 是 handler 在但返回罐头数据。
 - **demo 命中** 61 个缺口里，设备 31、媒体 10、网络 8、界面 3、位置 3、跳转 3、基础 2、画布 1。
 
 ### 2.2 诚实性（已清零）
@@ -130,7 +130,8 @@ DoD：`api:coverage` 进 CI；`canIUse` 与本宿主实际行为 0 差异；口�
 
 #### W1 快赢池：界面 / 基础 / 路由 / 跳转 / 身份（M，2 PR）
 
-**已落地（2026-11-19）**：身份 7 个（宿主 Mock）；基础 10 个——`getSystemInfoAsync`、`getSystemSetting`、
+**已落地（2026-11-19）**：身份 7 个（宿主 Mock）；设备 3 个——`setKeepScreenOn`（Wake Lock）、
+`loadFontFace`（FontFace）、`on/offNetworkWeakChange`（navigator.connection）；基础 10 个——`getSystemInfoAsync`、`getSystemSetting`、
 `getAccountInfoSync`、`getEnterOptionsSync`、`getUpdateManager`、`getRandomValues`、`createBufferURL`、
 `revokeBufferURL`、`requestIdleCallback`、`cancelIdleCallback`。
 

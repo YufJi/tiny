@@ -66,6 +66,8 @@ const CALLBACK_APIS = [
   'batchGetStorage',
   'batchSetStorage',
   'getLocation',
+  'setKeepScreenOn',
+  'loadFontFace',
   'startLocationUpdate',
   'stopLocationUpdate',
   'startAccelerometer',

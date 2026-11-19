@@ -82,6 +82,8 @@ const GLOBAL_EVENT_NAMES = {
   offWindowResize: 'windowResize',
   onNetworkStatusChange: 'networkStatusChange',
   offNetworkStatusChange: 'networkStatusChange',
+  onNetworkWeakChange: 'networkWeakChange',
+  offNetworkWeakChange: 'networkWeakChange',
   onAccelerometerChange: 'accelerometerChange',
   offAccelerometerChange: 'accelerometerChange',
   onCompassChange: 'compassChange',

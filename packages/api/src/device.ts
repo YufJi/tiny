@@ -34,6 +34,13 @@ export function createDeviceApi(context: ApiContext): ApiHost {
       'vibrateLong',
       () => callHost(context, 'device.vibrate', { duration: 400 }),
     ),
+    setKeepScreenOn: (params: unknown = {}) => runApi(
+      params,
+      'setKeepScreenOn',
+      () => callHost(context, 'device.keepScreenOn', {
+        keepScreenOn: (params as { keepScreenOn?: unknown }).keepScreenOn !== false,
+      }),
+    ),
     getSetting: (params: unknown = {}) => runApi(
       params,
       'getSetting',
