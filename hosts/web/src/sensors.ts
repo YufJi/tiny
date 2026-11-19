@@ -216,6 +216,21 @@ export function createSensorHandlers(
       )
       return { errMsg: 'startLocationUpdate:ok' }
     },
+    'location.fuzzy': (params) => new Promise<HandlerResult>((resolve) => {
+      if (!geolocation) {
+        resolve({ errMsg: 'getFuzzyLocation:fail geolocation is not available in this runtime' })
+        return
+      }
+      geolocation.getCurrentPosition(
+        (position) => resolve({
+          latitude: Math.round(position.coords.latitude * 100) / 100,
+          longitude: Math.round(position.coords.longitude * 100) / 100,
+          errMsg: 'getFuzzyLocation:ok',
+        }),
+        (error) => resolve({ errMsg: `getFuzzyLocation:fail ${locationError(error)}` }),
+        { enableHighAccuracy: false, timeout: Number(params.timeout ?? 10000) },
+      )
+    }),
     'location.stop': () => {
       if (watchId !== undefined && geolocation) {
         geolocation.clearWatch(watchId)

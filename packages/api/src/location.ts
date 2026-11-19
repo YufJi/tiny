@@ -16,6 +16,11 @@ export function createLocationApi(context: ApiContext): ApiHost {
       'location.get',
       params as Record<string, unknown>,
     )),
+    getFuzzyLocation: (params: unknown = {}) => runApi(params, 'getFuzzyLocation', () => callHost(
+      context,
+      'location.fuzzy',
+      params as Record<string, unknown>,
+    )),
     startLocationUpdate: (params: unknown = {}) => runApi(params, 'startLocationUpdate', () => callHost(
       context,
       'location.start',

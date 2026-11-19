@@ -177,4 +177,15 @@ describe('location handlers', () => {
     expect(test.handlers['location.stop']({})).toMatchObject({ errMsg: 'stopLocationUpdate:ok' })
     expect(test.cleared).toEqual([7])
   })
+
+  test('fuzzy location rounds to two decimals', async () => {
+    const test = createLocation()
+    const pending = test.handlers['location.fuzzy']({}) as Promise<Record<string, unknown>>
+    test.current?.success({ coords: { latitude: 31.234567, longitude: 121.47321 } })
+    await expect(pending).resolves.toEqual({
+      latitude: 31.23,
+      longitude: 121.47,
+      errMsg: 'getFuzzyLocation:ok',
+    })
+  })
 })

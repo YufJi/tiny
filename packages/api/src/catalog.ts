@@ -158,6 +158,7 @@ export const API_CATALOG = {
 
   // --- location.ts / sensors.ts: host geolocation and motion --------------
   getLocation: { status: 'real', host: 'location.get' },
+  getFuzzyLocation: { status: 'real', host: 'location.fuzzy' },
   startLocationUpdate: { status: 'real', host: 'location.start' },
   stopLocationUpdate: { status: 'real', host: 'location.stop' },
   onLocationChange: { status: 'real' },
@@ -211,6 +212,10 @@ export const API_CATALOG = {
   createCanvasContext: { status: 'real' },
   // Only the canvas-node form can be exported; `canvasId` fails honestly.
   canvasToTempFilePath: { status: 'partial', host: 'media.dataUrlToTempFile' },
+  // The canvas node is a transferred OffscreenCanvas that lives in the service
+  // realm, so pixel reads/writes need no host round-trip.
+  canvasGetImageData: { status: 'real' },
+  canvasPutImageData: { status: 'real' },
   // Legacy alias kept for pre-1.9 bundles; not a WeChat 3.17.5 name.
   createContext: { status: 'stub' },
 

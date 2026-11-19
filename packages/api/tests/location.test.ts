@@ -9,6 +9,9 @@ function createHost() {
     sendDiagnostic: () => undefined,
     call: (_domain: string, method: string, params: Record<string, unknown> = {}) => {
       calls.push({ method, params })
+      if (method === 'location.fuzzy') {
+        return Promise.resolve({ latitude: 31.23, longitude: 121.47, errMsg: 'getFuzzyLocation:ok' })
+      }
       if (method === 'location.get') {
         return Promise.resolve({
           latitude: 31.23,
@@ -99,5 +102,14 @@ describe('sensors', () => {
     events.emit('accelerometerChange', { x: 0, y: 0, z: 1 })
     events.emit('compassChange', { direction: 90 })
     expect(readings).toEqual([{ x: 0, y: 0, z: 1 }])
+  })
+
+  test('getFuzzyLocation reports the coarse coordinates', async () => {
+    const { host, calls } = createHost()
+    await expect(host.getFuzzyLocation({})).resolves.toMatchObject({
+      latitude: 31.23,
+      longitude: 121.47,
+    })
+    expect(calls[0].method).toBe('location.fuzzy')
   })
 })
