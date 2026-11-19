@@ -17,6 +17,12 @@ let toastElement: HTMLElement | null = null
  * APIs. The values are mocks: they keep prototype flows moving instead of
  * failing, and a real backend can replace them without touching `@tiny/api`.
  */
+export type TestHostApiOptions = {
+  /** Mini-program id reported by `wx.getAccountInfoSync()`. */
+  appId?: string
+  identity?: HostIdentity
+}
+
 export type HostIdentity = {
   /** Login code handed to the app; defaults to a random per-call code. */
   code?: string
@@ -29,8 +35,9 @@ export type HostIdentity = {
 export function createTestHostApiHandlers(
   storage: StorageValues = {},
   getSystemInfo: () => SystemInfo,
-  identity: HostIdentity = {},
+  options: TestHostApiOptions = {},
 ): HostApiHandlers {
+  const identity = options.identity ?? {}
   const authSetting: Record<string, boolean> = { ...identity.authSetting }
   const userInfo = {
     nickName: 'Tiny User',
@@ -51,6 +58,13 @@ export function createTestHostApiHandlers(
     'clipboard.set': (params) => setClipboard(String(params.data ?? '')),
     'clipboard.get': () => getClipboard(),
     'device.vibrate': (params) => vibrate(Number(params.duration ?? 15)),
+    'system.setting': () => ({
+      bluetoothEnabled: false,
+      locationEnabled: typeof navigator !== 'undefined' && 'geolocation' in navigator,
+      wifiEnabled: false,
+      errMsg: 'getSystemSetting:ok',
+    }),
+    'update.check': () => ({ hasUpdate: false, errMsg: 'checkForUpdate:ok' }),
     'identity.checkSession': () => ({ errMsg: 'checkSession:ok' }),
     'identity.authorize': (params) => {
       const scope = String(params.scope ?? '')
@@ -120,9 +134,18 @@ export function createTestHostApiHandlers(
 export function createTestHostSyncApiHandlers(
   storage: StorageValues = {},
   getSystemInfo: () => SystemInfo,
+  options: TestHostApiOptions = {},
 ): SyncApiHandlers {
   return {
     'system.info': () => getSystemInfo(),
+    'account.info': () => ({
+      miniProgram: {
+        appId: options.appId ?? 'tiny-test',
+        envVersion: 'develop',
+        version: '0.0.0',
+      },
+      plugin: {},
+    }),
     'storage.get': (params) => ({ value: storage[String(params.key)] }),
     'storage.set': (params) => {
       storage[String(params.key)] = params.value

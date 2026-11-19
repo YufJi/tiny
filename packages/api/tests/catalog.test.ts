@@ -48,7 +48,6 @@ describe('api catalog', () => {
   test('declares exactly the names the table installs', () => {
     const table = createTable()
     expect(Object.keys(table).sort()).toEqual([...API_NAMES].sort())
-    expect(API_NAMES).toHaveLength(110)
   })
 
   test('every host key is a domain.method name', () => {

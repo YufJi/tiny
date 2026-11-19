@@ -37,10 +37,22 @@ export const API_CATALOG = {
   // --- system.ts: host facts and service utilities -------------------------
   getSystemInfoSync: { status: 'real', host: 'system.info' },
   getSystemInfo: { status: 'real', host: 'system.info' },
+  getSystemInfoAsync: { status: 'real', host: 'system.info' },
+  getSystemSetting: { status: 'real', host: 'system.setting' },
+  getAccountInfoSync: { status: 'real', host: 'account.info' },
+  getEnterOptionsSync: { status: 'real' },
   canIUse: { status: 'real' },
   nextTick: { status: 'real' },
   getLaunchOptionsSync: { status: 'real' },
   hideKeyboard: { status: 'partial', host: 'keyboard.hide' },
+
+  // --- basics.ts: service utilities, no platform backend -------------------
+  getRandomValues: { status: 'real' },
+  createBufferURL: { status: 'real' },
+  revokeBufferURL: { status: 'real' },
+  requestIdleCallback: { status: 'real' },
+  cancelIdleCallback: { status: 'real' },
+  getUpdateManager: { status: 'real', host: 'update.check' },
 
   // --- global-events.ts: service-owned event hub ---------------------------
   onAppShow: { status: 'partial' },

@@ -20,6 +20,18 @@ export function createSystemApi(context: ApiContext): ApiHost {
       'getSystemInfo',
       async () => cloneJsonSafe(await callHost(context, 'system.info')),
     ),
+    getSystemInfoAsync: (params: unknown = {}) => runApi(
+      params,
+      'getSystemInfoAsync',
+      async () => cloneJsonSafe(await callHost(context, 'system.info')),
+    ),
+    getSystemSetting: (params: unknown = {}) => runApi(
+      params,
+      'getSystemSetting',
+      () => callHost(context, 'system.setting'),
+    ),
+    getAccountInfoSync: () => cloneJsonSafe(callHostSync(context, 'account.info')),
+    getEnterOptionsSync: () => cloneJsonSafe(context.launchOptions ?? {}),
     canIUse: createCanIUse(context, CAN_I_USE_CAPABILITIES),
     nextTick: (callback: unknown) => {
       if (typeof callback === 'function') Promise.resolve().then(() => callback())

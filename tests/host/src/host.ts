@@ -34,8 +34,8 @@ const wasmHost = new TestBrowserHost({
   initialPath,
   container: document.getElementById('app') ?? document.body,
   storage,
-  apiHandlers: createTestHostApiHandlers(storage, getSystemInfo),
-  syncApiHandlers: createTestHostSyncApiHandlers(storage, getSystemInfo),
+  apiHandlers: createTestHostApiHandlers(storage, getSystemInfo, { appId: app.id }),
+  syncApiHandlers: createTestHostSyncApiHandlers(storage, getSystemInfo, { appId: app.id }),
 }, async (config) => {
   const core = new WasmHostCore(config)
   return {

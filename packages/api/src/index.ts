@@ -1,4 +1,5 @@
 import type { ApiContext, ApiHost } from './context'
+import { createBasicsApi } from './basics'
 import { createCanvasApi } from './canvas'
 import { createWorkletApi } from './worklet'
 import { createAnalyticsApi } from './analytics'
@@ -69,6 +70,7 @@ export function createApiHost(
   apiContext.hasApi = (name) => available.has(name)
   const table: ApiHost = {
     ...createSystemApi(apiContext),
+    ...createBasicsApi(apiContext),
     ...createGlobalEventApi(apiContext),
     ...createStorageApi(apiContext),
     ...createNavigationApi(apiContext),

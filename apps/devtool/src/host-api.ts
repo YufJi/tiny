@@ -3,6 +3,8 @@ import type { HostApiHandlers, StorageValues, SyncApiHandlers, SystemInfo } from
 export type DevtoolNavigationAction = 'title' | 'color' | 'loading'
 
 export type DevtoolApiOptions = {
+  /** Mini-program id reported by `wx.getAccountInfoSync()`. */
+  appId?: string
   /** Host-owned storage facts shared by the async and sync API tables. */
   storage?: StorageValues
   getSystemInfo: () => SystemInfo
@@ -45,9 +47,24 @@ function createApiHandlers(
   options: DevtoolApiOptions,
 ): HostApiHandlers {
   const getSystemInfo = options.getSystemInfo
+  const authSetting: Record<string, boolean> = {}
   return {
     'keyboard.hide': () => ({ errMsg: 'hideKeyboard:ok' }),
     'system.info': () => getSystemInfo(),
+    'system.setting': () => ({
+      bluetoothEnabled: false,
+      locationEnabled: typeof navigator !== 'undefined' && 'geolocation' in navigator,
+      wifiEnabled: false,
+      errMsg: 'getSystemSetting:ok',
+    }),
+    'update.check': () => ({ hasUpdate: false, errMsg: 'checkForUpdate:ok' }),
+    'identity.checkSession': () => ({ errMsg: 'checkSession:ok' }),
+    'identity.authorize': (params) => {
+      const scope = String(params.scope ?? '')
+      if (!scope) return { errMsg: 'authorize:fail invalid scope' }
+      authSetting[scope] = true
+      return { errMsg: 'authorize:ok' }
+    },
     'system.menuButton': () => options.getMenuButtonBoundingClientRect?.(),
     'network.request': (params) => request(params),
     'network.type': () => ({ networkType: networkType(), errMsg: 'getNetworkType:ok' }),
@@ -55,8 +72,8 @@ function createApiHandlers(
     'clipboard.set': (params) => setClipboard(String(params.data ?? '')),
     'clipboard.get': () => getClipboard(),
     'device.vibrate': (params) => vibrate(Number(params.duration ?? 15)),
-    'settings.get': () => ({ authSetting: {}, errMsg: 'getSetting:ok' }),
-    'settings.open': () => ({ authSetting: {}, errMsg: 'openSetting:ok' }),
+    'settings.get': () => ({ authSetting: { ...authSetting }, errMsg: 'getSetting:ok' }),
+    'settings.open': () => ({ authSetting: { ...authSetting }, errMsg: 'openSetting:ok' }),
     'login': () => ({ code: createLoginCode(), errMsg: 'login:ok' }),
     'toast.show': (params) => showToast(params),
     'ui.toast': (params) => showToast(params),
@@ -134,6 +151,14 @@ function createSyncApiHandlers(
   return {
     'system.info': () => getSystemInfo(),
     'system.menuButton': () => getMenuButtonBoundingClientRect?.(),
+    'account.info': () => ({
+      miniProgram: {
+        appId: options.appId ?? 'tiny-devtool',
+        envVersion: 'develop',
+        version: '0.0.0',
+      },
+      plugin: {},
+    }),
     'storage.get': (params) => ({ value: storage[String(params.key)] }),
     'storage.set': (params) => {
       storage[String(params.key)] = params.value
