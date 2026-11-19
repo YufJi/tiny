@@ -17,7 +17,12 @@ export function createMediaPickerApi(context: ApiContext): ApiHost {
   return {
     chooseImage: forward('chooseImage'),
     chooseMedia: forward('chooseMedia'),
+    chooseVideo: forward('chooseVideo'),
     previewImage: forward('previewImage'),
+    previewMedia: forward('previewMedia'),
     getImageInfo: forward('getImageInfo'),
+    getVideoInfo: forward('getVideoInfo'),
+    saveImageToPhotosAlbum: forward('saveImageToPhotosAlbum'),
+    saveVideoToPhotosAlbum: forward('saveVideoToPhotosAlbum'),
   }
 }

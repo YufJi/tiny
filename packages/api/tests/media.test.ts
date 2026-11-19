@@ -85,4 +85,54 @@ describe('media picker', () => {
     await host.getImageInfo({ src: 'missing', fail: (value: unknown) => failures.push(value) })
     expect(failures).toHaveLength(1)
   })
+
+  test('chooseVideo and getVideoInfo forward through the host', async () => {
+    const { host, calls } = createHost({
+      'media.chooseVideo': () => ({
+        tempFilePath: 'blob:v',
+        duration: 3,
+        size: 1024,
+        width: 640,
+        height: 360,
+        errMsg: 'chooseVideo:ok',
+      }),
+      'media.getVideoInfo': (params) => ({
+        width: 640,
+        height: 360,
+        duration: 3,
+        path: String(params.src),
+        errMsg: 'getVideoInfo:ok',
+      }),
+    })
+    await expect(host.chooseVideo({ maxDuration: 60 })).resolves.toMatchObject({
+      tempFilePath: 'blob:v',
+      duration: 3,
+    })
+    await expect(host.getVideoInfo({ src: 'blob:v' })).resolves.toMatchObject({
+      path: 'blob:v',
+      width: 640,
+    })
+    expect(calls.map((call) => call.method)).toEqual(['media.chooseVideo', 'media.getVideoInfo'])
+  })
+
+  test('previewMedia and album saves keep the callback contract', async () => {
+    const { host, calls } = createHost({
+      'media.previewMedia': () => ({ errMsg: 'previewMedia:ok' }),
+      'media.saveImageToPhotosAlbum': () => ({ errMsg: 'saveImageToPhotosAlbum:ok' }),
+      'media.saveVideoToPhotosAlbum': () => ({ errMsg: 'saveVideoToPhotosAlbum:fail not supported' }),
+    })
+    await host.previewMedia({ sources: [{ url: 'blob:1', type: 'image' }], current: 0 })
+    await expect(host.saveImageToPhotosAlbum({ filePath: 'blob:1' })).resolves.toMatchObject({
+      errMsg: 'saveImageToPhotosAlbum:ok',
+    })
+
+    const failures: unknown[] = []
+    await host.saveVideoToPhotosAlbum({ filePath: 'blob:v', fail: (value: unknown) => failures.push(value) })
+    expect(failures).toHaveLength(1)
+    expect(calls.map((call) => call.method)).toEqual([
+      'media.previewMedia',
+      'media.saveImageToPhotosAlbum',
+      'media.saveVideoToPhotosAlbum',
+    ])
+  })
 })

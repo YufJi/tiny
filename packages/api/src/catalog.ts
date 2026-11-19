@@ -166,8 +166,15 @@ export const API_CATALOG = {
   // --- media-picker.ts: host-owned chooser, temp files and preview --------
   chooseImage: { status: 'real', host: 'media.chooseImage' },
   chooseMedia: { status: 'real', host: 'media.chooseMedia' },
+  // A browser cannot capture a thumbnail, the rest of the shape is real.
+  chooseVideo: { status: 'partial', host: 'media.chooseVideo' },
   previewImage: { status: 'partial', host: 'media.previewImage' },
+  previewMedia: { status: 'partial', host: 'media.previewMedia' },
   getImageInfo: { status: 'real', host: 'media.getImageInfo' },
+  getVideoInfo: { status: 'partial', host: 'media.getVideoInfo' },
+  // No photo album in a browser: the host saves the file as a download.
+  saveImageToPhotosAlbum: { status: 'partial', host: 'media.saveImageToPhotosAlbum' },
+  saveVideoToPhotosAlbum: { status: 'partial', host: 'media.saveVideoToPhotosAlbum' },
 
   // --- media.ts: manager shapes exist, no audio backend -------------------
   getRecorderManager: { status: 'stub' },

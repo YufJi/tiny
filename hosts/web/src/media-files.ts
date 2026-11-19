@@ -129,6 +129,8 @@ export type MediaHandlerOptions = {
   registry: TempFileRegistry
   /** Test/debug seam; defaults to the browser file chooser. */
   pick?: typeof pickFiles
+  /** Test/debug seam; defaults to reading the video element metadata. */
+  loadVideo?: typeof loadVideoElement
 }
 
 type HandlerParams = Record<string, unknown>
@@ -143,11 +145,17 @@ export function createMediaHandlers(
   options: MediaHandlerOptions,
 ): Record<string, (params: HandlerParams) => Promise<HandlerResult> | HandlerResult> {
   const pick = options.pick ?? pickFiles
+  const loadVideo = options.loadVideo ?? loadVideoElement
   return {
     'media.chooseImage': (params) => chooseImage(options.registry, pick, params),
     'media.chooseMedia': (params) => chooseMedia(options.registry, pick, params),
+    'media.chooseVideo': (params) => chooseVideo(options.registry, pick, loadVideo, params),
     'media.previewImage': (params) => previewImage(params),
+    'media.previewMedia': (params) => previewMedia(params),
     'media.getImageInfo': (params) => imageInfo(options.registry, params),
+    'media.getVideoInfo': (params) => videoInfo(options.registry, loadVideo, params),
+    'media.saveImageToPhotosAlbum': (params) => saveToAlbum(options.registry, params, 'saveImageToPhotosAlbum'),
+    'media.saveVideoToPhotosAlbum': (params) => saveToAlbum(options.registry, params, 'saveVideoToPhotosAlbum'),
   }
 }
 
@@ -259,4 +267,155 @@ function mimeFromPath(src: string): string | undefined {
   if (extension === 'jpg' || extension === 'jpeg') return 'image/jpeg'
   if (extension === 'svg') return 'image/svg+xml'
   return `image/${extension}`
+}
+
+
+/** Video metadata a host can read without loading the whole file. */
+export type VideoElementInfo = {
+  duration: number
+  width: number
+  height: number
+}
+
+/** Load a video far enough to read duration and intrinsic size. */
+export function loadVideoElement(src: string): Promise<VideoElementInfo> {
+  return new Promise((resolve, reject) => {
+    if (typeof document === 'undefined') {
+      reject(new Error('video metadata is not available in this runtime'))
+      return
+    }
+    const video = document.createElement('video')
+    video.preload = 'metadata'
+    video.onloadedmetadata = () => {
+      resolve({
+        duration: Number.isFinite(video.duration) ? video.duration : 0,
+        width: video.videoWidth,
+        height: video.videoHeight,
+      })
+      video.remove()
+    }
+    video.onerror = () => {
+      reject(new Error(`failed to load video: ${src}`))
+      video.remove()
+    }
+    video.src = src
+  })
+}
+
+async function chooseVideo(
+  registry: TempFileRegistry,
+  pick: typeof pickFiles,
+  loadVideo: (src: string) => Promise<VideoElementInfo>,
+  params: HandlerParams,
+): Promise<HandlerResult> {
+  const picked = await pick({ accept: 'video/*' })
+  const file = picked[0]
+  if (!file) return { errMsg: 'chooseVideo:fail cancel' }
+  const entry = registry.add(file, file.name)
+  try {
+    const info = await loadVideo(entry.url)
+    return {
+      tempFilePath: entry.url,
+      duration: info.duration,
+      size: entry.size,
+      height: info.height,
+      width: info.width,
+      errMsg: 'chooseVideo:ok',
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return { errMsg: `chooseVideo:fail ${message}` }
+  }
+}
+
+function previewMedia(params: HandlerParams): HandlerResult {
+  const sources = Array.isArray(params.sources)
+    ? params.sources.filter((source): source is { url?: unknown; type?: unknown } => Boolean(source))
+    : []
+  const urls = sources.map((source) => String(source.url ?? '')).filter(Boolean)
+  if (urls.length === 0) return { errMsg: 'previewMedia:fail sources is required' }
+  if (typeof document === 'undefined') return { errMsg: 'previewMedia:fail no document' }
+  const current = params.current === undefined ? 0 : Number(params.current)
+  const source = sources[Math.max(0, Math.min(sources.length - 1, current))]
+  const url = String(source?.url ?? urls[0])
+  const isVideo = String(source?.type ?? '') === 'video'
+
+  const overlay = document.createElement('div')
+  overlay.setAttribute('data-tiny-preview', url)
+  overlay.style.cssText = [
+    'position:fixed',
+    'inset:0',
+    'z-index:2147483000',
+    'background:#000',
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'cursor:zoom-out',
+  ].join(';')
+  const media = document.createElement(isVideo ? 'video' : 'img')
+  if (media instanceof HTMLVideoElement) media.controls = true
+  media.setAttribute('src', url)
+  media.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;'
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay) overlay.remove()
+  })
+  overlay.appendChild(media)
+  document.body.appendChild(overlay)
+  return { errMsg: 'previewMedia:ok' }
+}
+
+async function videoInfo(
+  registry: TempFileRegistry,
+  loadVideo: (src: string) => Promise<VideoElementInfo>,
+  params: HandlerParams,
+): Promise<HandlerResult> {
+  const src = String(params.src ?? '')
+  if (!src) return { errMsg: 'getVideoInfo:fail src is required' }
+  try {
+    const info = await loadVideo(src)
+    const entry = registry.get(src)
+    return {
+      orientation: 'up',
+      type: entry?.type || 'video/mp4',
+      duration: info.duration,
+      size: entry?.size ?? 0,
+      height: info.height,
+      width: info.width,
+      path: src,
+      errMsg: 'getVideoInfo:ok',
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return { errMsg: `getVideoInfo:fail ${message}` }
+  }
+}
+
+/**
+ * A browser cannot write to the photo album, so the host saves the file the way
+ * the platform allows: a download. The result is still `:ok` because the user
+ * got the file; the deviation is documented in docs/api-roadmap.md.
+ */
+function saveToAlbum(
+  registry: TempFileRegistry,
+  params: HandlerParams,
+  apiName: string,
+): HandlerResult {
+  const filePath = String(params.filePath ?? '')
+  if (!filePath) return { errMsg: `${apiName}:fail filePath is required` }
+  if (typeof document === 'undefined') return { errMsg: `${apiName}:fail no document` }
+  const entry = registry.get(filePath)
+  const anchor = document.createElement('a')
+  anchor.href = entry?.url ?? filePath
+  anchor.download = entry?.name || fileNameFromPath(filePath)
+  anchor.style.display = 'none'
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  return { errMsg: `${apiName}:ok` }
+}
+
+function fileNameFromPath(filePath: string): string {
+  const clean = filePath.split(/[?#]/)[0]
+  const name = clean.slice(clean.lastIndexOf('/') + 1)
+  return name || 'download'
 }
