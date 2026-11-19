@@ -26,6 +26,10 @@
   <view id="anim-box" class="anim-box" animation="{{animationData}}">anim</view>
   <view id="animate-probe" class="tap-box" bindtap="onAnimate">Animate</view>
   <text class="anim-status">anim: {{animStatus}}</text>
+  <switch id="skin-switch" checked />
+  <checkbox id="skin-checkbox" checked />
+  <radio id="skin-radio" checked />
+  <slider id="skin-slider" value="30" />
   <text class="timing-status">timing: {{status}}</text>
   <button bindtap="bump">Bump</button>
   <button bindtap="back">Back</button>

@@ -976,6 +976,25 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
         !(await text()).includes('long: tap'),
         'longpress listener still let the tap through',
       )
+      // R4: form-control tokens match the WeChat 3.17.5 simulator (#07c160).
+      const formColors = await render.evaluate(() => {
+        const style = (selector, property, pseudo) => {
+          const element = document.querySelector(selector)
+          return element ? getComputedStyle(element, pseudo).getPropertyValue(property) : ''
+        }
+        return {
+          switch: style('.tiny-builtin-switch--tiny-switch-input', 'background-color'),
+          checkbox: style('.tiny-builtin-checkbox--tiny-checkbox-input', 'color'),
+          radio: style('.tiny-builtin-radio--tiny-radio-input', 'background-color'),
+          slider: style('.tiny-builtin-slider--tiny-slider-track', 'background-color'),
+        }
+      })
+      assert.deepEqual(formColors, {
+        switch: 'rgb(7, 193, 96)',
+        checkbox: 'rgb(7, 193, 96)',
+        radio: 'rgb(7, 193, 96)',
+        slider: 'rgb(7, 193, 96)',
+      })
       // P0-9/P0-10: data belongs to the component after setData, Dates survive
       // the copy, and groupSetData calls back with the caller as `this`.
       await render.locator('#copy-probe').click()
@@ -1916,7 +1935,7 @@ export async function runWechatDemoAcceptance({ baseUrl, app = 'wechat-demo', br
       })
       assert.deepEqual(
         [radioVisual?.tag, radioVisual?.width, radioVisual?.radius, radioVisual?.background],
-        ['div', '22px', '50%', 'rgb(9, 187, 7)'],
+        ['div', '22px', '50%', 'rgb(7, 193, 96)'],
         'radio visual structure does not match WeChat',
       )
       assert.ok(radioVisual?.fontFamily.includes('weui'), 'radio check glyph should use the weui font')

@@ -4,7 +4,8 @@
     "pages/b/b",
     "pages/button/button",
     "pages/flow/flow",
-    "pages/move/move"
+    "pages/move/move",
+    "pages/form-controls/form-controls"
   ],
   "window": {
     "navigationBarTitleText": "Tiny WXS parity"

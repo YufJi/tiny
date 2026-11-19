@@ -1,0 +1,43 @@
+<view class="page">
+  <text class="title">Form controls</text>
+
+  <view class="case" data-key="switch-basic">
+    <switch id="switch-basic" />
+  </view>
+  <view class="case" data-key="switch-checked">
+    <switch id="switch-checked" checked color="#07c160" />
+  </view>
+  <view class="case" data-key="switch-disabled">
+    <switch id="switch-disabled" checked disabled />
+  </view>
+
+  <view class="case" data-key="checkbox-basic">
+    <checkbox id="checkbox-basic" />
+  </view>
+  <view class="case" data-key="checkbox-checked">
+    <checkbox id="checkbox-checked" checked />
+  </view>
+  <view class="case" data-key="checkbox-disabled">
+    <checkbox id="checkbox-disabled" checked disabled />
+  </view>
+
+  <view class="case" data-key="radio-basic">
+    <radio id="radio-basic" />
+  </view>
+  <view class="case" data-key="radio-checked">
+    <radio id="radio-checked" checked />
+  </view>
+  <view class="case" data-key="radio-disabled">
+    <radio id="radio-disabled" checked disabled />
+  </view>
+
+  <view class="case" data-key="slider-basic">
+    <slider id="slider-basic" value="30" />
+  </view>
+  <view class="case" data-key="slider-checked">
+    <slider id="slider-checked" value="60" activeColor="#ff0000" />
+  </view>
+  <view class="case" data-key="slider-disabled">
+    <slider id="slider-disabled" value="70" disabled />
+  </view>
+</view>
