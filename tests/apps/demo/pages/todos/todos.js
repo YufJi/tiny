@@ -65,6 +65,10 @@ Page({
     wx.navigateTo({ url: '../wxs-runtime/wxs-runtime' })
   },
 
+  openMeta() {
+    wx.navigateTo({ url: '/pages/meta/meta' })
+  },
+
   openVirtual() {
     wx.navigateTo({ url: '/pages/virtual/virtual' })
   },

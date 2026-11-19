@@ -6,7 +6,7 @@ tiny-icon[hidden] {
   display: none;
 }
 i {
-  font: normal normal normal 14px/1 weui;
+  font: normal normal normal 14px/1 weuiv2;
 }
 i::before {
   margin: 0;
@@ -14,7 +14,7 @@ i::before {
 }
 
 .tiny-icon-success {
-  color: #09bb07;
+  color: #07c160;
 }
 .tiny-icon-success::before {
   content: "\EA06";
@@ -28,7 +28,7 @@ i::before {
 }
 
 .tiny-icon-warn {
-  color: #f76260;
+  color: #fa5151;
 }
 .tiny-icon-warn::before {
   content: "\EA0B";
@@ -42,7 +42,7 @@ i::before {
 }
 
 .tiny-icon-safe_success {
-  color: #09bb07;
+  color: #07c160;
 }
 .tiny-icon-safe_success::before {
   content: "\EA04";
@@ -56,14 +56,14 @@ i::before {
 }
 
 .tiny-icon-success_circle {
-  color: #09bb07;
+  color: #07c160;
 }
 .tiny-icon-success_circle::before {
   content: "\EA07";
 }
 
 .tiny-icon-success_no_circle {
-  color: #09bb07;
+  color: #07c160;
 }
 .tiny-icon-success_no_circle::before {
   content: "\EA08";
@@ -84,35 +84,35 @@ i::before {
 }
 
 .tiny-icon-download {
-  color: #09bb07;
+  color: #07c160;
 }
 .tiny-icon-download::before {
   content: "\EA02";
 }
 
 .tiny-icon-info_circle {
-  color: #09bb07;
+  color: #07c160;
 }
 .tiny-icon-info_circle::before {
   content: "\EA0C";
 }
 
 .tiny-icon-cancel {
-  color: #f43530;
+  color: #fa5151;
 }
 .tiny-icon-cancel::before {
   content: "\EA0D";
 }
 
 .tiny-icon-search {
-  color: #b2b2b2;
+  color: #7f7f7f;
 }
 .tiny-icon-search::before {
   content: "\EA0E";
 }
 
 .tiny-icon-clear {
-  color: #b2b2b2;
+  color: #7f7f7f;
 }
 .tiny-icon-clear::before {
   content: "\EA0F";

@@ -42,3 +42,7 @@
   width: 100%;
   height: 200px;
 }
+
+.skin-image {
+  display: block;
+}

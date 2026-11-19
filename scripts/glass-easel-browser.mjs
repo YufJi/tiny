@@ -304,7 +304,7 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       })
       assert.ok(iconMetrics.fontFamily.includes('weui'), 'icon should use the weui font')
       assert.equal(iconMetrics.fontSize, '23px', 'icon default size mismatch')
-      assert.equal(iconMetrics.color, 'rgb(9, 187, 7)', 'icon success color mismatch')
+      assert.equal(iconMetrics.color, 'rgb(7, 193, 96)', 'icon success color mismatch')
       assert.notEqual(iconMetrics.content, 'none', 'icon should render a font glyph')
       assert.equal(iconMetrics.width, 23, 'icon width mismatch')
       const imageLoaded = await render.waitForFunction(
@@ -1058,6 +1058,26 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
         Math.abs(picker.selectedCenter - 100) < 1,
         `picker selected row not centered: ${picker.selectedCenter}`,
       )
+      // R4: WeChat 3.17.5 icons use the weuiv2 glyph font and 3.17.5 green;
+      // aspect modes keep the author's inline image box.
+      const media = await render.evaluate(() => {
+        const glyph = document.querySelector('#skin-icon i')
+        const image = document.querySelector('#skin-image')
+        const imageDiv = image?.querySelector('div')
+        const rect = image?.getBoundingClientRect()
+        return {
+          family: glyph ? getComputedStyle(glyph).fontFamily : '',
+          color: glyph ? getComputedStyle(glyph).color : '',
+          width: rect?.width ?? 0,
+          height: rect?.height ?? 0,
+          backgroundSize: imageDiv ? getComputedStyle(imageDiv).backgroundSize : '',
+        }
+      })
+      assert.ok(media.family.includes('weuiv2'), `icon font family ${media.family}`)
+      assert.equal(media.color, 'rgb(7, 193, 96)')
+      assert.equal(media.width, 80)
+      assert.equal(media.height, 40)
+      assert.equal(media.backgroundSize, 'cover')
       // P0-9/P0-10: data belongs to the component after setData, Dates survive
       // the copy, and groupSetData calls back with the caller as `this`.
       await render.locator('#copy-probe').click()
@@ -1118,6 +1138,38 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       )
       await render.locator('#vh-inner').click()
       await waitForText('vh-inner: vh-inner')
+      await byText(render, 'Back', { exact: true }).click()
+      await waitForText('Tiny Glass-easel P0')
+    })
+
+    await step('render page-meta and navigation-bar chrome', async () => {
+      currentStep = 'render page-meta and navigation-bar chrome'
+      await tapToPage('Meta', 'meta: false')
+      const meta = await render.evaluate(() => {
+        const root = document.querySelector('tiny-page')
+        return {
+          title: root?.dataset.tinyNavigationTitle ?? '',
+          loading: root?.dataset.tinyNavigationLoading ?? '',
+          background: root ? getComputedStyle(root).backgroundColor : '',
+          navBackground: root
+            ? getComputedStyle(root).getPropertyValue('--tiny-navbar-background-color').trim()
+            : '',
+          navFront: root
+            ? getComputedStyle(root).getPropertyValue('--tiny-navbar-front-color').trim()
+            : '',
+        }
+      })
+      assert.equal(meta.title, 'Meta title')
+      assert.equal(meta.loading, 'false')
+      assert.equal(meta.background, 'rgb(17, 34, 51)')
+      assert.equal(meta.navBackground, '#07c160')
+      assert.equal(meta.navFront, '#ffffff')
+      await byText(render, 'Toggle loading', { exact: true }).click()
+      await waitForText('meta: true')
+      const loading = await render.evaluate(
+        () => document.querySelector('tiny-page')?.dataset.tinyNavigationLoading,
+      )
+      assert.equal(loading, 'true')
       await byText(render, 'Back', { exact: true }).click()
       await waitForText('Tiny Glass-easel P0')
     })

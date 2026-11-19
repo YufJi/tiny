@@ -34,6 +34,8 @@
   <input id="skin-input-placeholder" placeholder="placeholder" />
   <textarea id="skin-textarea" value="textarea-value" />
   <textarea id="skin-textarea-auto" auto-height value="auto" />
+  <icon id="skin-icon" type="success" />
+  <image id="skin-image" class="skin-image" src="/assets/logo.png" mode="aspectFill" style="width: 80px; height: 40px;" />
   <picker-view id="skin-picker-view" class="picker-view" value="{{pickerValue}}">
     <picker-view-column>
       <view wx:for="{{pickerItems}}" wx:key="*this" class="picker-item">{{item}}</view>

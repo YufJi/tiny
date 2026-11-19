@@ -1,0 +1,19 @@
+<view class="page">
+  <text class="title">Icons</text>
+  <view class="icons">
+    <icon type="success" /><icon type="info" /><icon type="warn" /><icon type="waiting" />
+    <icon type="circle" /><icon type="download" /><icon type="info_circle" /><icon type="cancel" />
+    <icon type="search" /><icon type="clear" /><icon type="safe_success" /><icon type="safe_warn" />
+    <icon type="success_circle" /><icon type="success_no_circle" /><icon type="waiting_circle" />
+  </view>
+  <view class="icons">
+    <icon type="success" size="40" color="#ff0000" />
+    <icon type="warn" size="12" />
+  </view>
+
+  <text class="title">Images</text>
+  <image id="image-default" class="case" src="/assets/pic.png" />
+  <image id="image-fill" class="case" src="/assets/pic.png" mode="aspectFill" style="width: 120px; height: 80px;" />
+  <image id="image-fit" class="case" src="/assets/pic.png" mode="aspectFit" style="width: 120px; height: 80px;" />
+  <image id="image-width-fix" class="case" src="/assets/pic.png" mode="widthFix" style="width: 120px;" />
+</view>

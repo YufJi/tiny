@@ -9,7 +9,8 @@
     "pages/router/router",
     "pages/reorder/reorder",
     "pages/timing/timing",
-    "pages/virtual/virtual"
+    "pages/virtual/virtual",
+    "pages/meta/meta"
   ],
   "window": {
     "navigationBarTitleText": "P0 demo"
