@@ -26,6 +26,11 @@ export function createLocationApi(context: ApiContext): ApiHost {
       'location.start',
       params as Record<string, unknown>,
     )),
+    startLocationUpdateBackground: (params: unknown = {}) => runApi(
+      params,
+      'startLocationUpdateBackground',
+      () => callHost(context, 'location.startBackground', params as Record<string, unknown>),
+    ),
     stopLocationUpdate: (params: unknown = {}) => runApi(params, 'stopLocationUpdate', () => callHost(
       context,
       'location.stop',

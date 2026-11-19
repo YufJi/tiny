@@ -46,4 +46,14 @@ describe('host environment', () => {
     location!.onchange?.()
     expect(handlers['permissions.setting']({})).toMatchObject({ locationAuthorized: 'denied' })
   })
+
+  test('background fetch token and benchmark are answered locally', () => {
+    const handlers = createEnvHandlers({ canPlayHevc: () => false })
+    expect(handlers['backgroundFetch.getToken']({})).toMatchObject({ token: '' })
+    handlers['backgroundFetch.setToken']({ token: 't-1' })
+    expect(handlers['backgroundFetch.getToken']({})).toMatchObject({ token: 't-1' })
+    const benchmark = handlers['device.benchmark']({})
+    expect(Number(benchmark.benchmarkLevel)).toBeGreaterThanOrEqual(1)
+    expect(Number(benchmark.benchmarkLevel)).toBeLessThanOrEqual(50)
+  })
 })

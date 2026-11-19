@@ -68,6 +68,7 @@ export function createEnvHandlers(
     }
   }
   const canPlayHevc = options.canPlayHevc ?? defaultCanPlayHevc()
+  let backgroundFetchToken = ''
 
   return {
     // A normal mini program has no third-party ext config; `{}` is the honest
@@ -81,6 +82,27 @@ export function createEnvHandlers(
       return { supportHevc: support, hevcHardware: support }
     },
     'permissions.setting': () => ({ ...setting }),
+    'backgroundFetch.setToken': (params) => {
+      backgroundFetchToken = String(params.token ?? '')
+      return { errMsg: 'setBackgroundFetchToken:ok' }
+    },
+    'backgroundFetch.getToken': () => ({
+      token: backgroundFetchToken,
+      errMsg: 'getBackgroundFetchToken:ok',
+    }),
+    // A coarse, honest measurement: ops per millisecond over a short loop,
+    // mapped to a 1-50 level. Not comparable to WeChat's device database.
+    'device.benchmark': () => {
+      const started = nowMs()
+      let iterations = 0
+      while (nowMs() - started < 10) {
+        Math.sqrt(iterations + 1) * Math.sin(iterations % 97)
+        iterations += 1
+      }
+      const perMs = iterations / Math.max(1, nowMs() - started)
+      const level = Math.max(1, Math.min(50, Math.round(Math.log2(perMs + 1) * 3)))
+      return { benchmarkLevel: level, deviceLevel: level, errMsg: 'getDeviceBenchmarkInfo:ok' }
+    },
   }
 }
 
@@ -110,4 +132,8 @@ function defaultCanPlayHevc(): () => boolean {
     }
     return false
   }
+}
+
+function nowMs(): number {
+  return typeof performance === 'undefined' ? Date.now() : performance.now()
 }

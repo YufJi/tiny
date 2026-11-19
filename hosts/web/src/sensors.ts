@@ -216,6 +216,22 @@ export function createSensorHandlers(
       )
       return { errMsg: 'startLocationUpdate:ok' }
     },
+    'location.startBackground': (params) => {
+      // A browser cannot keep updating location in the background; the stream
+      // works while the page is alive, which is what the host can promise.
+      if (!geolocation) {
+        return { errMsg: 'startLocationUpdateBackground:fail geolocation is not available' }
+      }
+      if (watchId !== undefined) return { errMsg: 'startLocationUpdateBackground:ok' }
+      watchId = geolocation.watchPosition(
+        (position) => options.emit('locationChange', positionPayload(position)),
+        (error) => options.emit('locationChangeError', {
+          errMsg: `locationChange:fail ${locationError(error)}`,
+        }),
+        { enableHighAccuracy: params.type === 'gcj02', timeout: 10000 },
+      )
+      return { errMsg: 'startLocationUpdateBackground:ok' }
+    },
     'location.fuzzy': (params) => new Promise<HandlerResult>((resolve) => {
       if (!geolocation) {
         resolve({ errMsg: 'getFuzzyLocation:fail geolocation is not available in this runtime' })
