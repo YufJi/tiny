@@ -7,6 +7,7 @@ function createHost() {
   const handlers: Record<string, (params: Record<string, unknown>) => unknown> = {
     'battery.infoSync': () => ({ level: 55, isCharging: false }),
     'audio.sources': () => ({ audioSources: ['auto', 'mic'] }),
+    'device.scanCode': () => ({ result: 'x', errMsg: 'scanCode:ok' }),
     'media.cropImage': (params) => ({
       tempFilePath: 'blob:crop',
       errMsg: 'cropImage:ok',
@@ -68,5 +69,14 @@ describe('device extras round two', () => {
       method: 'media.cropImage',
       params: { src: 'blob:big', x: 10, y: 20, width: 100, height: 50, destWidth: 200, destHeight: 100 },
     })
+  })
+
+  test('scanCode forwards to the host', async () => {
+    const { host, calls } = createHost()
+    await expect(host.scanCode({ onlyFromCamera: true })).resolves.toEqual({
+      result: 'x',
+      errMsg: 'scanCode:ok',
+    })
+    expect(calls[0]).toMatchObject({ method: 'device.scanCode', params: { onlyFromCamera: true } })
   })
 })

@@ -24,6 +24,7 @@ const BROWSER_SOURCES = [
   'hosts/web/src/device-extras.ts',
   'hosts/web/src/host-env.ts',
   'hosts/web/src/page-introspection.ts',
+  'hosts/web/src/scan.ts',
 ]
 
 function quotedHandlerKeys(source: string): Set<string> {

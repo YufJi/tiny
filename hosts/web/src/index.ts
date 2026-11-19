@@ -45,6 +45,7 @@ export {
   type GlassRenderTreeOptions,
 } from './render/tree'
 export { HOST_CORE_API_KEYS } from './api-capabilities'
+export { createScanHandlers, type ScanHandlerOptions } from './scan'
 export {
   createPageIntrospectionHandlers,
   type FrameLike,

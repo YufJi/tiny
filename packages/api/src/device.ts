@@ -34,6 +34,11 @@ export function createDeviceApi(context: ApiContext): ApiHost {
       'vibrateLong',
       () => callHost(context, 'device.vibrate', { duration: 400 }),
     ),
+    scanCode: (params: unknown = {}) => runApi(params, 'scanCode', () => callHost(
+      context,
+      'device.scanCode',
+      params as Record<string, unknown>,
+    )),
     setKeepScreenOn: (params: unknown = {}) => runApi(
       params,
       'setKeepScreenOn',

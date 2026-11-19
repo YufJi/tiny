@@ -74,6 +74,7 @@ const CALLBACK_APIS = [
   'batchGetStorage',
   'batchSetStorage',
   'getLocation',
+  'scanCode',
   'setBackgroundFetchToken',
   'getBackgroundFetchToken',
   'getDeviceBenchmarkInfo',

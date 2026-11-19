@@ -194,6 +194,8 @@ export const API_CATALOG = {
   offDeviceMotionChange: { status: 'real' },
 
   // --- device.ts: clipboard, vibration, identity --------------------------
+  // Works where BarcodeDetector exists (Chromium); other engines fail honestly.
+  scanCode: { status: 'partial', host: 'device.scanCode' },
   setKeepScreenOn: { status: 'real', host: 'device.keepScreenOn' },
   setClipboardData: { status: 'real', host: 'clipboard.set' },
   getClipboardData: { status: 'real', host: 'clipboard.get' },
