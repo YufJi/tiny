@@ -45,6 +45,11 @@ export {
   type GlassRenderTreeOptions,
 } from './render/tree'
 export {
+  createFileSystemHandlers,
+  FILE_SYSTEM_USER_ROOT,
+  type FileSystemHandlerOptions,
+} from './file-system'
+export {
   createPersistentStorage,
   type PersistentStorage,
   type StorageBackend,

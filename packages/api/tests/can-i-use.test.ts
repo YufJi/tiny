@@ -48,7 +48,6 @@ describe('canIUse schema families', () => {
   test('does not claim installed stub APIs', () => {
     const { host } = createContext()
     for (const name of [
-      'getFileSystemManager',
       'worklet',
       'reportAnalytics',
       'getRecorderManager',
@@ -62,6 +61,7 @@ describe('canIUse schema families', () => {
       expect(host.canIUse!(`wx.${name}`)).toBe(false)
     }
     // Host-backed APIs are not stubs.
+    expect(host.canIUse!('getFileSystemManager')).toBe(true)
     expect(host.canIUse!('request')).toBe(true)
     expect(host.canIUse!('createAnimation')).toBe(true)
     expect(host.canIUse!('setClipboardData')).toBe(true)

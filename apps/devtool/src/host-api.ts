@@ -1,5 +1,11 @@
 import type { HostApiHandlers, StorageValues, SyncApiHandlers, SystemInfo } from '@tiny/api'
-import { createMediaHandlers, createNetworkHandlers, createTempFileRegistry, pickFiles } from '@tiny/host-web'
+import {
+  createFileSystemHandlers,
+  createMediaHandlers,
+  createNetworkHandlers,
+  createTempFileRegistry,
+  pickFiles,
+} from '@tiny/host-web'
 
 export type DevtoolNavigationAction = 'title' | 'color' | 'loading'
 
@@ -55,6 +61,7 @@ function createApiHandlers(
   return {
     ...createMediaHandlers({ registry: tempFiles, pick: options.pickFiles }),
     ...createNetworkHandlers({ registry: tempFiles }),
+    ...createFileSystemHandlers(),
     'keyboard.hide': () => ({ errMsg: 'hideKeyboard:ok' }),
     'system.info': () => getSystemInfo(),
     'system.setting': () => ({
@@ -209,6 +216,7 @@ function createSyncApiHandlers(
       }
       return { errMsg: 'batchSetStorage:ok' }
     },
+    ...createFileSystemHandlers(),
   }
 }
 

@@ -88,7 +88,7 @@ export function createApiHost(
     ...createMediaApi(),
     ...createCompatStubs(),
     ...createQueryApi(apiContext),
-    ...createFileSystemApi(),
+    ...createFileSystemApi(apiContext),
     ...extensions,
   }
   for (const name of Object.keys(table)) available.add(name)

@@ -214,7 +214,7 @@ export const API_CATALOG = {
   createIntersectionObserver: { status: 'real' },
 
   // --- filesystem.ts ------------------------------------------------------
-  getFileSystemManager: { status: 'stub' },
+  getFileSystemManager: { status: 'real' },
 } as const satisfies Record<string, ApiDescriptor>
 
 export type ApiCatalog = typeof API_CATALOG

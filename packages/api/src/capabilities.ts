@@ -206,7 +206,6 @@ function buildComponentCapabilities(): Readonly<Record<string, CanIUseCapability
  * implement it.
  */
 export const STUB_APIS: ReadonlySet<string> = new Set([
-  'getFileSystemManager',
   'worklet',
   'reportAnalytics',
   'getRecorderManager',

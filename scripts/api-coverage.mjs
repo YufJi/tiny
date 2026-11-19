@@ -25,7 +25,7 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 /** Numbers the roadmap quotes; only raise them as work lands. */
 const BASELINE = {
   present: 135,
-  semantic: 104,
+  semantic: 105,
   demoMissing: 57,
   inert: 0,
 }
@@ -118,8 +118,13 @@ const demoExcluded = [...demo.keys()]
   .filter((name) => byName.has(name) && EXCLUDED_SCOPES.has(byName.get(name).scope)
     && !presentNames.has(name))
 
+// Host handlers live in the app entry plus the shared @tiny/host-web factories.
+const HANDLER_KEY = /'([a-z][a-zA-Z]*(?:\.[a-zA-Z]+)?)'\s*:/g
 const browserHandlers = new Set([
-  ...readHostHandlers('tests/host/src/host-api.ts', /'([a-z][a-zA-Z]*(?:\.[a-zA-Z]+)?)'\s*:/g),
+  ...readHostHandlers('tests/host/src/host-api.ts', HANDLER_KEY),
+  ...readHostHandlers('hosts/web/src/media-files.ts', HANDLER_KEY),
+  ...readHostHandlers('hosts/web/src/network-tasks.ts', HANDLER_KEY),
+  ...readHostHandlers('hosts/web/src/file-system.ts', HANDLER_KEY),
   ...readHostHandlers('native/host-core/src/host/core.rs', /"([a-z][a-zA-Z]*\.[a-zA-Z]+)"/g),
 ])
 const iosHandlers = new Set([

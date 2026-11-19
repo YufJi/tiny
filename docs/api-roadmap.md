@@ -50,8 +50,8 @@
 
 ## 1. 结论
 
-1. **面够了，语义不够。** 在范围内的 349 个名字里，表里已有 135 个（39%），但端到端可用（A）只有 77 个
-   （另有 5 个宿主扩展）、半可用（B）22 个、纯桩（C）31 个——**语义覆盖 29.8%**，214 个名字缺失。
+1. **面够了，语义不够。** 在范围内的 349 个名字里，表里已有 135 个（39%），但端到端可用（A）只有 78 个
+   （另有 5 个宿主扩展）、半可用（B）22 个、纯桩（C）30 个——**语义覆盖 30.1%**，214 个名字缺失。
 2. **“假成功”已清零。** 2026-11-19 的 11 个在范围内“`canIUse` 说 true 但什么都不做”的 API，已按
    “真实现 / 诚实失败 / 声明不支持”三选一处理；`api:coverage` 的 honesty 段现在为 0。
 3. **官方 demo 在范围内的缺口是 57 个**（另 12 个落在排除分类）。这是唯一能“跑一遍就知道有没有退步”的短周期目标。
@@ -69,7 +69,7 @@
 | 微信 3.17.5 `wx.*` 名字 | 499 | 基础库内嵌 canIUse 矩阵的方法表 |
 | 在范围 / 排除 | 349 / 150 | 按 §0 的分类 |
 | tiny 表内名字（在范围） | 135 | 131 core + 5 扩展，扣掉 6 个排除分类 |
-| 端到端可用 A / 半可用 B / 纯桩 C | 77 / 22 / 31 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
+| 端到端可用 A / 半可用 B / 纯桩 C | 78 / 22 / 30 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
 | 缺失（在范围） | 214 | 设备 88、媒体 35、界面 30、基础 8、网络 12、路由 14、位置 13…… |
 | 依赖宿主 handler 的 API | 45 | 其余 65 个是 service 侧逻辑 |
 | iOS 返回 `fail not implemented` | 25 / 45 | 其中 3 个属于排除分类 |
@@ -81,7 +81,7 @@
 ### 2.1 三个数字的含义
 
 - **名字覆盖** 135/349 = 39%。只说明 `typeof wx.foo === 'function'` 成立，不代表能用。
-- **语义覆盖** (A + B + 5 扩展)/349 = 29.8%。A 是有宿主 handler 且真的干活；B 是 handler 在但返回罐头数据。
+- **语义覆盖** (A + B + 5 扩展)/349 = 30.1%。A 是有宿主 handler 且真的干活；B 是 handler 在但返回罐头数据。
 - **demo 命中** 61 个缺口里，设备 31、媒体 10、网络 8、界面 3、位置 3、跳转 3、基础 2、画布 1。
 
 ### 2.2 诚实性（已清零）
@@ -192,9 +192,14 @@ DoD：一个 fixture 页面完成「选图 → 上传 → 下载 → 预览」�
 
 #### W4 数据缓存与文件（M–L，2–3 PR）
 
-**部分落地（2026-11-19）**：`batchGetStorage`/`batchSetStorage`（含 Sync）按微信 3.17.5 的真实形状实现
+**已落地（2026-11-19）**：`batchGetStorage`/`batchSetStorage`（含 Sync）按微信 3.17.5 的真实形状实现
 （`batchGetStorage` 回 `{dataList}`，`batchGetStorageSync` 直接回数组，`batchSetStorage` 收 `kvList`）；
-acceptance host 的 storage 落 `localStorage`（按 appId 分区），刷新不再丢。`getFileSystemManager` 仍在下一批。
+acceptance host 的 storage 落 `localStorage`（按 appId 分区），刷新不再丢。
+
+`getFileSystemManager` 已从 fail stub 转成真实管理器：`access`/`readFile`/`writeFile`/`mkdir`/`readdir`/
+`stat`/`unlink`/`rmdir` 及 8 个 `*Sync` 变体，二进制走 base64 过桥，`Stats` 带 `isFile()`/`isDirectory()`。
+宿主是内存 VFS（10MB 上限，`wxfile://usr/...` 树；`wxfile://tmp` 与 `..` 逃逸一律失败）。
+未做：`copyFile`/`rename`/`appendFile`/`saveFile`/`getFileInfo`/fd 系列/`unzip`。
 
 - 数据缓存：持久化（浏览器 IndexedDB/localStorage，iOS UserDefaults 已有）、
   `batchGetStorage`/`batchSetStorage`（4 个）。

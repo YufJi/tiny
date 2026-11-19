@@ -1,5 +1,11 @@
 import type { HostApiHandlers, StorageValues, SyncApiHandlers, SystemInfo } from '@tiny/api'
-import { createMediaHandlers, createNetworkHandlers, createTempFileRegistry, pickFiles } from '@tiny/host-web'
+import {
+  createFileSystemHandlers,
+  createMediaHandlers,
+  createNetworkHandlers,
+  createTempFileRegistry,
+  pickFiles,
+} from '@tiny/host-web'
 
 
 const OVERLAY_ID = 'tiny-api-overlay'
@@ -69,6 +75,7 @@ export function createTestHostApiHandlers(
     'device.vibrate': (params) => vibrate(Number(params.duration ?? 15)),
     ...createMediaHandlers({ registry: tempFiles, pick }),
     ...createNetworkHandlers({ registry: tempFiles }),
+    ...createFileSystemHandlers(),
     'system.setting': () => ({
       bluetoothEnabled: false,
       locationEnabled: typeof navigator !== 'undefined' && 'geolocation' in navigator,

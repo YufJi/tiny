@@ -41,7 +41,7 @@ export function createEncodingApi(_context: ApiContext): ApiHost {
   }
 }
 
-function decodeBase64(base64: string): ArrayBuffer {
+export function decodeBase64(base64: string): ArrayBuffer {
   const cleaned = base64.replace(/[\t\n\f\r ]/g, '')
   if (cleaned.length === 0) return new ArrayBuffer(0)
 
@@ -74,7 +74,7 @@ function decodeBase64(base64: string): ArrayBuffer {
   return bytes.buffer
 }
 
-function encodeBase64(bytes: Uint8Array): string {
+export function encodeBase64(bytes: Uint8Array): string {
   const chunks: string[] = []
   let chunk = ''
   for (let index = 0; index < bytes.length; index += 3) {
