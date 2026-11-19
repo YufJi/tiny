@@ -45,6 +45,10 @@ export {
   type GlassRenderTreeOptions,
 } from './render/tree'
 export {
+  createNetworkHandlers,
+  type NetworkHandlerOptions,
+} from './network-tasks'
+export {
   createRenderHostEventBus,
   listenForRenderHostEvents,
   type RenderHostEventBus,

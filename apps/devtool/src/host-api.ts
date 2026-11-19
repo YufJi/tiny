@@ -1,5 +1,5 @@
 import type { HostApiHandlers, StorageValues, SyncApiHandlers, SystemInfo } from '@tiny/api'
-import { createMediaHandlers, createTempFileRegistry, pickFiles } from '@tiny/host-web'
+import { createMediaHandlers, createNetworkHandlers, createTempFileRegistry, pickFiles } from '@tiny/host-web'
 
 export type DevtoolNavigationAction = 'title' | 'color' | 'loading'
 
@@ -54,6 +54,7 @@ function createApiHandlers(
   const tempFiles = createTempFileRegistry()
   return {
     ...createMediaHandlers({ registry: tempFiles, pick: options.pickFiles }),
+    ...createNetworkHandlers({ registry: tempFiles }),
     'keyboard.hide': () => ({ errMsg: 'hideKeyboard:ok' }),
     'system.info': () => getSystemInfo(),
     'system.setting': () => ({

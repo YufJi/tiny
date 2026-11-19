@@ -126,6 +126,9 @@ export const API_CATALOG = {
   getNetworkType: { status: 'real', host: 'network.type' },
   getBatteryInfo: { status: 'partial', host: 'battery.get' },
   request: { status: 'partial', host: 'network.request' },
+  uploadFile: { status: 'real', host: 'network.uploadFile' },
+  // `filePath` (moving into the saved-file area) waits for W4; the temp path works.
+  downloadFile: { status: 'real', host: 'network.downloadFile' },
 
   // --- device.ts: clipboard, vibration, identity --------------------------
   setClipboardData: { status: 'real', host: 'clipboard.set' },

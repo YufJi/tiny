@@ -61,6 +61,8 @@ const CALLBACK_APIS = [
   'getImageInfo',
   'getVideoInfo',
   'canvasToTempFilePath',
+  'uploadFile',
+  'downloadFile',
   'saveImageToPhotosAlbum',
   'saveVideoToPhotosAlbum',
   'showToast',
