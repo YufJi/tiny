@@ -189,7 +189,7 @@ struct HostSystemInfo {
       "brand": "Apple",
       "language": language,
       "version": "8.0.0",
-      "SDKVersion": "3.0.0",
+      "SDKVersion": "3.17.5",
       "theme": theme,
       "host": "WeChat",
       "enableDebug": false,

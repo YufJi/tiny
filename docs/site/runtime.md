@@ -139,7 +139,7 @@ runtimeCompatibility 只决定应用需要哪些兼容全局和 behavior scheme�
 :::card{tag="service" title="兼容全局与 API"}
 `installMiniProgramGlobals()` 按 runtimeCompatibility 安装配置的 App/Page/Component/Behavior/getApp/getCurrentPages，以及 API namespace 和 aliases。
 
-`canIUse()` 以注入的 `wx.*` 表、内置组件清单和能力声明为准（不看 `SDKVersion`）；诊断和建议信息使用同一组 namespace。
+`canIUse()` 以注入的 `wx.*` 表、内置组件清单和能力声明为准（不看 `SDKVersion`）；未知 `wx.*` 名称读出 `undefined`（`typeof`/`in` 一致，首次访问仍报 `UNSUPPORTED_API`），桩 API（`authorize`/`checkSession`/`login`/文件系统/legacy canvas 等）即使可调用也回答 false。所有宿主统一报 `SDKVersion: "3.17.5"`。
 :::
 
 :::card{tag="render" title="Tiny 内部命名"}
@@ -522,7 +522,7 @@ iOS 没有 OffscreenCanvas。service 侧记录 Canvas 2D 调用，native 渲染�
 :::callout{title="两套 animation API" tone="warn"}
 `this.animate` / `clearAnimate` 会把 keyframes 归一化后走 `tree.animate`，Web 宿主用 Web Animations API 播放，支持多 step 和 scroll-driven 时序；scroll 模式目前不回传完成回调。
 
-`wx.createAnimation` 仍是最终态 CSS transition：编译期把 `animation` 属性改写成内联 style，多 step 时序和事件回调没有还原。
+`wx.createAnimation().export()` 返回微信的 `{actions}`，编译器把 WXML `animation` 序列化成宿主属性，render 侧按 `animationToStyle` 逐个 action 应用 CSS transition（`transitionend` + 定时兜底）；`bindtransitionend` 事件暂未映射。
 :::
 
 ## 当前限制 {#limits kicker="限制"}

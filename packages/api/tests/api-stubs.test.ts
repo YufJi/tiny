@@ -53,6 +53,18 @@ describe('P0 API stubs', () => {
     expect(styled.transformOrigin).toBe('0 0')
   })
 
+  test('worklet/media namespaces keep their call shapes', () => {
+    const { context } = createContext()
+    const wx = createApiHost(context) as unknown as Record<string, any>
+    expect(typeof wx.worklet.shared).toBe('function')
+    expect(wx.worklet.shared(2).value).toBe(2)
+    expect(typeof wx.worklet.Easing.out).toBe('function')
+    expect(typeof wx.getRecorderManager().start).toBe('function')
+    expect(typeof wx.getBackgroundAudioManager().play).toBe('function')
+    expect(typeof wx.createInnerAudioContext().play).toBe('function')
+    expect(wx.reportAnalytics('event', {})).toBeUndefined()
+  })
+
   test('createCanvasContext tolerates any drawing call', () => {
     const { context } = createContext()
     const canvas = createApiHost(context).createCanvasContext() as Record<string, (...args: unknown[]) => unknown>

@@ -1,5 +1,9 @@
 import type { ApiContext, ApiHost } from './context'
 import { createCanvasApi } from './canvas'
+import { createWorkletApi } from './worklet'
+import { createAnalyticsApi } from './analytics'
+import { createMediaApi } from './media'
+import { createCompatStubs } from './compat-stubs'
 import { createDeviceApi } from './device'
 import { createEncodingApi } from './encoding'
 import { createFileSystemApi } from './filesystem'
@@ -75,6 +79,10 @@ export function createApiHost(
     ...createEncodingApi(apiContext),
     ...createShareApi(apiContext),
     ...createCanvasApi(apiContext),
+    ...createWorkletApi(),
+    ...createAnalyticsApi(),
+    ...createMediaApi(),
+    ...createCompatStubs(),
     ...createQueryApi(apiContext),
     ...createFileSystemApi(),
     ...extensions,

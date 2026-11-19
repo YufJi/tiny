@@ -179,6 +179,45 @@ function buildComponentCapabilities(): Readonly<Record<string, CanIUseCapability
   return facts
 }
 
+/**
+ * APIs installed so third-party bundles keep their call shape, but without a
+ * real semantic implementation (fake permissions, stub login/profile, fail-only
+ * file system, legacy canvas fallback). `canIUse` must answer false for these:
+ * an app that branches on the capability should take its fallback path instead
+ * of calling a stub that cannot deliver.
+ */
+export const STUB_APIS: ReadonlySet<string> = new Set([
+  'authorize',
+  'checkSession',
+  'login',
+  'getUserProfile',
+  'getUserInfo',
+  'getFileSystemManager',
+  'createCanvasContext',
+  'worklet',
+  'reportAnalytics',
+  'getRecorderManager',
+  'getBackgroundAudioManager',
+  'createInnerAudioContext',
+  'createContext',
+  'getScreenBrightness',
+  'setScreenBrightness',
+  'createBLEPeripheralServer',
+  'onBLEPeripheralConnectionStateChanged',
+  'offBLEPeripheralConnectionStateChanged',
+  'onLocalServiceFound',
+  'offLocalServiceFound',
+  'onLocalServiceLost',
+  'offLocalServiceLost',
+  'onLocalServiceResolveFail',
+  'offLocalServiceResolveFail',
+  'onLocalServiceDiscoveryStop',
+  'offLocalServiceDiscoveryStop',
+  'startLocalServiceDiscovery',
+  'stopLocalServiceDiscovery',
+  'createWorker',
+])
+
 /** The capability table handed to the `canIUse` resolver. */
 export const CAN_I_USE_CAPABILITIES: CanIUseCapabilities = {
   api: buildApiCapabilities(),

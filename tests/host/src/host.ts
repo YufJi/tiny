@@ -8,7 +8,7 @@ const { app, manifest } = await resolveTestApp(search.get('app'))
 const initialPath = search.get('path') || manifest.pages[0]?.path || ''
 const storage = {}
 const baseSystemInfo = {
-  SDKVersion: '3.0.0',
+  SDKVersion: '3.17.5',
   // WeChat always reports these; WeUI components read `system` directly.
   system: 'iOS 16.0',
   model: 'iPhone 13',

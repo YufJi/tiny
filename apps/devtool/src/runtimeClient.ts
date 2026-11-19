@@ -172,7 +172,7 @@ export class DevtoolRuntimeClient {
       const width = this.container?.clientWidth ?? 0
       const height = this.container?.clientHeight ?? 0
       return {
-        SDKVersion: '3.0.0',
+        SDKVersion: '3.17.5',
         ...facts,
         pixelRatio: facts.pixelRatio
           ?? (typeof window === 'undefined' ? 1 : window.devicePixelRatio),

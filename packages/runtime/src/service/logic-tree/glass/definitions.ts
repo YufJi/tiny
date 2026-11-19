@@ -440,6 +440,11 @@ export class GlassDefinitionRegistry {
         }
       }
       methods.groupSetData = groupSetDataMethod
+      if (!('applyAnimatedStyle' in methods)) {
+        // Worklet stub: WeChat installs this on every component when the
+        // worklet runtime is present; Tiny keeps the call shape a no-op.
+        methods.applyAnimatedStyle = () => undefined
+      }
       if (this.host.logicIntersectionFactory) {
         methods.createIntersectionObserver = function (
           this: glassEasel.GeneralComponent,
@@ -805,6 +810,7 @@ export class GlassDefinitionRegistry {
   ): Record<string, (...args: unknown[]) => unknown> {
     const methods: Record<string, (...args: unknown[]) => unknown> = {
       groupSetData: groupSetDataMethod,
+      applyAnimatedStyle: () => undefined,
     }
     const options = this.host.logicPageOptions?.get(path)
     if (options) {

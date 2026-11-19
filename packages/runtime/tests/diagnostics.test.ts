@@ -94,14 +94,17 @@ describe('runtime diagnostics', () => {
     ;(globalObject.Page as (options: Record<string, unknown>) => unknown)({
       methods: {
         callUnsupportedApi() {
-          wx.makeTea()
+          const api = (wx as unknown as Record<string, unknown>).makeTea
+          return { type: typeof api, present: 'makeTea' in wx }
         },
       },
     })
 
     await host.bootstrap()
-    await service.activePage?.invokeMethod('callUnsupportedApi')
+    const probe = await service.activePage?.invokeMethod('callUnsupportedApi')
     await new Promise((resolve) => setTimeout(resolve, 0))
+    // Unknown APIs read as undefined, like WeChat; the probe is still reported.
+    expect(probe).toEqual({ type: 'undefined', present: false })
 
     expect(host.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(expect.arrayContaining([
       'UNSUPPORTED_COMPONENT',

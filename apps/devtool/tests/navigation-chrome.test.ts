@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { createDevtoolApiHost } from '../src/host-api'
 
 const systemInfo = {
-  SDKVersion: '3.0.0',
+  SDKVersion: '3.17.5',
   brand: 'devtools',
   model: 'iPhone 13',
   system: 'iOS 16.0',
