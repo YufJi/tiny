@@ -38,6 +38,7 @@ function createTable(): Record<string, unknown> {
     get: (_target, property) => {
       if (property === 'hasApi') return () => true
       if (property === 'launchOptions') return {}
+      if (property === 'hostCapabilities') return undefined
       return noop
     },
   }) as unknown as ApiContext

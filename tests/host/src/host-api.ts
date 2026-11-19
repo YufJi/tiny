@@ -27,6 +27,14 @@ let toastElement: HTMLElement | null = null
  * APIs. The values are mocks: they keep prototype flows moving instead of
  * failing, and a real backend can replace them without touching `@tiny/api`.
  */
+/** Handler keys this host registers but cannot honour (page chrome, share UI). */
+export const TEST_HOST_UNSUPPORTED_KEYS: ReadonlySet<string> = new Set([
+  'navigation.color',
+  'navigation.loading',
+  'share.menu',
+  'page.scrollTo',
+])
+
 export type TestHostApiOptions = {
   /** Mini-program id reported by `wx.getAccountInfoSync()`. */
   appId?: string

@@ -1,7 +1,11 @@
 import init, { WasmHostCore } from '@tiny/host-core-wasm'
-import { createPersistentStorage } from '@tiny/host-web'
+import { createPersistentStorage, HOST_CORE_API_KEYS } from '@tiny/host-web'
 import { TestBrowserHost } from './test-host'
-import { createTestHostApiHandlers, createTestHostSyncApiHandlers } from './host-api'
+import {
+  createTestHostApiHandlers,
+  createTestHostSyncApiHandlers,
+  TEST_HOST_UNSUPPORTED_KEYS,
+} from './host-api'
 import { generatedBaseFor, resolveTestApp } from './test-app'
 
 const search = new URLSearchParams(window.location.search)
@@ -28,28 +32,37 @@ const getSystemInfo = () => ({
 })
 
 await init()
+const apiHandlers = createTestHostApiHandlers(storage, getSystemInfo, {
+  appId: app.id,
+  onStorageChange: persistent.flush,
+  emitGlobalEvent: (name, payload) => emitGlobalEvent(name, payload),
+  resolveWorkerUrl: (workerPath) => (
+    `${generatedBase}/${workerPath.split('/').map(encodeURIComponent).join('/')}`
+  ),
+})
+const syncApiHandlers = createTestHostSyncApiHandlers(storage, getSystemInfo, {
+  appId: app.id,
+  onStorageChange: persistent.flush,
+})
+const apiCapabilities = [
+  ...Object.keys(apiHandlers),
+  ...Object.keys(syncApiHandlers),
+  ...HOST_CORE_API_KEYS,
+].filter((key) => !TEST_HOST_UNSUPPORTED_KEYS.has(key))
+
 const wasmHost = new TestBrowserHost({
   appId: app.id,
   manifest,
   // The service and render documents load the same fixture's artifacts; pass
   // the selection through their URLs because each iframe owns its module graph.
-  serviceUrl: `/service.html?app=${encodeURIComponent(app.id)}`,
+  serviceUrl: `/service.html?app=${encodeURIComponent(app.id)}`
+    + `&apiCapabilities=${encodeURIComponent(apiCapabilities.join(','))}`,
   renderUrl: `/render.html?app=${encodeURIComponent(app.id)}`,
   initialPath,
   container: document.getElementById('app') ?? document.body,
   storage,
-  apiHandlers: createTestHostApiHandlers(storage, getSystemInfo, {
-    appId: app.id,
-    onStorageChange: persistent.flush,
-    emitGlobalEvent: (name, payload) => emitGlobalEvent(name, payload),
-    resolveWorkerUrl: (workerPath) => (
-      `${generatedBase}/${workerPath.split('/').map(encodeURIComponent).join('/')}`
-    ),
-  }),
-  syncApiHandlers: createTestHostSyncApiHandlers(storage, getSystemInfo, {
-    appId: app.id,
-    onStorageChange: persistent.flush,
-  }),
+  apiHandlers,
+  syncApiHandlers,
 }, async (config) => {
   const core = new WasmHostCore(config)
   return {

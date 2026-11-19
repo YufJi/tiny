@@ -192,3 +192,54 @@ describe('canIUse schema families', () => {
     expect(() => host.canIUse!(null)).toThrow('canIUse: schema should be a string')
   })
 })
+
+describe('per-host capabilities', () => {
+  test('canIUse follows the host handler keys, not just the table', () => {
+    const context = {
+      connection: {
+        sendDiagnostic: () => undefined,
+        call: () => Promise.resolve(undefined),
+        callSync: () => undefined,
+      },
+      apiName: 'wx',
+      apiNamespaces: ['wx'],
+      pageId: 'page-1',
+      hostCapabilities: new Set(['storage.get', 'storage.set']),
+    } as unknown as ApiContext
+    const host = createApiHost(context) as Record<string, (...args: unknown[]) => unknown>
+
+    // Host-backed API whose handler the host did not advertise.
+    expect(host.canIUse!('setNavigationBarTitle')).toBe(false)
+    expect(host.canIUse!('getStorage')).toBe(true)
+    // Service-side APIs need no host key and stay available.
+    expect(host.canIUse!('nextTick')).toBe(true)
+    expect(host.canIUse!('getFileSystemManager')).toBe(true)
+    // Host-backed APIs outside the list, and service-only stubs, stay false.
+    expect(host.canIUse!('createWorker')).toBe(false)
+    expect(host.canIUse!('reportAnalytics')).toBe(false)
+  })
+
+  test('a host that implements a reference stub advertises it', () => {
+    const context = {
+      connection: {
+        sendDiagnostic: () => undefined,
+        call: () => Promise.resolve(undefined),
+        callSync: () => undefined,
+      },
+      apiName: 'wx',
+      apiNamespaces: ['wx'],
+      pageId: 'page-1',
+      hostCapabilities: new Set(['share.menu', 'navigation.color']),
+    } as unknown as ApiContext
+    const host = createApiHost(context) as Record<string, (...args: unknown[]) => unknown>
+    // The browser host only stubs these; a host with real chrome can do them.
+    expect(host.canIUse!('showShareMenu')).toBe(true)
+    expect(host.canIUse!('setNavigationBarColor')).toBe(true)
+    expect(host.canIUse!('setNavigationBarTitle')).toBe(false)
+  })
+
+  test('without a capability list the engine-wide answer is kept', () => {
+    const { host } = createContext()
+    expect(host.canIUse!('setNavigationBarTitle')).toBe(true)
+  })
+})

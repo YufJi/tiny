@@ -1,6 +1,7 @@
 import type { ApiContext, ApiHost } from './context'
 import { createBasicsApi } from './basics'
 import { createCanvasApi } from './canvas'
+import { describeApi } from './catalog'
 import { createWorkletApi } from './worklet'
 import { createAnalyticsApi } from './analytics'
 import { createLocationApi } from './location'
@@ -97,6 +98,19 @@ export function createApiHost(
     ...createFileSystemApi(apiContext),
     ...extensions,
   }
-  for (const name of Object.keys(table)) available.add(name)
+  for (const name of Object.keys(table)) {
+    const descriptor = describeApi(name)
+    // A host that declares its capabilities only advertises APIs it can run;
+    // a host that does not declare any keeps the engine-wide answer.
+    const host = descriptor?.host
+    const runnable = descriptor
+      ? host
+        // A host that declares capabilities decides for host-backed entries,
+        // including ones the reference host only stubs.
+        ? !apiContext.hostCapabilities || apiContext.hostCapabilities.has(host)
+        : descriptor.status !== 'stub'
+      : true
+    if (runnable) available.add(name)
+  }
   return table
 }

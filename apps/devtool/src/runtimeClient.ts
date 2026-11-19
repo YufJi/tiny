@@ -10,12 +10,27 @@ import type { RuntimeDiagnostic, RuntimePageState, RuntimeTabBarState } from '@t
 import type { InspectNode } from '@tiny/runtime'
 import type { RuntimeManifest } from '@tiny/runtime'
 import type { StorageValues, SystemInfo } from '@tiny/api'
-import { WasmBrowserHost, type WasmHostCoreFactory } from '@tiny/host-web'
+import { HOST_CORE_API_KEYS, WasmBrowserHost, type WasmHostCoreFactory } from '@tiny/host-web'
 import { createDevtoolApiHost } from './host-api'
 import { projectComponentTree } from './componentTree'
 import { pollHostPicker, showHostPicker, updateHostPicker } from './hostPicker'
 import { launchExitState } from './pageStackState'
 import type { PreviewRect } from '@tiny/devtool-simulator'
+
+/** Advertise the `api` handler keys this host can honour; the service turns the
+ * list into per-host `canIUse` answers. */
+function withApiCapabilities(
+  serviceUrl: string,
+  apiHost: { apiHandlers: Record<string, unknown>; syncApiHandlers: Record<string, unknown> },
+): string {
+  const keys = [
+    ...Object.keys(apiHost.apiHandlers),
+    ...Object.keys(apiHost.syncApiHandlers),
+    ...HOST_CORE_API_KEYS,
+  ]
+  const separator = serviceUrl.includes('?') ? '&' : '?'
+  return `${serviceUrl}${separator}apiCapabilities=${encodeURIComponent(keys.join(','))}`
+}
 
 export type DevtoolRuntimeStatus = 'idle' | 'connecting' | 'running' | 'terminated' | 'error'
 
@@ -197,7 +212,7 @@ export class DevtoolRuntimeClient {
       this.wasmHost = new WasmBrowserHost({
         appId: this.options.appId ?? 'devtool',
         manifest: this.options.manifest,
-        serviceUrl: this.options.serviceUrl,
+        serviceUrl: withApiCapabilities(this.options.serviceUrl, apiHost),
         renderUrl: this.options.renderUrl,
         initialPath: this.launchPath,
         container,

@@ -44,6 +44,7 @@ export {
   type GlassRenderTree,
   type GlassRenderTreeOptions,
 } from './render/tree'
+export { HOST_CORE_API_KEYS } from './api-capabilities'
 export {
   createWorkerHandlers,
   WORKER_BOOTSTRAP,

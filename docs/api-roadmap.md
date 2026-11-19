@@ -95,8 +95,7 @@ API 已按三种方式处理：
 | 诚实失败（宿主返回 `:fail`） | `pageScrollTo`、`setNavigationBarColor`、`show`/`hideNavigationBarLoading`（浏览器宿主） |
 | 声明不支持（保留注册形状） | `on/offThemeChange`、`on/offMemoryWarning`、`on/offUserCaptureScreen` |
 
-遗留两点：分享菜单 3 个（排除分类）在浏览器宿主也改为诚实失败；devtool 的导航栏/分享 chrome 仍能工作，
-但在宿主能力上报落地前，`canIUse` 对它们保守回答 false（ADR-0027 的“宁缺勿假”）。
+遗留一点：分享菜单 3 个（排除分类）在浏览器宿主改为诚实失败；devtool 通过宿主能力上报回答 true。
 
 ## 3. 排序模型
 
@@ -120,8 +119,9 @@ API 已按三种方式处理：
 - **API catalog**：`name → { hostKey?, shape: plain|event|factory, stub?, excluded? }` 收成一份声明，
   `createApiHost`、`canIUse`、覆盖率报告都从这里读。150 个排除项也在表里，标 `excluded: true` + 原因。
 - **`pnpm api:coverage`**：输出 名字/语义/demo 命中/iOS 对齐/假成功 五张表，分母用 349。
-- **宿主能力上报**：宿主启动时声明实现了哪些 `api` handler key，`canIUse` 改为「表里有 ∩ 宿主真实现」。
-  需要一篇 ADR 补 0027。
+- **宿主能力上报（已落地 2026-11-19）**：宿主在 service URL 上声明自己真正能跑通的 `api` handler key，
+  `createApiHost` 按声明过滤 `canIUse`（含 Rust HostCore 的 `navigate.*`/`page.*`）；声明了能力的宿主，
+  其答案覆盖 `STUB_APIS`——devtool 的导航栏/分享 chrome 因此回答 true，浏览器宿主回答 false。
 - **假成功清零**：已完成（11 → 0）；后续新 API 由 `catalog.test.ts` 的 stub⇔canIUse 规则挡住。
 - **C 层 31 个桩逐个定归属**：能实现的挂到对应波次，不能实现的写清理由，多余的删除。
 - **iOS 25 个缺口先“说真话”**：W0 只做能力上报与显式不支持声明，让 `canIUse` 在 iOS 上不再虚报。
