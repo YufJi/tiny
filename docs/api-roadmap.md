@@ -286,6 +286,22 @@ MVP 边界：`createWorker(path)` → `postMessage`/`onMessage`/`terminate`；wo
 
 原则：**宁可 0 实现也不要假实现**。每个域产出一页“能力矩阵”，写清浏览器/iOS 各自行为。
 
+## 4.1 波次状态（2026-11-19）
+
+| 波次 | 状态 | 说明 |
+| --- | --- | --- |
+| W0 诚实与度量 | ✅ 完成 | catalog + `api:coverage` + 宿主能力上报；11 个假成功清零；`stub ⇔ canIUse false` 由测试强制 |
+| W1 快赢池 | 🟡 部分 | 身份 7、基础/环境 13、电池/字体/网络质量/键盘 5、页面级位置 3、头像裁剪压缩等；页面 chrome（topBarText/背景色/尺寸）、跨小程序跳转、14 个路由事件未做（语义不清或需 devtool UI） |
+| W2 本地媒体与画布 | ✅ 完成 | 选图/选视频/文件、预览、图片信息、压缩、裁剪、相册保存（下载）、canvas 导出与像素读写 |
+| W3 网络 | ✅ 完成 | request、uploadFile/downloadFile（进度+abort）、WebSocket（Task + 全局事件）；TCP/UDP 浏览器不可行 |
+| W4 数据缓存与文件 | ✅ 完成 | 持久化、batch、FileSystemManager 主体、openDocument/saveFileToDisk；`saveFileSync` 因 Blob 无法同步读而缺席 |
+| W5 媒体采集与播放 | 🟡 部分 | innerAudio、backgroundAudio、recorder；camera/video/live-player/WebAudio 缺（需要组件侧承载） |
+| W6 位置与传感器 | ✅ 完成 | 定位/模糊定位/持续更新、加速度计/罗盘/陀螺仪/设备运动、电池、键盘高度 |
+| W7 Worker | ✅ 完成 | 编译层产出 + Blob Worker + `worker` 全局 bootstrap + 消息排队 |
+| iOS 宿主 | 🟡 部分 | 38/88 个 handler key（身份、设置、剪贴板、批量存储、网络、电量、震动、toast/loading/modal/actionSheet），媒体/传感器/Worker 仍缺 |
+
+语义覆盖从 20.6% 提升到 49.0%，官方 demo 在范围内的缺口从 61 降到 41。
+
 ## 5. 第一批 PR（建议）
 
 1. **PR-1（W0）**：`packages/api/src/catalog.ts` + `scripts/api-coverage.mjs` + `pnpm api:coverage`，
