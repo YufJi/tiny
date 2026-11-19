@@ -143,8 +143,12 @@ describe('wx:// behaviors', () => {
     }
     // The kernel reports these as `UNSUPPORTED_BEHAVIOR`, so the render side
     // must not silently accept them.
-    for (const id of ['wx://request-filter', 'wx://request-sender', 'wx://functional-page-behavior', 'wx://proxy-swiper']) {
+    for (const id of ['wx://request-filter', 'wx://request-sender', 'wx://functional-page-behavior']) {
       expect(behaviors[id], id).toBeUndefined()
+    }
+    // 3.17.5 proxy behaviors are marker-only but declared.
+    for (const id of ['wx://proxy-swiper', 'wx://proxy-swiper-item', 'wx://proxy-scroll-view', 'wx://translate']) {
+      expect(behaviors[id], id).toBeDefined()
     }
   })
 })

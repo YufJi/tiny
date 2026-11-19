@@ -7,6 +7,7 @@ import { createFormFieldButtonBehavior } from './form-field-button'
 import { createFormFieldGroupBehavior } from './form-field-group'
 import { createBuiltinLabelTargetBehavior } from './label-target'
 import { createStyleFilterBehavior } from './style-filter'
+import { createMarkerBehavior } from './marker'
 import { builtinBehaviorId } from './types'
 import type { BuiltinBehaviorFactory, BuiltinBehaviorSpec } from './types'
 
@@ -54,7 +55,8 @@ export function behaviorTraitImplementations(value: unknown): Array<{
 }
 
 /**
- * The `wx://` built-in behaviors implemented by Tiny.
+ * The `wx://` built-in behaviors of WeChat 3.17.5, plus Tiny's `style-filter`
+ * extension.
  *
  * `wx://request-filter`, `wx://request-sender` and
  * `wx://functional-page-behavior` are intentionally excluded:
@@ -63,23 +65,37 @@ export function behaviorTraitImplementations(value: unknown): Array<{
  * - functional-page-behavior belongs to the plugin/functional-page navigator,
  *   which Tiny does not support.
  * Declaring any of them falls back to `UNSUPPORTED_BEHAVIOR`.
+ *
+ * `proxy-swiper`, `proxy-swiper-item`, `proxy-scroll-view` and `translate` are
+ * markers: WeChat's built-in components declare them, and third-party code may
+ * check `hasBehavior`, but Tiny has no separate semantics to attach.
  */
 const BUILTIN_BEHAVIOR_FACTORIES: readonly BuiltinBehaviorFactory[] = [
-  createComponentExportBehavior,
   createFormFieldBehavior,
-  createFormFieldButtonBehavior,
   createFormFieldGroupBehavior,
+  createFormFieldButtonBehavior,
   createBuiltinLabelTargetBehavior,
+  createMarkerBehavior('proxy-swiper'),
+  createMarkerBehavior('proxy-swiper-item'),
+  createMarkerBehavior('proxy-scroll-view'),
+  createComponentExportBehavior,
+  createMarkerBehavior('translate'),
+  // Tiny extension, not part of WeChat 3.17.5.
   createStyleFilterBehavior,
 ]
 
-/** Built-in behavior short names, in reference order. */
+/** Built-in behavior short names, in WeChat 3.17.5 reference order. */
 export const BUILTIN_BEHAVIOR_NAMES = [
-  'component-export',
   'form-field',
-  'form-field-button',
   'form-field-group',
+  'form-field-button',
   'label-target',
+  'proxy-swiper',
+  'proxy-swiper-item',
+  'proxy-scroll-view',
+  'component-export',
+  'translate',
+  // Tiny extension.
   'style-filter',
 ] as const
 
