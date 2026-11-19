@@ -1,3 +1,4 @@
+import AudioToolbox
 import CoreLocation
 import Foundation
 import Network
@@ -18,6 +19,8 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private let smoke: Bool
   private var core: HostCoreSession?
   private var networkMonitor: NWPathMonitor?
+  /// Last network type reported by `NWPathMonitor`, served to `wx.getNetworkType`.
+  private var currentNetworkType = "wifi"
   private var initialPageId: String?
   private var smokeNavigationStarted = false
   private var surfaces: [String: NativeRenderSurface] = [:]
@@ -639,6 +642,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       }
       DispatchQueue.main.async {
         guard let self else { return }
+        self.currentNetworkType = networkType
         try? self.core?.command([
           "type": "emitEvent",
           "name": "networkStatusChange",
@@ -1336,6 +1340,8 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       ]
     case "permissions.setting":
       result = authorizeSettingPayload()
+    case "network.type":
+      result = ["networkType": currentNetworkType, "errMsg": "getNetworkType:ok"]
     default:
       result = ["error": "unsupported synchronous host API: \(method)"]
     }
@@ -1343,6 +1349,64 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
           let text = String(data: data, encoding: .utf8)
     else { return "null" }
     return text
+  }
+
+  /// URLSession-backed `wx.request`. The reply is delivered later, so the
+  /// switch returns without calling `platformResult`.
+  private func performNetworkRequest(requestId: String, params: [String: Any]) {
+    guard let urlString = params["url"] as? String,
+          let url = URL(string: urlString),
+          let scheme = url.scheme?.lowercased(),
+          scheme == "http" || scheme == "https"
+    else {
+      try? core?.platformResult(requestId: requestId, result: ["errMsg": "request:fail invalid url"])
+      return
+    }
+    var request = URLRequest(url: url)
+    request.httpMethod = (params["method"] as? String ?? "GET").uppercased()
+    if let header = params["header"] as? [String: Any] {
+      for (key, value) in header {
+        request.setValue(String(describing: value), forHTTPHeaderField: key)
+      }
+    }
+    if let data = params["data"] {
+      if let text = data as? String {
+        request.httpBody = text.data(using: .utf8)
+      } else if JSONSerialization.isValidJSONObject(data),
+                let body = try? JSONSerialization.data(withJSONObject: data) {
+        request.httpBody = body
+      }
+    }
+    let timeout = (params["timeout"] as? Double ?? 60000) / 1000
+    request.timeoutInterval = max(1, timeout)
+    let wantsBuffer = (params["responseType"] as? String) == "arraybuffer"
+    URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+      Task { @MainActor in
+        guard let self else { return }
+        if let error {
+          try? self.core?.platformResult(requestId: requestId, result: [
+            "errMsg": "request:fail \(error.localizedDescription)",
+          ])
+          return
+        }
+        let http = response as? HTTPURLResponse
+        var result: [String: Any] = [
+          "statusCode": http?.statusCode ?? 0,
+          "header": (http?.allHeaderFields as? [String: String]) ?? [:],
+          "errMsg": "request:ok",
+        ]
+        if let data {
+          if wantsBuffer {
+            result["data"] = data.base64EncodedString()
+          } else {
+            result["data"] = String(data: data, encoding: .utf8) ?? ""
+          }
+        } else {
+          result["data"] = ""
+        }
+        try? self.core?.platformResult(requestId: requestId, result: result)
+      }
+    }.resume()
   }
 
   /// WeChat mock identity: fields match the real envelope so prototype flows
@@ -1456,6 +1520,26 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
         try core?.platformResult(requestId: requestId, result: mockProfile())
       case "update.check":
         try core?.platformResult(requestId: requestId, result: ["hasUpdate": false, "errMsg": "checkForUpdate:ok"])
+      case "network.type":
+        try core?.platformResult(requestId: requestId, result: [
+          "networkType": currentNetworkType,
+          "errMsg": "getNetworkType:ok",
+        ])
+      case "battery.get":
+        let device = UIDevice.current
+        device.isBatteryMonitoringEnabled = true
+        let level = device.batteryLevel < 0 ? 100 : Int((device.batteryLevel * 100).rounded())
+        let charging = device.batteryState == .charging || device.batteryState == .full
+        try core?.platformResult(requestId: requestId, result: [
+          "level": level,
+          "isCharging": charging,
+          "errMsg": "getBatteryInfo:ok",
+        ])
+      case "device.vibrate":
+        AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "vibrateShort:ok"])
+      case "network.request":
+        performNetworkRequest(requestId: requestId, params: params)
       default:
         // An unimplemented host handler is a platform failure, not a fake
         // success: `request` must not look like it fetched anything, `login`
