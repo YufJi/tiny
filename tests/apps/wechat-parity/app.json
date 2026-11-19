@@ -8,7 +8,9 @@
     "pages/form-controls/form-controls",
     "pages/inputs/inputs",
     "pages/picker-view/picker-view",
-    "pages/icon-image/icon-image"
+    "pages/icon-image/icon-image",
+    "pages/visual-batch/visual-batch",
+    "pages/container/container"
   ],
   "window": {
     "navigationBarTitleText": "Tiny WXS parity"

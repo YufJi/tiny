@@ -3,6 +3,8 @@
     <text class="title">Tiny Glass-easel P0</text>
   <view id="open-virtual" bindtap="openVirtual">Virtual host</view>
   <view id="open-meta" bindtap="openMeta">Meta</view>
+  <view id="open-visual" bindtap="openVisual">Visual batch</view>
+  <view id="open-container" bindtap="openContainer">Container</view>
     <text class="subtitle">marker: {{marker}}</text>
     <text class="custom-detail">custom: {{customDetail}}</text>
     <text class="system">system: {{system.pixelRatio}} / {{system.windowWidth}}x{{system.windowHeight}}</text>

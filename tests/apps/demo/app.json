@@ -10,7 +10,9 @@
     "pages/reorder/reorder",
     "pages/timing/timing",
     "pages/virtual/virtual",
-    "pages/meta/meta"
+    "pages/meta/meta",
+    "pages/visual/visual",
+    "pages/container/container"
   ],
   "window": {
     "navigationBarTitleText": "P0 demo"

@@ -1166,11 +1166,85 @@ export async function runBrowserAcceptance({ baseUrl, app = 'demo', browser }) {
       assert.equal(meta.navFront, '#ffffff')
       await byText(render, 'Toggle loading', { exact: true }).click()
       await waitForText('meta: true')
+      await render.waitForFunction(
+        () => document.querySelector('tiny-page')?.dataset.tinyNavigationLoading === 'true',
+        null,
+        { timeout: 5000 },
+      )
       const loading = await render.evaluate(
         () => document.querySelector('tiny-page')?.dataset.tinyNavigationLoading,
       )
       assert.equal(loading, 'true')
       await byText(render, 'Back', { exact: true }).click()
+      await waitForText('Tiny Glass-easel P0')
+    })
+
+    await step('render progress, rich-text, movable-view and swiper', async () => {
+      currentStep = 'render progress, rich-text, movable-view and swiper'
+      await tapToPage('Visual batch', 'Progress')
+      await waitForText('Rich text')
+      const visual = await render.evaluate(() => {
+        const q = (selector) => document.querySelector(selector)
+        const track = q('[class*="progress-bar"]')
+        const bar = q('[class*="progress-inner-bar"]')
+        const info = q('[class*="progress-info"]')
+        const rich = q('tiny-rich-text')
+        const richStyled = rich?.querySelector('[style*="color"]')
+        const movable = q('#movable-view')
+        const swiper = q('#swiper')
+        const dots = [...document.querySelectorAll(
+          '[class*="swiper-dot"]:not([class*="swiper-dots"])',
+        )]
+        const active = dots.find((dot) => String(dot.className).includes('swiper-dot-active'))
+        const trackRect = track?.getBoundingClientRect()
+        const barRect = bar?.getBoundingClientRect()
+        return {
+          progressRatio: trackRect && barRect ? barRect.width / trackRect.width : 0,
+          info: info?.textContent ?? '',
+          richText: rich?.textContent ?? '',
+          richColor: richStyled ? getComputedStyle(richStyled).color : '',
+          movableTransform: movable ? getComputedStyle(movable).transform : '',
+          swiperHeight: swiper?.getBoundingClientRect().height ?? 0,
+          dotCount: dots.length,
+          activeIndex: active ? dots.indexOf(active) : -1,
+        }
+      })
+      assert.ok(Math.abs(visual.progressRatio - 0.3) < 0.02, `progress ${visual.progressRatio}`)
+      assert.equal(visual.info, '30%')
+      assert.equal(visual.richText, 'Rich text')
+      assert.equal(visual.richColor, 'rgb(7, 193, 96)')
+      assert.equal(visual.movableTransform, 'matrix(1, 0, 0, 1, 30, 20)')
+      assert.equal(visual.swiperHeight, 100)
+      assert.equal(visual.dotCount, 3)
+      assert.equal(visual.activeIndex, 1)
+      await byText(render, 'Back', { exact: true }).click()
+      await waitForText('Tiny Glass-easel P0')
+    })
+
+    await step('render a page-container overlay and bottom panel', async () => {
+      currentStep = 'render a page-container overlay and bottom panel'
+      await tapToPage('Container', 'Panel content')
+      // Let the page-container enter transition settle before measuring.
+      await page.waitForTimeout(600)
+      const container = await render.evaluate(() => {
+        const overlay = document.querySelector('[class*="weui-overlay"]')
+        const popup = document.querySelector('[class*="weui-popup"]')
+        return {
+          overlayBackground: overlay ? getComputedStyle(overlay).backgroundColor : '',
+          overlayPosition: overlay ? getComputedStyle(overlay).position : '',
+          popupRadius: popup ? getComputedStyle(popup).borderTopLeftRadius : '',
+          popupBottom: popup?.getBoundingClientRect().bottom ?? 0,
+          popupWidth: popup?.getBoundingClientRect().width ?? 0,
+          viewportWidth: window.innerWidth,
+          viewportBottom: window.innerHeight,
+        }
+      })
+      assert.equal(container.overlayBackground, 'rgba(0, 0, 0, 0.7)')
+      assert.equal(container.overlayPosition, 'fixed')
+      assert.equal(container.popupRadius, '20px')
+      assert.equal(container.popupWidth, container.viewportWidth)
+      assert.equal(container.popupBottom, container.viewportBottom)
+      await byText(render, 'Close', { exact: true }).click()
       await waitForText('Tiny Glass-easel P0')
     })
 

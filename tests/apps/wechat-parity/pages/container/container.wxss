@@ -1,0 +1,7 @@
+.page { padding: 12px; }
+.title { font-size: 14px; }
+.panel {
+  background: #fff;
+  height: 160px;
+  padding: 12px;
+}

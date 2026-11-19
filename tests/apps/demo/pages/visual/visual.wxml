@@ -1,0 +1,20 @@
+<view class="page">
+  <text class="title">Progress</text>
+  <progress id="progress" percent="30" show-info stroke-width="6" active-color="#07c160" />
+
+  <text class="title">Rich text</text>
+  <rich-text id="rich-text" nodes="{{richNodes}}" />
+
+  <text class="title">Movable view</text>
+  <movable-area id="movable-area" style="width: 200px; height: 120px; background: #eee;">
+    <movable-view id="movable-view" style="width: 40px; height: 40px; background: #07c160;" x="30" y="20" direction="all" />
+  </movable-area>
+
+  <text class="title">Swiper</text>
+  <swiper id="swiper" style="height: 100px;" indicator-dots="{{true}}" current="1">
+    <swiper-item><view class="slide slide-a">A</view></swiper-item>
+    <swiper-item><view class="slide slide-b">B</view></swiper-item>
+    <swiper-item><view class="slide slide-c">C</view></swiper-item>
+  </swiper>
+  <button bindtap="back">Back</button>
+</view>
