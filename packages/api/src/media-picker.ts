@@ -20,6 +20,11 @@ export function createMediaPickerApi(context: ApiContext): ApiHost {
     chooseVideo: forward('chooseVideo'),
     chooseMessageFile: forward('chooseMessageFile'),
     compressImage: forward('compressImage'),
+    checkDeviceSupportHevc: (params: unknown = {}) => runApi(
+      params,
+      'checkDeviceSupportHevc',
+      () => callHost(context, 'media.hevcSupport', params as Record<string, unknown>),
+    ),
     previewImage: forward('previewImage'),
     previewMedia: forward('previewMedia'),
     getImageInfo: forward('getImageInfo'),

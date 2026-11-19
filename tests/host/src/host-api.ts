@@ -5,6 +5,7 @@ import {
   createNetworkHandlers,
   createAudioHandlers,
   createDeviceHandlers,
+  createEnvHandlers,
   createSocketHandlers,
   createRecorderHandlers,
   createSensorHandlers,
@@ -51,6 +52,13 @@ export type TestHostApiOptions = {
   emitGlobalEvent?: (name: string, payload?: unknown) => void
   /** Resolve a mini-program worker path to a servable URL. */
   resolveWorkerUrl?: (path: string) => string
+  /**
+   * Handler maps shared by the async and sync tables. The file system keeps
+   * bytes and the permission cache keeps state, so both channels must see the
+   * same instance.
+   */
+  fileSystem?: Record<string, (params: Record<string, unknown>) => unknown>
+  env?: Record<string, (params: Record<string, unknown>) => unknown>
 }
 
 export type HostIdentity = {
@@ -93,7 +101,8 @@ export function createTestHostApiHandlers(
     'device.vibrate': (params) => vibrate(Number(params.duration ?? 15)),
     ...createMediaHandlers({ registry: tempFiles, pick }),
     ...createNetworkHandlers({ registry: tempFiles }),
-    ...createFileSystemHandlers(),
+    ...(options.fileSystem ?? createFileSystemHandlers()),
+    ...(options.env ?? createEnvHandlers()),
     ...createSensorHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
     ...createDeviceHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
     ...createAudioHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
@@ -179,6 +188,8 @@ export function createTestHostSyncApiHandlers(
       plugin: {},
     }),
     ...createStorageHandlers(storage, onChange),
+    ...(options.fileSystem ?? createFileSystemHandlers()),
+    ...(options.env ?? createEnvHandlers()),
   }
 }
 

@@ -1,5 +1,10 @@
 import init, { WasmHostCore } from '@tiny/host-core-wasm'
-import { createPersistentStorage, HOST_CORE_API_KEYS } from '@tiny/host-web'
+import {
+  createEnvHandlers,
+  createFileSystemHandlers,
+  createPersistentStorage,
+  HOST_CORE_API_KEYS,
+} from '@tiny/host-web'
 import { TestBrowserHost } from './test-host'
 import {
   createTestHostApiHandlers,
@@ -32,6 +37,8 @@ const getSystemInfo = () => ({
 })
 
 await init()
+const fileSystem = createFileSystemHandlers()
+const env = createEnvHandlers()
 const apiHandlers = createTestHostApiHandlers(storage, getSystemInfo, {
   appId: app.id,
   onStorageChange: persistent.flush,
@@ -39,10 +46,14 @@ const apiHandlers = createTestHostApiHandlers(storage, getSystemInfo, {
   resolveWorkerUrl: (workerPath) => (
     `${generatedBase}/${workerPath.split('/').map(encodeURIComponent).join('/')}`
   ),
+  fileSystem,
+  env,
 })
 const syncApiHandlers = createTestHostSyncApiHandlers(storage, getSystemInfo, {
   appId: app.id,
   onStorageChange: persistent.flush,
+  fileSystem,
+  env,
 })
 const apiCapabilities = [
   ...Object.keys(apiHandlers),

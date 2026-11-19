@@ -5,6 +5,7 @@ import {
   createNetworkHandlers,
   createAudioHandlers,
   createDeviceHandlers,
+  createEnvHandlers,
   createSocketHandlers,
   createRecorderHandlers,
   createSensorHandlers,
@@ -55,15 +56,27 @@ let toastElement: HTMLElement | null = null
  */
 export function createDevtoolApiHost(options: DevtoolApiOptions): DevtoolApiHost {
   const storage = options.storage ?? {}
-  return {
-    apiHandlers: createApiHandlers(storage, options),
-    syncApiHandlers: createSyncApiHandlers(storage, options),
+  // Shared so the async and sync channels see one file system and one
+  // permission cache.
+  const shared = {
+    fileSystem: createFileSystemHandlers(),
+    env: createEnvHandlers(),
   }
+  return {
+    apiHandlers: createApiHandlers(storage, options, shared),
+    syncApiHandlers: createSyncApiHandlers(storage, options, shared),
+  }
+}
+
+type SharedHandlers = {
+  fileSystem: Record<string, (params: Record<string, unknown>) => unknown>
+  env: Record<string, (params: Record<string, unknown>) => unknown>
 }
 
 function createApiHandlers(
   storage: StorageValues,
   options: DevtoolApiOptions,
+  shared: SharedHandlers,
 ): HostApiHandlers {
   const getSystemInfo = options.getSystemInfo
   const authSetting: Record<string, boolean> = {}
@@ -71,7 +84,8 @@ function createApiHandlers(
   return {
     ...createMediaHandlers({ registry: tempFiles, pick: options.pickFiles }),
     ...createNetworkHandlers({ registry: tempFiles }),
-    ...createFileSystemHandlers(),
+    ...shared.fileSystem,
+    ...shared.env,
     ...createSensorHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
     ...createDeviceHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
     ...createAudioHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
@@ -193,6 +207,7 @@ function createApiHandlers(
 function createSyncApiHandlers(
   storage: StorageValues,
   options: DevtoolApiOptions,
+  shared: SharedHandlers,
 ): SyncApiHandlers {
   const getSystemInfo = options.getSystemInfo
   const getMenuButtonBoundingClientRect = options.getMenuButtonBoundingClientRect
@@ -238,7 +253,8 @@ function createSyncApiHandlers(
       }
       return { errMsg: 'batchSetStorage:ok' }
     },
-    ...createFileSystemHandlers(),
+    ...shared.fileSystem,
+    ...shared.env,
   }
 }
 

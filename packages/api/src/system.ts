@@ -32,6 +32,20 @@ export function createSystemApi(context: ApiContext): ApiHost {
     ),
     getAccountInfoSync: () => cloneJsonSafe(callHostSync(context, 'account.info')),
     getEnterOptionsSync: () => cloneJsonSafe(context.launchOptions ?? {}),
+    getExtConfig: (params: unknown = {}) => runApi(
+      params,
+      'getExtConfig',
+      async () => ({
+        extConfig: cloneJsonSafe(await callHost(context, 'account.extConfig')),
+        errMsg: 'getExtConfig:ok',
+      }),
+    ),
+    getExtConfigSync: () => cloneJsonSafe(callHostSync(context, 'account.extConfig')),
+    getApiCategory: () => ({ apiCategory: 'default' }),
+    getRendererUserAgent: () => String(
+      (callHostSync(context, 'env.userAgent') as { userAgent?: unknown } | undefined)?.userAgent ?? '',
+    ),
+    getAppAuthorizeSetting: () => cloneJsonSafe(callHostSync(context, 'permissions.setting')),
     canIUse: createCanIUse(context, CAN_I_USE_CAPABILITIES),
     nextTick: (callback: unknown) => {
       if (typeof callback === 'function') Promise.resolve().then(() => callback())

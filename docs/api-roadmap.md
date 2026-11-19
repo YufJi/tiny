@@ -50,8 +50,8 @@
 
 ## 1. 结论
 
-1. **面够了，语义不够。** 在范围内的 349 个名字里，表里已有 173 个（50%），但端到端可用（A）只有 116 个
-   （另有 5 个宿主扩展）、半可用（B）25 个、纯桩（C）27 个——**语义覆盖 41.8%**，176 个名字缺失。
+1. **面够了，语义不够。** 在范围内的 349 个名字里，表里已有 176 个（50%），但端到端可用（A）只有 119 个
+   （另有 5 个宿主扩展）、半可用（B）25 个、纯桩（C）27 个——**语义覆盖 42.7%**，173 个名字缺失。
 2. **“假成功”已清零。** 2026-11-19 的 11 个在范围内“`canIUse` 说 true 但什么都不做”的 API，已按
    “真实现 / 诚实失败 / 声明不支持”三选一处理；`api:coverage` 的 honesty 段现在为 0。
 3. **官方 demo 在范围内的缺口是 42 个**（另 12 个落在排除分类）。这是唯一能“跑一遍就知道有没有退步”的短周期目标。
@@ -68,9 +68,9 @@
 | --- | ---: | --- |
 | 微信 3.17.5 `wx.*` 名字 | 499 | 基础库内嵌 canIUse 矩阵的方法表 |
 | 在范围 / 排除 | 349 / 150 | 按 §0 的分类 |
-| tiny 表内名字（在范围） | 173 | 169 core + 5 扩展，扣掉 6 个排除分类 |
-| 端到端可用 A / 半可用 B / 纯桩 C | 116 / 25 / 27 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
-| 缺失（在范围） | 176 | 设备 56、媒体 33、界面 30、基础 8、网络 5、路由 14、位置 6…… |
+| tiny 表内名字（在范围） | 176 | 172 core + 5 扩展，扣掉 6 个排除分类 |
+| 端到端可用 A / 半可用 B / 纯桩 C | 119 / 25 / 27 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
+| 缺失（在范围） | 173 | 设备 56、媒体 32、界面 29、基础 7、网络 5、路由 14、位置 6…… |
 | 依赖宿主 handler 的 API | 45 | 其余 65 个是 service 侧逻辑 |
 | iOS 返回 `fail not implemented` | 25 / 45 | 其中 3 个属于排除分类 |
 | 官方 demo 调用到的唯一 API | 154 | `tests/apps/wechat-demo/**` 静态扫描 |
@@ -80,8 +80,8 @@
 
 ### 2.1 三个数字的含义
 
-- **名字覆盖** 173/349 = 50%。只说明 `typeof wx.foo === 'function'` 成立，不代表能用。
-- **语义覆盖** (A + B + 5 扩展)/349 = 41.8%。A 是有宿主 handler 且真的干活；B 是 handler 在但返回罐头数据。
+- **名字覆盖** 176/349 = 50%。只说明 `typeof wx.foo === 'function'` 成立，不代表能用。
+- **语义覆盖** (A + B + 5 扩展)/349 = 42.7%。A 是有宿主 handler 且真的干活；B 是 handler 在但返回罐头数据。
 - **demo 命中** 61 个缺口里，设备 31、媒体 10、网络 8、界面 3、位置 3、跳转 3、基础 2、画布 1。
 
 ### 2.2 诚实性（已清零）
@@ -134,7 +134,10 @@ DoD：`api:coverage` 进 CI；`canIUse` 与本宿主实际行为 0 差异；口�
 `loadFontFace`（FontFace）、`on/offNetworkWeakChange`（navigator.connection）、
 `on/offBatteryInfoChange`（navigator.getBattery）；基础 10 个——`getSystemInfoAsync`、`getSystemSetting`、
 `getAccountInfoSync`、`getEnterOptionsSync`、`getUpdateManager`、`getRandomValues`、`createBufferURL`、
-`revokeBufferURL`、`requestIdleCallback`、`cancelIdleCallback`。
+`revokeBufferURL`、`requestIdleCallback`、`cancelIdleCallback`；环境事实 3 个——`getRendererUserAgent`
+（宿主 UA）、`getApiCategory`（`default`）、`checkDeviceSupportHevc`（MediaSource/canPlayType）。
+顺带实现了范围外的 `getExtConfig`/`getExtConfigSync`（如实返回 `{}`）与 `getAppAuthorizeSetting`
+（Permissions API 缓存 + `not determined` 初始值），它们不进分母。
 
 在范围缺失 240 个里，有约 55 个是“宿主事实或事件登记”级别的廉价项，一次清掉，demo 命中也跟着降。
 
