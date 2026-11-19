@@ -247,7 +247,16 @@ export const API_CATALOG = {
 
   // --- media.ts: manager shapes exist, no audio backend -------------------
   getRecorderManager: { status: 'partial', host: 'recorder.start' },
-  getBackgroundAudioManager: { status: 'stub' },
+  getBackgroundAudioManager: { status: 'partial', host: 'backgroundAudio.play' },
+  playBackgroundAudio: { status: 'partial', host: 'backgroundAudio.play' },
+  pauseBackgroundAudio: { status: 'partial', host: 'backgroundAudio.pause' },
+  stopBackgroundAudio: { status: 'partial', host: 'backgroundAudio.stop' },
+  seekBackgroundAudio: { status: 'partial', host: 'backgroundAudio.seek' },
+  getBackgroundAudioPlayerState: { status: 'partial', host: 'backgroundAudio.state' },
+  onBackgroundAudioPlay: { status: 'real' },
+  onBackgroundAudioPause: { status: 'real' },
+  onBackgroundAudioStop: { status: 'real' },
+
   createInnerAudioContext: { status: 'partial', host: 'audio.create' },
 
   // --- compat-stubs.ts: platform surface with no backend ------------------

@@ -4,11 +4,11 @@ import { createCanvasApi } from './canvas'
 import { describeApi } from './catalog'
 import { createWorkletApi } from './worklet'
 import { createAnalyticsApi } from './analytics'
+import { createBackgroundAudioApi } from './background-audio'
 import { createInnerAudioApi } from './inner-audio'
 import { createRecorderApi } from './recorder'
 import { createSocketApi } from './socket'
 import { createLocationApi } from './location'
-import { createMediaApi } from './media'
 import { createMediaPickerApi } from './media-picker'
 import { createSensorApi } from './sensors'
 import { createWorkerApi } from './worker'
@@ -95,9 +95,9 @@ export function createApiHost(
     ...createWorkletApi(),
     ...createAnalyticsApi(),
     ...createMediaPickerApi(apiContext),
+    ...createBackgroundAudioApi(apiContext),
     ...createInnerAudioApi(apiContext),
     ...createRecorderApi(apiContext),
-    ...createMediaApi(),
     ...createWorkerApi(apiContext),
     ...createCompatStubs(),
     ...createQueryApi(apiContext),

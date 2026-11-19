@@ -50,8 +50,8 @@
 
 ## 1. 结论
 
-1. **面够了，语义不够。** 在范围内的 349 个名字里，表里已有 184 个（53%），但端到端可用（A）只有 126 个
-   （另有 5 个宿主扩展）、半可用（B）26 个、纯桩（C）27 个——**语义覆盖 45.0%**，165 个名字缺失。
+1. **面够了，语义不够。** 在范围内的 349 个名字里，表里已有 192 个（55%），但端到端可用（A）只有 129 个
+   （另有 5 个宿主扩展）、半可用（B）32 个、纯桩（C）26 个——**语义覆盖 47.6%**，157 个名字缺失。
 2. **“假成功”已清零。** 2026-11-19 的 11 个在范围内“`canIUse` 说 true 但什么都不做”的 API，已按
    “真实现 / 诚实失败 / 声明不支持”三选一处理；`api:coverage` 的 honesty 段现在为 0。
 3. **官方 demo 在范围内的缺口是 42 个**（另 12 个落在排除分类）。这是唯一能“跑一遍就知道有没有退步”的短周期目标。
@@ -68,9 +68,9 @@
 | --- | ---: | --- |
 | 微信 3.17.5 `wx.*` 名字 | 499 | 基础库内嵌 canIUse 矩阵的方法表 |
 | 在范围 / 排除 | 349 / 150 | 按 §0 的分类 |
-| tiny 表内名字（在范围） | 184 | 180 core + 5 扩展，扣掉 6 个排除分类 |
-| 端到端可用 A / 半可用 B / 纯桩 C | 126 / 26 / 27 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
-| 缺失（在范围） | 165 | 设备 55、媒体 31、界面 29、基础 7、网络 5、路由 14、位置 5、画布 2…… |
+| tiny 表内名字（在范围） | 192 | 188 core + 5 扩展，扣掉 6 个排除分类 |
+| 端到端可用 A / 半可用 B / 纯桩 C | 129 / 32 / 26 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
+| 缺失（在范围） | 157 | 设备 55、媒体 23、界面 28、基础 7、网络 3、路由 14、位置 5、跳转 7、画布 1…… |
 | 依赖宿主 handler 的 API | 45 | 其余 65 个是 service 侧逻辑 |
 | iOS 返回 `fail not implemented` | 25 / 45 | 其中 3 个属于排除分类 |
 | 官方 demo 调用到的唯一 API | 154 | `tests/apps/wechat-demo/**` 静态扫描 |
@@ -80,8 +80,8 @@
 
 ### 2.1 三个数字的含义
 
-- **名字覆盖** 184/349 = 53%。只说明 `typeof wx.foo === 'function'` 成立，不代表能用。
-- **语义覆盖** (A + B + 5 扩展)/349 = 45.0%。A 是有宿主 handler 且真的干活；B 是 handler 在但返回罐头数据。
+- **名字覆盖** 192/349 = 55%。只说明 `typeof wx.foo === 'function'` 成立，不代表能用。
+- **语义覆盖** (A + B + 5 扩展)/349 = 47.6%。A 是有宿主 handler 且真的干活；B 是 handler 在但返回罐头数据。
 - **demo 命中** 61 个缺口里，设备 31、媒体 10、网络 8、界面 3、位置 3、跳转 3、基础 2、画布 1。
 
 ### 2.2 诚实性（已清零）
@@ -226,6 +226,10 @@ acceptance host 的 storage 落 `localStorage`（按 appId 分区），刷新不
 **部分落地（2026-11-19）**：`createInnerAudioContext` 转真——宿主用 `HTMLAudioElement` 播放，
 `play/pause/stop/seek/destroy` 经 `audio.*` host key 下发，状态（`currentTime`/`duration`/`paused`）
 从 `audioStateChange` 全局事件回填；浏览器 autoplay 策略拒绝时走 `onError` 而不是静默。
+后台音频 9 个也转真：`getBackgroundAudioManager` + 旧版 `play/pause/stop/seekBackgroundAudio`、
+`getBackgroundAudioPlayerState`、`onBackgroundAudioPlay/Pause/Stop`，共用一个宿主 `HTMLAudioElement`。
+移动端后台标签可能被系统挂起，所以按 partial 计。
+
 `getRecorderManager` 也转真：`MediaRecorder` + 麦克风权限，start/pause/resume/stop 经 `recorder.*` 下发，
 录完的 blob 进临时文件表并回 `{tempFilePath, duration, fileSize}`；权限被拒发 `error` 事件。
 未做：`getBackgroundAudioManager`、`createCameraContext`/`createVideoContext`、`onFrameRecorded`。

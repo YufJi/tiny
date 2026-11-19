@@ -117,4 +117,46 @@ describe('audio handlers', () => {
       audioSources: ['auto', 'buildInMic', 'headsetMic', 'mic'],
     })
   })
+
+  test('background audio plays through its own element', async () => {
+    const { element, emit } = createElement()
+    element.duration = 60
+    const emitted: Array<{ name: string; payload?: unknown }> = []
+    const handlers = createAudioHandlers({
+      emit: (name, payload) => emitted.push({ name, payload }),
+      createAudio: () => element,
+    })
+    await expect(handlers['backgroundAudio.play']({
+      src: 'bg.mp3',
+      title: 'Track',
+    })).resolves.toEqual({ errMsg: 'playBackgroundAudio:ok' })
+    expect(element.src).toBe('bg.mp3')
+    emit('play')
+    expect(emitted).toContainEqual({ name: 'backgroundAudioPlay', payload: { type: 'play' } })
+
+    element.currentTime = 5
+    emit('timeupdate')
+    expect(emitted).toContainEqual({
+      name: 'backgroundAudioStateChange',
+      payload: { type: 'timeUpdate', currentTime: 5, duration: 60 },
+    })
+    expect(handlers['backgroundAudio.state']({})).toMatchObject({
+      status: 'playing',
+      currentPosition: 5,
+      duration: 60,
+    })
+  })
+
+  test('background stop resets the position', () => {
+    const { element } = createElement()
+    const handlers = createAudioHandlers({
+      emit: () => undefined,
+      createAudio: () => element,
+    })
+    void handlers['backgroundAudio.play']({ src: 'bg.mp3' })
+    element.currentTime = 9
+    handlers['backgroundAudio.stop']({})
+    expect(element.currentTime).toBe(0)
+    expect(handlers['backgroundAudio.state']({})).toMatchObject({ status: 'paused' })
+  })
 })

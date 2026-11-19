@@ -24,8 +24,8 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 /** Numbers the roadmap quotes; only raise them as work lands. */
 const BASELINE = {
-  present: 184,
-  semantic: 157,
+  present: 192,
+  semantic: 166,
   demoMissing: 42,
   inert: 0,
 }
