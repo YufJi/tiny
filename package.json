@@ -29,6 +29,7 @@
     "parity:wechat:compare": "node scripts/wechat-parity-compare.mjs",
     "parity:wechat:button": "node scripts/wechat-parity-button-compare.mjs",
     "parity:probe": "node scripts/parity-probe.mjs",
+    "api:coverage": "pnpm --filter @tiny/api build && node scripts/api-coverage.mjs",
     "dev:wechat-demo": "pnpm compile:wechat-demo && pnpm --filter @tiny/cli exec vite --config ../../tests/host/vite.config.ts --port 5174",
     "check:fixture-platform": "node scripts/check-fixture-platform.mjs",
     "check:runtime-purity": "node scripts/check-runtime-purity.mjs",
