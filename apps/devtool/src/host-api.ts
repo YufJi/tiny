@@ -141,6 +141,19 @@ function createApiHandlers(
       currentSize: JSON.stringify(storage).length,
       limitSize: 10240,
     }),
+    'storage.batchGet': (params) => ({
+      dataList: (Array.isArray(params.keyList) ? params.keyList : []).map(
+        (key) => storage[String(key)],
+      ),
+      errMsg: 'batchGetStorage:ok',
+    }),
+    'storage.batchSet': (params) => {
+      for (const entry of Array.isArray(params.kvList) ? params.kvList : []) {
+        const item = (entry ?? {}) as { key?: unknown; value?: unknown }
+        storage[String(item.key)] = item.value
+      }
+      return { errMsg: 'batchSetStorage:ok' }
+    },
   }
 }
 
@@ -183,6 +196,19 @@ function createSyncApiHandlers(
       currentSize: JSON.stringify(storage).length,
       limitSize: 10240,
     }),
+    'storage.batchGet': (params) => ({
+      dataList: (Array.isArray(params.keyList) ? params.keyList : []).map(
+        (key) => storage[String(key)],
+      ),
+      errMsg: 'batchGetStorage:ok',
+    }),
+    'storage.batchSet': (params) => {
+      for (const entry of Array.isArray(params.kvList) ? params.kvList : []) {
+        const item = (entry ?? {}) as { key?: unknown; value?: unknown }
+        storage[String(item.key)] = item.value
+      }
+      return { errMsg: 'batchSetStorage:ok' }
+    },
   }
 }
 

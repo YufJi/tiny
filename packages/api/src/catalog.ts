@@ -89,6 +89,10 @@ export const API_CATALOG = {
   clearStorageSync: { status: 'real', host: 'storage.clear' },
   getStorageInfo: { status: 'real', host: 'storage.info' },
   getStorageInfoSync: { status: 'real', host: 'storage.info' },
+  batchGetStorage: { status: 'real', host: 'storage.batchGet' },
+  batchGetStorageSync: { status: 'real', host: 'storage.batchGet' },
+  batchSetStorage: { status: 'real', host: 'storage.batchSet' },
+  batchSetStorageSync: { status: 'real', host: 'storage.batchSet' },
 
   // --- navigation.ts: routes go through host-core, chrome through the host -
   navigateTo: { status: 'real', host: 'navigate.to' },

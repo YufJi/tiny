@@ -63,6 +63,8 @@ const CALLBACK_APIS = [
   'canvasToTempFilePath',
   'uploadFile',
   'downloadFile',
+  'batchGetStorage',
+  'batchSetStorage',
   'saveImageToPhotosAlbum',
   'saveVideoToPhotosAlbum',
   'showToast',

@@ -45,6 +45,11 @@ export {
   type GlassRenderTreeOptions,
 } from './render/tree'
 export {
+  createPersistentStorage,
+  type PersistentStorage,
+  type StorageBackend,
+} from './storage-area'
+export {
   createNetworkHandlers,
   type NetworkHandlerOptions,
 } from './network-tasks'

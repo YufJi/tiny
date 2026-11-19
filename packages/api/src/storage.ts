@@ -24,6 +24,20 @@ function storageValue(context: ApiContext, key: string): unknown {
   return cloneJsonSafe(result?.value)
 }
 
+function readKeyList(value: unknown): string[] {
+  const source = Array.isArray(value) ? value : (value as { keyList?: unknown } | undefined)?.keyList
+  return Array.isArray(source) ? source.map(String) : []
+}
+
+function readKvList(value: unknown): Array<{ key: string; value: unknown }> {
+  const source = Array.isArray(value) ? value : (value as { kvList?: unknown } | undefined)?.kvList
+  if (!Array.isArray(source)) return []
+  return source.map((entry) => {
+    const item = (entry ?? {}) as { key?: unknown; value?: unknown }
+    return { key: String(item.key), value: cloneJsonSafe(item.value) }
+  })
+}
+
 /**
  * `wx.*Storage*`.
  *
@@ -77,6 +91,25 @@ export function createStorageApi(context: ApiContext): ApiHost {
       }
     }),
     getStorageInfoSync: () => readStorageInfo(context),
+    batchGetStorage: (params: unknown = {}) => runApi(params, 'batchGetStorage', async () => {
+      const keyList = readKeyList(params)
+      const result = await callHost(context, 'storage.batchGet', { keyList }) as { dataList?: unknown } | undefined
+      return { dataList: cloneJsonSafe(result?.dataList ?? []), errMsg: 'batchGetStorage:ok' }
+    }),
+    batchGetStorageSync: (keyList: unknown) => {
+      const result = callHostSync(context, 'storage.batchGet', {
+        keyList: readKeyList(keyList),
+      }) as { dataList?: unknown } | undefined
+      return cloneJsonSafe(result?.dataList ?? [])
+    },
+    batchSetStorage: (params: unknown = {}) => runApi(params, 'batchSetStorage', async () => {
+      await callHost(context, 'storage.batchSet', { kvList: readKvList(params) })
+      return { errMsg: 'batchSetStorage:ok' }
+    }),
+    batchSetStorageSync: (kvList: unknown) => {
+      callHostSync(context, 'storage.batchSet', { kvList: readKvList(kvList) })
+      return undefined
+    },
     removeStorageSync: (key: unknown) => {
       callHostSync(context, 'storage.remove', { key: String(key) })
       return undefined

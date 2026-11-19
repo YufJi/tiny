@@ -1,4 +1,5 @@
 import init, { WasmHostCore } from '@tiny/host-core-wasm'
+import { createPersistentStorage } from '@tiny/host-web'
 import { TestBrowserHost } from './test-host'
 import { createTestHostApiHandlers, createTestHostSyncApiHandlers } from './host-api'
 import { resolveTestApp } from './test-app'
@@ -6,7 +7,8 @@ import { resolveTestApp } from './test-app'
 const search = new URLSearchParams(window.location.search)
 const { app, manifest } = await resolveTestApp(search.get('app'))
 const initialPath = search.get('path') || manifest.pages[0]?.path || ''
-const storage = {}
+const persistent = createPersistentStorage(`tiny.storage.${app.id}`)
+const storage = persistent.values
 const baseSystemInfo = {
   SDKVersion: '3.17.5',
   // WeChat always reports these; WeUI components read `system` directly.
@@ -34,8 +36,14 @@ const wasmHost = new TestBrowserHost({
   initialPath,
   container: document.getElementById('app') ?? document.body,
   storage,
-  apiHandlers: createTestHostApiHandlers(storage, getSystemInfo, { appId: app.id }),
-  syncApiHandlers: createTestHostSyncApiHandlers(storage, getSystemInfo, { appId: app.id }),
+  apiHandlers: createTestHostApiHandlers(storage, getSystemInfo, {
+    appId: app.id,
+    onStorageChange: persistent.flush,
+  }),
+  syncApiHandlers: createTestHostSyncApiHandlers(storage, getSystemInfo, {
+    appId: app.id,
+    onStorageChange: persistent.flush,
+  }),
 }, async (config) => {
   const core = new WasmHostCore(config)
   return {

@@ -25,6 +25,8 @@ export type TestHostApiOptions = {
   identity?: HostIdentity
   /** Test seam: replace the browser file chooser. */
   pickFiles?: typeof pickFiles
+  /** Persist storage after a write, remove or clear. */
+  onStorageChange?: () => void
 }
 
 export type HostIdentity = {
@@ -45,6 +47,7 @@ export function createTestHostApiHandlers(
   const authSetting: Record<string, boolean> = { ...identity.authSetting }
   const tempFiles = createTempFileRegistry()
   const pick = options.pickFiles ?? pickFiles
+  const onChange = options.onStorageChange ?? (() => undefined)
   const userInfo = {
     nickName: 'Tiny User',
     avatarUrl: '',
@@ -114,24 +117,7 @@ export function createTestHostApiHandlers(
       errMsg: `${String(params.action ?? 'share')}:fail not supported by this host`,
     }),
     'page.scrollTo': () => ({ errMsg: 'pageScrollTo:fail not supported by this host' }),
-    'storage.get': (params) => ({ value: storage[String(params.key)] }),
-    'storage.set': (params) => {
-      storage[String(params.key)] = params.value
-      return { errMsg: 'setStorageSync:ok' }
-    },
-    'storage.remove': (params) => {
-      delete storage[String(params.key)]
-      return { errMsg: 'removeStorageSync:ok' }
-    },
-    'storage.clear': () => {
-      for (const key of Object.keys(storage)) delete storage[key]
-      return { errMsg: 'clearStorageSync:ok' }
-    },
-    'storage.info': () => ({
-      keys: Object.keys(storage),
-      currentSize: JSON.stringify(storage).length,
-      limitSize: 10240,
-    }),
+    ...createStorageHandlers(storage, onChange),
   }
 }
 
@@ -144,6 +130,7 @@ export function createTestHostSyncApiHandlers(
   getSystemInfo: () => SystemInfo,
   options: TestHostApiOptions = {},
 ): SyncApiHandlers {
+  const onChange = options.onStorageChange ?? (() => undefined)
   return {
     'system.info': () => getSystemInfo(),
     'account.info': () => ({
@@ -154,24 +141,7 @@ export function createTestHostSyncApiHandlers(
       },
       plugin: {},
     }),
-    'storage.get': (params) => ({ value: storage[String(params.key)] }),
-    'storage.set': (params) => {
-      storage[String(params.key)] = params.value
-      return { errMsg: 'setStorageSync:ok' }
-    },
-    'storage.remove': (params) => {
-      delete storage[String(params.key)]
-      return { errMsg: 'removeStorageSync:ok' }
-    },
-    'storage.clear': () => {
-      for (const key of Object.keys(storage)) delete storage[key]
-      return { errMsg: 'clearStorageSync:ok' }
-    },
-    'storage.info': () => ({
-      keys: Object.keys(storage),
-      currentSize: JSON.stringify(storage).length,
-      limitSize: 10240,
-    }),
+    ...createStorageHandlers(storage, onChange),
   }
 }
 
@@ -436,4 +406,54 @@ function showActionSheet(params: Record<string, unknown>): Promise<Record<string
     panel.appendChild(actions)
     root.append(mask, panel)
   })
+}
+
+
+function createStorageHandlers(
+  storage: StorageValues,
+  onChange: () => void,
+): Record<string, (params: Record<string, unknown>) => unknown> {
+  const keyList = (params: Record<string, unknown>): string[] => (
+    Array.isArray(params.keyList) ? params.keyList.map(String) : []
+  )
+  const kvList = (params: Record<string, unknown>): Array<{ key: string; value: unknown }> => (
+    Array.isArray(params.kvList)
+      ? params.kvList.map((entry) => {
+        const item = (entry ?? {}) as { key?: unknown; value?: unknown }
+        return { key: String(item.key), value: item.value }
+      })
+      : []
+  )
+  return {
+    'storage.get': (params) => ({ value: storage[String(params.key)] }),
+    'storage.set': (params) => {
+      storage[String(params.key)] = params.value
+      onChange()
+      return { errMsg: 'setStorageSync:ok' }
+    },
+    'storage.remove': (params) => {
+      delete storage[String(params.key)]
+      onChange()
+      return { errMsg: 'removeStorageSync:ok' }
+    },
+    'storage.clear': () => {
+      for (const key of Object.keys(storage)) delete storage[key]
+      onChange()
+      return { errMsg: 'clearStorageSync:ok' }
+    },
+    'storage.info': () => ({
+      keys: Object.keys(storage),
+      currentSize: JSON.stringify(storage).length,
+      limitSize: 10240,
+    }),
+    'storage.batchGet': (params) => ({
+      dataList: keyList(params).map((key) => storage[key]),
+      errMsg: 'batchGetStorage:ok',
+    }),
+    'storage.batchSet': (params) => {
+      for (const { key, value } of kvList(params)) storage[key] = value
+      onChange()
+      return { errMsg: 'batchSetStorage:ok' }
+    },
+  }
 }
