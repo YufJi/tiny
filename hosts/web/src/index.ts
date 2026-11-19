@@ -45,6 +45,11 @@ export {
   type GlassRenderTreeOptions,
 } from './render/tree'
 export {
+  createSensorHandlers,
+  type GlobalEventEmitter,
+  type SensorHandlerOptions,
+} from './sensors'
+export {
   createFileSystemHandlers,
   FILE_SYSTEM_USER_ROOT,
   type FileSystemHandlerOptions,

@@ -3,6 +3,7 @@ import {
   createFileSystemHandlers,
   createMediaHandlers,
   createNetworkHandlers,
+  createSensorHandlers,
   createTempFileRegistry,
   pickFiles,
 } from '@tiny/host-web'
@@ -33,6 +34,8 @@ export type TestHostApiOptions = {
   pickFiles?: typeof pickFiles
   /** Persist storage after a write, remove or clear. */
   onStorageChange?: () => void
+  /** Forward host sensor/location readings as service global events. */
+  emitGlobalEvent?: (name: string, payload?: unknown) => void
 }
 
 export type HostIdentity = {
@@ -76,6 +79,7 @@ export function createTestHostApiHandlers(
     ...createMediaHandlers({ registry: tempFiles, pick }),
     ...createNetworkHandlers({ registry: tempFiles }),
     ...createFileSystemHandlers(),
+    ...createSensorHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
     'system.setting': () => ({
       bluetoothEnabled: false,
       locationEnabled: typeof navigator !== 'undefined' && 'geolocation' in navigator,

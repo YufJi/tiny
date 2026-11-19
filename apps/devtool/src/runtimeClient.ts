@@ -181,12 +181,14 @@ export class DevtoolRuntimeClient {
       }
     }
     try {
+      let emitGlobalEvent: (name: string, payload?: unknown) => void = () => undefined
       const apiHost = createDevtoolApiHost({
         storage,
         getSystemInfo,
         getMenuButtonBoundingClientRect: () => this.options.menuButton,
         onNavigation: (action, params) => this.applyNavigation(action, params),
         onShareMenu: (visible) => this.update({ shareMenuVisible: visible }),
+        emitGlobalEvent: (name, payload) => emitGlobalEvent(name, payload),
       })
       this.wasmHost = new WasmBrowserHost({
         appId: this.options.appId ?? 'devtool',
@@ -222,6 +224,7 @@ export class DevtoolRuntimeClient {
           return Promise.reject(new Error(`unsupported host request: ${method}`))
         },
       }, this.options.wasmCoreFactory)
+      emitGlobalEvent = (name, payload) => this.wasmHost?.emitGlobalEvent(name, payload)
       await this.wasmHost.launch()
       // The service sends the post-ready tree snapshot asynchronously.
       await new Promise((resolve) => setTimeout(resolve, 300))

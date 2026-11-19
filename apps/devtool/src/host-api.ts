@@ -3,6 +3,7 @@ import {
   createFileSystemHandlers,
   createMediaHandlers,
   createNetworkHandlers,
+  createSensorHandlers,
   createTempFileRegistry,
   pickFiles,
 } from '@tiny/host-web'
@@ -22,6 +23,8 @@ export type DevtoolApiOptions = {
   onShareMenu?: (visible: boolean) => void
   /** Test seam: replace the browser file chooser. */
   pickFiles?: typeof pickFiles
+  /** Forward host sensor/location readings as service global events. */
+  emitGlobalEvent?: (name: string, payload?: unknown) => void
 }
 
 export type DevtoolApiHost = {
@@ -62,6 +65,7 @@ function createApiHandlers(
     ...createMediaHandlers({ registry: tempFiles, pick: options.pickFiles }),
     ...createNetworkHandlers({ registry: tempFiles }),
     ...createFileSystemHandlers(),
+    ...createSensorHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
     'keyboard.hide': () => ({ errMsg: 'hideKeyboard:ok' }),
     'system.info': () => getSystemInfo(),
     'system.setting': () => ({

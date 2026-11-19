@@ -134,6 +134,31 @@ export const API_CATALOG = {
   // `filePath` (moving into the saved-file area) waits for W4; the temp path works.
   downloadFile: { status: 'real', host: 'network.downloadFile' },
 
+  // --- location.ts / sensors.ts: host geolocation and motion --------------
+  getLocation: { status: 'real', host: 'location.get' },
+  startLocationUpdate: { status: 'real', host: 'location.start' },
+  stopLocationUpdate: { status: 'real', host: 'location.stop' },
+  onLocationChange: { status: 'real' },
+  offLocationChange: { status: 'real' },
+  onLocationChangeError: { status: 'real' },
+  offLocationChangeError: { status: 'real' },
+  startAccelerometer: { status: 'real', host: 'sensor.start' },
+  stopAccelerometer: { status: 'real', host: 'sensor.stop' },
+  onAccelerometerChange: { status: 'real' },
+  offAccelerometerChange: { status: 'real' },
+  startCompass: { status: 'real', host: 'sensor.start' },
+  stopCompass: { status: 'real', host: 'sensor.stop' },
+  onCompassChange: { status: 'real' },
+  offCompassChange: { status: 'real' },
+  startGyroscope: { status: 'real', host: 'sensor.start' },
+  stopGyroscope: { status: 'real', host: 'sensor.stop' },
+  onGyroscopeChange: { status: 'real' },
+  offGyroscopeChange: { status: 'real' },
+  startDeviceMotionListening: { status: 'real', host: 'sensor.start' },
+  stopDeviceMotionListening: { status: 'real', host: 'sensor.stop' },
+  onDeviceMotionChange: { status: 'real' },
+  offDeviceMotionChange: { status: 'real' },
+
   // --- device.ts: clipboard, vibration, identity --------------------------
   setClipboardData: { status: 'real', host: 'clipboard.set' },
   getClipboardData: { status: 'real', host: 'clipboard.get' },

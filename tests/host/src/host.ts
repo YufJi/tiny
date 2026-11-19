@@ -7,6 +7,7 @@ import { resolveTestApp } from './test-app'
 const search = new URLSearchParams(window.location.search)
 const { app, manifest } = await resolveTestApp(search.get('app'))
 const initialPath = search.get('path') || manifest.pages[0]?.path || ''
+let emitGlobalEvent: (name: string, payload?: unknown) => void = () => undefined
 const persistent = createPersistentStorage(`tiny.storage.${app.id}`)
 const storage = persistent.values
 const baseSystemInfo = {
@@ -39,6 +40,7 @@ const wasmHost = new TestBrowserHost({
   apiHandlers: createTestHostApiHandlers(storage, getSystemInfo, {
     appId: app.id,
     onStorageChange: persistent.flush,
+    emitGlobalEvent: (name, payload) => emitGlobalEvent(name, payload),
   }),
   syncApiHandlers: createTestHostSyncApiHandlers(storage, getSystemInfo, {
     appId: app.id,
@@ -52,6 +54,7 @@ const wasmHost = new TestBrowserHost({
   }
 })
 
+emitGlobalEvent = (name, payload) => wasmHost.emitGlobalEvent(name, payload)
 await wasmHost.launch()
 ;(window as unknown as Record<string, unknown>).__tinyRuntime = {
   host: wasmHost,

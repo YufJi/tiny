@@ -3,8 +3,10 @@ import { createBasicsApi } from './basics'
 import { createCanvasApi } from './canvas'
 import { createWorkletApi } from './worklet'
 import { createAnalyticsApi } from './analytics'
+import { createLocationApi } from './location'
 import { createMediaApi } from './media'
 import { createMediaPickerApi } from './media-picker'
+import { createSensorApi } from './sensors'
 import { createCompatStubs } from './compat-stubs'
 import { createDeviceApi } from './device'
 import { createEncodingApi } from './encoding'
@@ -78,6 +80,8 @@ export function createApiHost(
     ...createUiApi(apiContext),
     ...createTabBarApi(apiContext),
     ...createNetworkApi(apiContext),
+    ...createLocationApi(apiContext),
+    ...createSensorApi(apiContext),
     ...createDeviceApi(apiContext),
     ...createEncodingApi(apiContext),
     ...createShareApi(apiContext),
