@@ -73,11 +73,11 @@ toast/loading/modal/actionSheet）
 | tiny 表内名字（在范围） | 200 | 196 core + 5 扩展，扣掉 6 个排除分类 |
 | 端到端可用 A / 半可用 B / 纯桩 C | 131 / 38 / 26 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
 | 缺失（在范围） | 149 | 设备 53、媒体 23、界面 26、基础 4、网络 3、路由 14、位置 4、跳转 7、画布 1…… |
-| 依赖宿主 handler 的 API | 45 | 其余 65 个是 service 侧逻辑 |
+| 依赖宿主 handler 的 API | 113 | 其余 95 个是 service 侧逻辑 |
 | iOS 已实现的宿主 handler key | 38 / 88 | 身份/设置/剪贴板/批量存储/account/update + Rust 路由指令 |
 | 官方 demo 调用到的唯一 API | 154 | `tests/apps/wechat-demo/**` 静态扫描 |
-| 其中在范围且缺失的 | 42 | 另 12 个落在排除分类，5 个不是 3.17.5 名字 |
-| 受影响的 demo 源文件 | 51 | 至少调用 1 个缺失名字 |
+| 其中在范围且缺失的 | 40 | 另 12 个落在排除分类，5 个不是 3.17.5 名字 |
+| 受影响的 demo 源文件 | 22 | 至少调用 1 个缺失名字 |
 | `canIUse` 说 true 但无效果（在范围） | 0 | `api:coverage` 的 honesty 段；由 `catalog.test.ts` 强制 |
 
 ### 2.1 三个数字的含义
