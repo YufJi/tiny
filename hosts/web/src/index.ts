@@ -46,6 +46,10 @@ export {
 } from './render/tree'
 export { HOST_CORE_API_KEYS } from './api-capabilities'
 export {
+  createSocketHandlers,
+  type SocketHandlerOptions,
+} from './socket'
+export {
   createRecorderHandlers,
   type RecorderHandlerOptions,
 } from './recorder'

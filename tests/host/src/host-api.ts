@@ -5,6 +5,7 @@ import {
   createNetworkHandlers,
   createAudioHandlers,
   createDeviceHandlers,
+  createSocketHandlers,
   createRecorderHandlers,
   createSensorHandlers,
   createWorkerHandlers,
@@ -96,6 +97,7 @@ export function createTestHostApiHandlers(
     ...createSensorHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
     ...createDeviceHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
     ...createAudioHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
+    ...createSocketHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
     ...createRecorderHandlers({
       emit: options.emitGlobalEvent ?? (() => undefined),
       registry: tempFiles,

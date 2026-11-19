@@ -134,6 +134,18 @@ export const API_CATALOG = {
   getBatteryInfo: { status: 'partial', host: 'battery.get' },
   request: { status: 'partial', host: 'network.request' },
   uploadFile: { status: 'real', host: 'network.uploadFile' },
+  // A browser WebSocket cannot set handshake headers; everything else works.
+  connectSocket: { status: 'partial', host: 'socket.connect' },
+  sendSocketMessage: { status: 'real', host: 'socket.send' },
+  closeSocket: { status: 'real', host: 'socket.close' },
+  onSocketOpen: { status: 'real' },
+  offSocketOpen: { status: 'real' },
+  onSocketClose: { status: 'real' },
+  offSocketClose: { status: 'real' },
+  onSocketError: { status: 'real' },
+  offSocketError: { status: 'real' },
+  onSocketMessage: { status: 'real' },
+  offSocketMessage: { status: 'real' },
   // `filePath` (moving into the saved-file area) waits for W4; the temp path works.
   downloadFile: { status: 'real', host: 'network.downloadFile' },
 
@@ -251,6 +263,19 @@ export type ApiName = keyof ApiCatalog
 
 /** Names the runtime exposes but WeChat 3.17.5 does not. */
 export const TINY_ONLY_APIS: ReadonlySet<string> = new Set(['createContext', 'worklet'])
+
+/**
+ * Documented WeChat APIs that are absent from the 3.17.5 `canIUse` matrix, so
+ * they cannot appear in `data/wechat-3.17.5.tsv`. They are still real APIs and
+ * stay in the table; coverage does not count them because WeChat's own matrix
+ * does not.
+ */
+export const EXTRA_WECHAT_APIS: ReadonlySet<string> = new Set([
+  'offSocketOpen',
+  'offSocketClose',
+  'offSocketError',
+  'offSocketMessage',
+])
 
 /** Host-composed APIs (not part of `createApiHost`), counted by coverage. */
 export const HOST_EXTENSION_APIS = [

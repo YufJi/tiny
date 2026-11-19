@@ -5,6 +5,7 @@ import { createApiHost } from '../src'
 import {
   API_CATALOG,
   API_NAMES,
+  EXTRA_WECHAT_APIS,
   HOST_EXTENSION_APIS,
   TINY_ONLY_APIS,
   apiHostKeys,
@@ -39,6 +40,7 @@ function createTable(): Record<string, unknown> {
       if (property === 'hasApi') return () => true
       if (property === 'launchOptions') return {}
       if (property === 'hostCapabilities') return undefined
+      if (property === 'events') return undefined
       return noop
     },
   }) as unknown as ApiContext
@@ -99,9 +101,11 @@ describe('wechat 3.17.5 name list', () => {
   test('every catalog name is a WeChat API unless it is a Tiny-only alias', () => {
     const wechat = new Set(readWechatList().map((row) => row.name))
     for (const name of API_NAMES) {
-      if (TINY_ONLY_APIS.has(name)) continue
+      if (TINY_ONLY_APIS.has(name) || EXTRA_WECHAT_APIS.has(name)) continue
       expect(wechat.has(name), `${name} is missing from data/wechat-3.17.5.tsv`).toBe(true)
     }
+    // The extras are real WeChat APIs the matrix omits; they must not collide.
+    for (const name of EXTRA_WECHAT_APIS) expect(wechat.has(name)).toBe(false)
   })
 
   test('tiny-only aliases stay out of the WeChat list', () => {
