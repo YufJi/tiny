@@ -428,3 +428,8 @@ iOS 侧同理：媒体、传感器、Worker 三族的 Swift handler 补上后，
 `component.invoke` 控制域（含 Rust 侧 `ProtocolDomain::Component`）、`render/thread.ts` 的分发、
 `hosts/web` 的 `invokeComponent`（白名单 + `tiny:command` 事件）、`@tiny/api` 的 `createMapContext`
 （`getCenterLocation` / `moveToLocation` / `getScale`）。video/camera 需要扩展各标签的白名单后再打开。
+
+浏览器实测（2026-11-20，wechat-demo 地图页，组件 `id="map"`）：`getScale` 返回 18；
+`getCenterLocation` 返回 `23.099994 / 113.32452`；`moveToLocation(31.23, 121.47)` 后读数与渲染侧
+`<tiny-map latitude/longitude>` 同步变为新坐标。没有活动页面时命令立即以 `no active page` 失败，
+不再等桥接的 30s 超时。

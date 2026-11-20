@@ -59,6 +59,16 @@ describe('createMapContext', () => {
     expect(failures).toEqual([{ errMsg: 'mapContext.getCenterLocation:fail component not found' }])
   })
 
+  test('fails fast when there is no active page', async () => {
+    const { context, calls } = createContext([])
+    ;(context as unknown as { pageId?: string }).pageId = undefined
+    const map = createMapContext(context, 'myMap')
+    const failures: Array<{ errMsg: string }> = []
+    await map.getScale({ fail: (error) => failures.push(error) })
+    expect(calls).toHaveLength(0)
+    expect(failures).toEqual([{ errMsg: 'mapContext.getScale:fail no active page' }])
+  })
+
   test('the promise form rejects without callbacks', async () => {
     const { context } = createContext([{ status: 'unsupported-method', method: 'takePhoto' }])
     const map = createMapContext(context, 'myMap')

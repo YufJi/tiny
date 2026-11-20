@@ -37,11 +37,17 @@ function invoke(
   method: string,
   args: Record<string, unknown> | undefined,
 ): Promise<CommandResult> {
+  const pageId = context.pageId
+  // Without a page the host core has nowhere to route the command and the
+  // caller would wait for the bridge timeout; fail immediately instead.
+  if (!pageId) {
+    return Promise.resolve({ status: 'error', message: 'no active page' })
+  }
   return context.connection.call(
     COMPONENT_COMMAND.domain,
     COMPONENT_COMMAND.invoke,
     { selector: `#${mapId}`, method, ...(args ? { args } : {}) },
-    context.pageId ? { pageId: context.pageId } : {},
+    { pageId },
   ) as Promise<CommandResult>
 }
 
