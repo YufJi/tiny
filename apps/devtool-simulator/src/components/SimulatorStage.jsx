@@ -150,11 +150,12 @@ function SimulatorStage({
                 style={{ top: device.frameHeight * 0.25, height: device.frameHeight * 0.11 }}
               />
               <div
-                className="td-screen"
+                className={`td-screen${navigation.backgroundTextStyle === 'light' ? ' td-screen--bg-text-light' : ''}`}
                 ref={screenRef}
                 style={{
                   width: device.screenWidth,
                   height: device.screenHeight,
+                  backgroundColor: navigation.pageBackground,
                   borderRadius: device.screenRadius,
                   '--td-cutout-width': `${device.cutoutWidth}px`,
                   '--td-cutout-height': `${device.cutoutHeight}px`,

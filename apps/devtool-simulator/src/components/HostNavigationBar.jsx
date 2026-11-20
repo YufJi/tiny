@@ -104,7 +104,9 @@ function HostNavigationBar({
           </svg>
         </button>
       )}
-      <div className="td-nav-title" title={navigation.title}>{navigation.title}</div>
+      <div className="td-nav-title" title={navigation.topBarText || navigation.title}>
+        {navigation.topBarText || navigation.title}
+      </div>
       {navigation.loading ? <span className="td-nav-loading" aria-label="Loading" role="status" /> : null}
       {launcher ? <span className="td-nav-launcher-mark" aria-hidden="true">◎</span> : null}
     </div>

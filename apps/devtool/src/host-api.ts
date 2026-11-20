@@ -17,7 +17,15 @@ import {
   pickFiles,
 } from '@tiny/host-web'
 
-export type DevtoolNavigationAction = 'title' | 'color' | 'loading'
+export type DevtoolNavigationAction =
+  | 'title'
+  | 'color'
+  | 'loading'
+  | 'topBarText'
+  | 'background'
+  | 'backgroundTextStyle'
+  | 'alertBeforeUnload'
+  | 'disableAlertBeforeUnload'
 
 export type DevtoolApiOptions = {
   /** Mini-program id reported by `wx.getAccountInfoSync()`. */
@@ -150,6 +158,30 @@ function createApiHandlers(
       iv: '',
       errMsg: 'getUserProfile:ok',
     }),
+    'navigation.topBarText': (params) => {
+      options.onNavigation?.('topBarText', { text: String(params.text ?? '') })
+      return { errMsg: 'setTopBarText:ok' }
+    },
+    'page.backgroundColor': (params) => {
+      options.onNavigation?.('background', {
+        backgroundColor: String(params.backgroundColor ?? ''),
+        backgroundColorTop: params.backgroundColorTop,
+        backgroundColorBottom: params.backgroundColorBottom,
+      })
+      return { errMsg: 'setBackgroundColor:ok' }
+    },
+    'page.backgroundTextStyle': (params) => {
+      options.onNavigation?.('backgroundTextStyle', { textStyle: String(params.textStyle ?? 'dark') })
+      return { errMsg: 'setBackgroundTextStyle:ok' }
+    },
+    'page.alertBeforeUnload': (params) => {
+      options.onNavigation?.('alertBeforeUnload', { message: String(params.message ?? '') })
+      return { errMsg: 'enableAlertBeforeUnload:ok' }
+    },
+    'page.disableAlertBeforeUnload': () => {
+      options.onNavigation?.('disableAlertBeforeUnload', {})
+      return { errMsg: 'disableAlertBeforeUnload:ok' }
+    },
     'navigation.title': (params) => {
       if (typeof document !== 'undefined') document.title = String(params.title ?? '')
       options.onNavigation?.('title', params)

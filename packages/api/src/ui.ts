@@ -30,6 +30,35 @@ export function createUiApi(context: ApiContext): ApiHost {
       context,
       'ui.hideLoading',
     )),
+    setTopBarText: (params: unknown = {}) => runApi(params, 'setTopBarText', () => callHost(
+      context,
+      'navigation.topBarText',
+      { text: (params as { text?: unknown }).text ?? '' },
+    )),
+    setBackgroundColor: (params: unknown = {}) => runApi(params, 'setBackgroundColor', () => callHost(
+      context,
+      'page.backgroundColor',
+      params as Record<string, unknown>,
+    )),
+    setBackgroundTextStyle: (params: unknown = {}) => runApi(
+      params,
+      'setBackgroundTextStyle',
+      () => callHost(context, 'page.backgroundTextStyle', {
+        textStyle: (params as { textStyle?: unknown }).textStyle ?? 'dark',
+      }),
+    ),
+    enableAlertBeforeUnload: (params: unknown = {}) => runApi(
+      params,
+      'enableAlertBeforeUnload',
+      () => callHost(context, 'page.alertBeforeUnload', {
+        message: (params as { message?: unknown }).message ?? '',
+      }),
+    ),
+    disableAlertBeforeUnload: (params: unknown = {}) => runApi(
+      params,
+      'disableAlertBeforeUnload',
+      () => callHost(context, 'page.disableAlertBeforeUnload'),
+    ),
     getSelectedTextRange: (params: unknown = {}) => runApi(
       params,
       'getSelectedTextRange',

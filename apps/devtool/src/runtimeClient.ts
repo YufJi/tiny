@@ -49,6 +49,14 @@ export type DevtoolNavigationState = {
   backgroundColor?: string
   textStyle?: 'white' | 'black'
   loading?: boolean
+  /** `wx.setTopBarText` override for the chrome title. */
+  topBarText?: string
+  /** `wx.setBackgroundColor` for the screen behind the page. */
+  pageBackground?: string
+  /** `wx.setBackgroundTextStyle`: pull-down spinner colour. */
+  backgroundTextStyle?: 'dark' | 'light'
+  /** `wx.enableAlertBeforeUnload`: toolbar back asks first. */
+  alertBeforeUnload?: string
 }
 
 export type DevtoolRuntimeState = {
@@ -400,7 +408,9 @@ export class DevtoolRuntimeClient {
    * back restores the title/color the page had before it was hidden.
    */
   private applyNavigation(
-    action: 'title' | 'color' | 'loading',
+    action: 'title' | 'color' | 'loading'
+      | 'topBarText' | 'background' | 'backgroundTextStyle'
+      | 'alertBeforeUnload' | 'disableAlertBeforeUnload',
     params: Record<string, unknown>,
   ): void {
     const page = this.state.currentPage
@@ -415,6 +425,16 @@ export class DevtoolRuntimeClient {
       else if (front === '#000000') next.textStyle = 'black'
     } else if (action === 'loading' && typeof params.visible === 'boolean') {
       next.loading = params.visible
+    } else if (action === 'topBarText') {
+      next.topBarText = String(params.text ?? '')
+    } else if (action === 'background') {
+      if (typeof params.backgroundColor === 'string') next.pageBackground = params.backgroundColor
+    } else if (action === 'backgroundTextStyle') {
+      next.backgroundTextStyle = params.textStyle === 'light' ? 'light' : 'dark'
+    } else if (action === 'alertBeforeUnload') {
+      next.alertBeforeUnload = String(params.message ?? '')
+    } else if (action === 'disableAlertBeforeUnload') {
+      next.alertBeforeUnload = undefined
     }
     this.navigationOverrides.set(page, next)
     this.update({ navigation: { ...next } })

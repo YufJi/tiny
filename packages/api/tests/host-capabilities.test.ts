@@ -13,6 +13,7 @@ const read = (path: string): string => readFileSync(new URL(path, root), 'utf8')
 
 const BROWSER_SOURCES = [
   'tests/host/src/host-api.ts',
+  'apps/devtool/src/host-api.ts',
   'hosts/web/src/media-files.ts',
   'hosts/web/src/network-tasks.ts',
   'hosts/web/src/file-system.ts',

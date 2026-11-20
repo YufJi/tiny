@@ -128,6 +128,12 @@ export const API_CATALOG = {
   loadFontFace: { status: 'real', host: 'font.load' },
   // Both read the render iframe: same-origin only, so partial.
   getSelectedTextRange: { status: 'partial', host: 'page.selectedTextRange' },
+  // Chrome only the devtool renders; the browser host fails honestly.
+  setTopBarText: { status: 'partial', host: 'navigation.topBarText' },
+  setBackgroundColor: { status: 'partial', host: 'page.backgroundColor' },
+  setBackgroundTextStyle: { status: 'partial', host: 'page.backgroundTextStyle' },
+  enableAlertBeforeUnload: { status: 'partial', host: 'page.alertBeforeUnload' },
+  disableAlertBeforeUnload: { status: 'partial', host: 'page.disableAlertBeforeUnload' },
   checkIsPictureInPictureActive: { status: 'partial', host: 'page.pipActive' },
 
   // --- tabbar.ts: runtime tabBar, no host round-trip ----------------------

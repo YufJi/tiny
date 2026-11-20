@@ -7,6 +7,11 @@ function createHost() {
   const handlers: Record<string, (params: Record<string, unknown>) => unknown> = {
     'page.selectedTextRange': () => ({ start: 2, end: 5, errMsg: 'getSelectedTextRange:ok' }),
     'page.pipActive': () => ({ isActive: true, errMsg: 'checkIsPictureInPictureActive:ok' }),
+    'navigation.topBarText': () => ({ errMsg: 'setTopBarText:ok' }),
+    'page.backgroundColor': () => ({ errMsg: 'setBackgroundColor:ok' }),
+    'page.backgroundTextStyle': () => ({ errMsg: 'setBackgroundTextStyle:ok' }),
+    'page.alertBeforeUnload': () => ({ errMsg: 'enableAlertBeforeUnload:ok' }),
+    'page.disableAlertBeforeUnload': () => ({ errMsg: 'disableAlertBeforeUnload:ok' }),
   }
   const connection = {
     sendDiagnostic: () => undefined,
@@ -45,5 +50,23 @@ describe('page introspection APIs', () => {
     const { host, calls } = createHost()
     await expect(host.checkIsPictureInPictureActive({})).resolves.toMatchObject({ isActive: true })
     expect(calls[0].method).toBe('page.pipActive')
+  })
+
+  test('page chrome APIs forward their parameters', async () => {
+    const { host, calls } = createHost()
+    await host.setTopBarText({ text: 'Top' })
+    await host.setBackgroundColor({ backgroundColor: '#112233' })
+    await host.setBackgroundTextStyle({ textStyle: 'light' })
+    await host.enableAlertBeforeUnload({ message: 'Leave?' })
+    await host.disableAlertBeforeUnload({})
+    expect(calls.map((call) => call.method)).toEqual([
+      'navigation.topBarText',
+      'page.backgroundColor',
+      'page.backgroundTextStyle',
+      'page.alertBeforeUnload',
+      'page.disableAlertBeforeUnload',
+    ])
+    expect(calls[0].params).toEqual({ text: 'Top' })
+    expect(calls[3].params).toEqual({ message: 'Leave?' })
   })
 })

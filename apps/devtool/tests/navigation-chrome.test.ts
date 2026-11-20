@@ -59,4 +59,25 @@ describe('devtool navigation chrome', () => {
       ['loading', { visible: false }],
     ])
   })
+
+  test('page chrome APIs reach the host chrome', () => {
+    const events: Array<[string, Record<string, unknown>]> = []
+    const { apiHandlers: handlers } = createDevtoolApiHost({
+      getSystemInfo: () => systemInfo,
+      onNavigation: (action, params) => events.push([action, params]),
+    })
+    handlers['navigation.topBarText']!({ text: 'Top' })
+    handlers['page.backgroundColor']!({ backgroundColor: '#f0f0f0' })
+    handlers['page.backgroundTextStyle']!({ textStyle: 'light' })
+    handlers['page.alertBeforeUnload']!({ message: 'Leave?' })
+    handlers['page.disableAlertBeforeUnload']!({})
+
+    expect(events).toEqual([
+      ['topBarText', { text: 'Top' }],
+      ['background', { backgroundColor: '#f0f0f0', backgroundColorTop: undefined, backgroundColorBottom: undefined }],
+      ['backgroundTextStyle', { textStyle: 'light' }],
+      ['alertBeforeUnload', { message: 'Leave?' }],
+      ['disableAlertBeforeUnload', {}],
+    ])
+  })
 })
