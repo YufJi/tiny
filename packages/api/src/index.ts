@@ -11,6 +11,7 @@ import { createSocketApi } from './socket'
 import { createLocationApi } from './location'
 import { createMediaPickerApi } from './media-picker'
 import { createSensorApi } from './sensors'
+import { createVoiceApi } from './voice'
 import { createWorkerApi } from './worker'
 import { createCompatStubs } from './compat-stubs'
 import { createDeviceApi } from './device'
@@ -96,6 +97,7 @@ export function createApiHost(
     ...createAnalyticsApi(),
     ...createMediaPickerApi(apiContext),
     ...createBackgroundAudioApi(apiContext),
+    ...createVoiceApi(apiContext),
     ...createInnerAudioApi(apiContext),
     ...createRecorderApi(apiContext),
     ...createWorkerApi(apiContext),

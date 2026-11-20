@@ -30,6 +30,11 @@ export function createMediaPickerApi(context: ApiContext): ApiHost {
       'cropImage',
       () => callHost(context, 'media.cropImage', params as Record<string, unknown>),
     ),
+    saveMediaToPhotosAlbum: (params: unknown = {}) => runApi(
+      params,
+      'saveMediaToPhotosAlbum',
+      () => callHost(context, 'media.saveMediaToPhotosAlbum', params as Record<string, unknown>),
+    ),
     checkDeviceSupportHevc: (params: unknown = {}) => runApi(
       params,
       'checkDeviceSupportHevc',

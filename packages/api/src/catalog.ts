@@ -269,6 +269,7 @@ export const API_CATALOG = {
   // No photo album in a browser: the host saves the file as a download.
   saveImageToPhotosAlbum: { status: 'partial', host: 'media.saveImageToPhotosAlbum' },
   saveVideoToPhotosAlbum: { status: 'partial', host: 'media.saveVideoToPhotosAlbum' },
+  saveMediaToPhotosAlbum: { status: 'partial', host: 'media.saveMediaToPhotosAlbum' },
 
   // --- media.ts: manager shapes exist, no audio backend -------------------
   getRecorderManager: { status: 'partial', host: 'recorder.start' },
@@ -278,6 +279,9 @@ export const API_CATALOG = {
   stopBackgroundAudio: { status: 'partial', host: 'backgroundAudio.stop' },
   seekBackgroundAudio: { status: 'partial', host: 'backgroundAudio.seek' },
   getBackgroundAudioPlayerState: { status: 'partial', host: 'backgroundAudio.state' },
+  playVoice: { status: 'partial', host: 'voice.play' },
+  pauseVoice: { status: 'partial', host: 'voice.pause' },
+  stopVoice: { status: 'partial', host: 'voice.stop' },
   onBackgroundAudioPlay: { status: 'real' },
   onBackgroundAudioPause: { status: 'real' },
   onBackgroundAudioStop: { status: 'real' },

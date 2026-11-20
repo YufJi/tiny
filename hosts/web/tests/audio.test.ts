@@ -159,4 +159,26 @@ describe('audio handlers', () => {
     expect(element.currentTime).toBe(0)
     expect(handlers['backgroundAudio.state']({})).toMatchObject({ status: 'paused' })
   })
+
+  test('legacy voice playback uses its own element', async () => {
+    const { element } = createElement()
+    const handlers = createAudioHandlers({ emit: () => undefined, createAudio: () => element })
+    await expect(handlers['voice.play']({ filePath: 'voice.mp3' })).resolves.toEqual({
+      errMsg: 'playVoice:ok',
+    })
+    expect(element.src).toBe('voice.mp3')
+    handlers['voice.pause']({})
+    expect(element.paused).toBe(true)
+    await handlers['voice.play']({ filePath: 'voice.mp3' })
+    element.currentTime = 3
+    handlers['voice.stop']({})
+    expect(element.currentTime).toBe(0)
+  })
+
+  test('playVoice requires a file path', async () => {
+    const handlers = createAudioHandlers({ emit: () => undefined, createAudio: () => createElement().element })
+    await expect(handlers['voice.play']({})).resolves.toEqual({
+      errMsg: 'playVoice:fail filePath is required',
+    })
+  })
 })

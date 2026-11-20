@@ -82,6 +82,7 @@ export function createAudioHandlers(
     return { ok: true, element }
   }
 
+  let voice: AudioElementLike | undefined
   let background: AudioElementLike | undefined
   let backgroundAttached = false
   const backgroundEvents = [
@@ -156,6 +157,31 @@ export function createAudioHandlers(
       duration: background && Number.isFinite(background.duration) ? background.duration : 0,
       errMsg: 'getBackgroundAudioPlayerState:ok',
     }),
+    'voice.play': async (params) => {
+      if (!createAudio) return { errMsg: 'playVoice:fail audio playback is not available in this runtime' }
+      const filePath = String(params.filePath ?? '')
+      if (!filePath) return { errMsg: 'playVoice:fail filePath is required' }
+      voice ??= createAudio('')
+      if (voice.src !== filePath) voice.src = filePath
+      try {
+        await voice.play()
+        return { errMsg: 'playVoice:ok' }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        return { errMsg: `playVoice:fail ${message}` }
+      }
+    },
+    'voice.pause': () => {
+      voice?.pause()
+      return { errMsg: 'pauseVoice:ok' }
+    },
+    'voice.stop': () => {
+      if (voice) {
+        voice.pause()
+        voice.currentTime = 0
+      }
+      return { errMsg: 'stopVoice:ok' }
+    },
     'audio.sources': () => ({
       audioSources: ['auto', 'buildInMic', 'headsetMic', 'mic'],
     }),

@@ -180,4 +180,14 @@ describe('media picker', () => {
       'media.compressImage',
     ])
   })
+
+  test('saveMediaToPhotosAlbum forwards to the host', async () => {
+    const { host, calls } = createHost({
+      'media.saveMediaToPhotosAlbum': () => ({ errMsg: 'saveMediaToPhotosAlbum:ok' }),
+    })
+    await expect(host.saveMediaToPhotosAlbum({ filePath: 'blob:1' })).resolves.toMatchObject({
+      errMsg: 'saveMediaToPhotosAlbum:ok',
+    })
+    expect(calls[0].method).toBe('media.saveMediaToPhotosAlbum')
+  })
 })

@@ -85,4 +85,12 @@ describe('page introspection APIs', () => {
     events.emit('keyDown', { key: 'a', code: 'KeyA', keyCode: 65 })
     expect(keys).toHaveLength(1)
   })
+
+  test('legacy voice APIs forward to the host', async () => {
+    const { host, calls } = createHost()
+    await host.playVoice({ filePath: 'voice.mp3' })
+    await host.pauseVoice({})
+    await host.stopVoice({})
+    expect(calls.map((call) => call.method)).toEqual(['voice.play', 'voice.pause', 'voice.stop'])
+  })
 })

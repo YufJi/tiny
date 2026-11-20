@@ -165,6 +165,7 @@ export function createMediaHandlers(
     'media.getVideoInfo': (params) => videoInfo(options.registry, loadVideo, params),
     'media.saveImageToPhotosAlbum': (params) => saveToAlbum(options.registry, params, 'saveImageToPhotosAlbum'),
     'media.saveVideoToPhotosAlbum': (params) => saveToAlbum(options.registry, params, 'saveVideoToPhotosAlbum'),
+    'media.saveMediaToPhotosAlbum': (params) => saveToAlbum(options.registry, params, 'saveMediaToPhotosAlbum'),
     'media.dataUrlToTempFile': (params) => dataUrlToTempFile(options.registry, params),
   }
 }

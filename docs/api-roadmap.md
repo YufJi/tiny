@@ -50,8 +50,8 @@
 
 ## 1. 结论
 
-1. **面够了，语义不够。** 在范围内的 349 个名字里，表里已有 211 个（60%），但端到端可用（A）只有 135 个
-   （另有 5 个宿主扩展）、半可用（B）47 个、纯桩（C）24 个——**语义覆盖 53.6%**，138 个名字缺失。
+1. **面够了，语义不够。** 在范围内的 349 个名字里，表里已有 215 个（62%），但端到端可用（A）只有 135 个
+   （另有 5 个宿主扩展）、半可用（B）51 个、纯桩（C）24 个——**语义覆盖 54.7%**，134 个名字缺失。
 2. **“假成功”已清零。** 2026-11-19 的 11 个在范围内“`canIUse` 说 true 但什么都不做”的 API，已按
    “真实现 / 诚实失败 / 声明不支持”三选一处理；`api:coverage` 的 honesty 段现在为 0。
 3. **官方 demo 在范围内的缺口是 40 个**（另 12 个落在排除分类）。这是唯一能“跑一遍就知道有没有退步”的短周期目标。
@@ -70,9 +70,9 @@ toast/loading/modal/actionSheet、运动传感器、定位、文件系统）
 | --- | ---: | --- |
 | 微信 3.17.5 `wx.*` 名字 | 499 | 基础库内嵌 canIUse 矩阵的方法表 |
 | 在范围 / 排除 | 349 / 150 | 按 §0 的分类 |
-| tiny 表内名字（在范围） | 211 | 207 core + 5 扩展，扣掉 6 个排除分类 |
-| 端到端可用 A / 半可用 B / 纯桩 C | 135 / 47 / 24 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
-| 缺失（在范围） | 138 | 设备 53、媒体 23、界面 16、基础 4、网络 3、路由 14、位置 4、跳转 7…… |
+| tiny 表内名字（在范围） | 215 | 211 core + 5 扩展，扣掉 6 个排除分类 |
+| 端到端可用 A / 半可用 B / 纯桩 C | 135 / 51 / 24 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
+| 缺失（在范围） | 134 | 设备 53、媒体 19、界面 16、基础 4、网络 3、路由 14、位置 4、跳转 7…… |
 | 依赖宿主 handler 的 API | 113 | 其余 95 个是 service 侧逻辑 |
 | iOS 已实现的宿主 handler key | 61 / 91 | 身份/设置/剪贴板/批量存储/account/update + Rust 路由指令 |
 | 官方 demo 调用到的唯一 API | 154 | `tests/apps/wechat-demo/**` 静态扫描 |
@@ -82,8 +82,8 @@ toast/loading/modal/actionSheet、运动传感器、定位、文件系统）
 
 ### 2.1 三个数字的含义
 
-- **名字覆盖** 211/349 = 60%。只说明 `typeof wx.foo === 'function'` 成立，不代表能用。
-- **语义覆盖** (A + B + 5 扩展)/349 = 53.6%。A 是有宿主 handler 且真的干活；B 是 handler 在但返回罐头数据。
+- **名字覆盖** 215/349 = 62%。只说明 `typeof wx.foo === 'function'` 成立，不代表能用。
+- **语义覆盖** (A + B + 5 扩展)/349 = 54.7%。A 是有宿主 handler 且真的干活；B 是 handler 在但返回罐头数据。
 - **demo 命中** 61 个缺口里，设备 31、媒体 10、网络 8、界面 3、位置 3、跳转 3、基础 2、画布 1。
 
 ### 2.2 诚实性（已清零）
@@ -295,18 +295,18 @@ MVP 边界：`createWorker(path)` → `postMessage`/`onMessage`/`terminate`；wo
 | W2 本地媒体与画布 | ✅ 完成 | 选图/选视频/文件、预览、图片信息、压缩、裁剪、相册保存（下载）、canvas 导出与像素读写 |
 | W3 网络 | ✅ 完成 | request、uploadFile/downloadFile（进度+abort）、WebSocket（Task + 全局事件）；TCP/UDP 浏览器不可行 |
 | W4 数据缓存与文件 | ✅ 完成 | 持久化、batch、FileSystemManager 主体、openDocument/saveFileToDisk；`saveFileSync` 因 Blob 无法同步读而缺席 |
-| W5 媒体采集与播放 | 🟡 部分 | innerAudio、backgroundAudio、recorder；camera/video/live-player/WebAudio 缺（需要组件侧承载） |
+| W5 媒体采集与播放 | 🟡 部分 | innerAudio、backgroundAudio、recorder、旧版 play/pause/stopVoice、saveMediaToPhotosAlbum；camera/video/live-player/WebAudio 缺（需要组件侧承载） |
 | W6 位置与传感器 | ✅ 完成 | 定位/模糊定位/持续更新、加速度计/罗盘/陀螺仪/设备运动、电池、键盘高度 |
 | W7 Worker | ✅ 完成 | 编译层产出 + Blob Worker + `worker` 全局 bootstrap + 消息排队 |
 | iOS 宿主 | 🟡 部分 | 61/91 个 handler key（身份、设置、剪贴板、批量存储、网络、电量、震动、屏幕亮度、常亮、toast/loading/modal/actionSheet、四类运动传感器、定位、沙盒文件系统、文档预览与另存），媒体与 Worker 仍缺 |
 
-语义覆盖从 20.6% 提升到 53.6%，官方 demo 在范围内的缺口从 61 降到 40。
+语义覆盖从 20.6% 提升到 54.7%，官方 demo 在范围内的缺口从 61 降到 40。
 
 ### 4.3 后续三条线
 
 剩余 149 个缺口不在同一个层面，下一阶段建议按线推进，而不是继续加表项：
 
-1. **组件承载线（18 个）**：`createCameraContext` / `createVideoContext` / `createLivePlayerContext` /
+1. **组件承载线（14 个）**：`createCameraContext` / `createVideoContext` / `createLivePlayerContext` /
    `createMapContext` / `createWebAudioContext` / `createOffscreenCanvas` / 图片视频编辑。前提是先把
    `<camera>`/`<video>`/`<map>` 做到可承载（当前 39/60 标签里这几个仍是占位），做完再让 API 控制组件实例。
 2. **devtool chrome 线（15 个）**：`setTopBarText`、`setBackgroundColor`、`setBackgroundTextStyle`、
@@ -366,14 +366,14 @@ iOS 侧同理：媒体、传感器、Worker 三族的 Swift handler 补上后，
 | 分类归口靠键名近似 | 分母与优先级可能偏差 | W0 用官方文档目录校正，偏差超 5% 就重算 |
 | WebSocket 走 bridge 的流式改造 | 影响 bridge 协议稳定性 | 单独 ADR，先做 `onChunkReceived` 验证通道 |
 
-## 附录 A：剩余 138 个缺口的归因（2026-11-19）
+## 附录 A：剩余 134 个缺口的归因（2026-11-19）
 
 继续堆 API 层的收益已经很小：剩下的缺口大多不在 `@tiny/api`，而在组件、devtool UI 或浏览器能力边界。
 
 | 原因 | 数量 | 代表 API | 建议 |
 | --- | ---: | --- | --- |
 | 浏览器无对应能力 | 71 | 蓝牙 30+、WiFi/NFC/HCE/Beacon 20+、`createTCPSocket`/`createUDPSocket`、`sendSms`、通讯录/日历、录屏、`getBackgroundFetchData` | 不实现；W8 只产出能力矩阵 |
-| 需要内置组件或宿主 UI 承载 | 18 | `createCameraContext`/`createVideoContext`/`createLivePlayerContext`、`createWebAudioContext`、`createMapContext`、`createOffscreenCanvas`、`editImage`/`openVideoEditor` | 与组件波次一起做，不在 API 层硬造 |
+| 需要内置组件或宿主 UI 承载 | 14 | `createCameraContext`/`createVideoContext`/`createLivePlayerContext`、`createWebAudioContext`、`createMapContext`、`createOffscreenCanvas`、`editImage`/`openVideoEditor` | 与组件波次一起做，不在 API 层硬造 |
 | 需要页面 chrome | 15 | `setTopBarText`/`setBackgroundColor`/`setBackgroundTextStyle`/`hideHomeButton`/`setWindowSize`、window/key 事件、`enableAlertBeforeUnload`、preload 系列 | devtool 预览层 + 能力上报；浏览器诚实失败 |
 | 自定义路由语义未确认 | 14 | `onAppRoute`/`onBeforePageLoad` 等 | 先在微信模拟器确认再实现 |
 | 跨小程序生态 | 7 | `navigateToMiniProgram`/`openEmbeddedMiniProgram` | 宿主插件接口，浏览器无目标 |
