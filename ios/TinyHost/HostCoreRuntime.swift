@@ -25,6 +25,11 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private let motionManager = CMMotionManager()
   private var headingManager: CLLocationManager?
   private var headingDelegate: HeadingDelegate?
+  private var locationManager: CLLocationManager?
+  private var locationDelegate: LocationDelegate?
+  private var pendingLocationRequestId: String?
+  private var pendingLocationFuzzy = false
+  private var locationTracking = false
   /// Last network type reported by `NWPathMonitor`, served to `wx.getNetworkType`.
   private var currentNetworkType = "wifi"
   private var initialPageId: String?
@@ -1357,6 +1362,128 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     return text
   }
 
+  // MARK: - Location
+
+  private func locationPayload(_ location: CLLocation) -> [String: Any] {
+    [
+      "latitude": location.coordinate.latitude,
+      "longitude": location.coordinate.longitude,
+      "speed": max(0, location.speed),
+      "accuracy": location.horizontalAccuracy,
+      "altitude": location.altitude,
+      "verticalAccuracy": location.verticalAccuracy,
+      "horizontalAccuracy": location.horizontalAccuracy,
+    ]
+  }
+
+  private func locationErrorText(_ error: Error) -> String {
+    let code = (error as NSError).code
+    if code == 1 { return "auth deny" }
+    return error.localizedDescription
+  }
+
+  private func ensureLocationManager() -> CLLocationManager {
+    if let manager = locationManager, locationDelegate != nil {
+      return manager
+    }
+    let manager = CLLocationManager()
+    let delegate = LocationDelegate()
+    delegate.onUpdate = { [weak self] location in
+      Task { @MainActor in
+        guard let self else { return }
+        if let requestId = self.pendingLocationRequestId {
+          self.pendingLocationRequestId = nil
+          var payload = self.locationPayload(location)
+          if self.pendingLocationFuzzy {
+            payload["latitude"] = (payload["latitude"] as? Double).map { ($0 * 100).rounded() / 100 } ?? 0
+            payload["longitude"] = (payload["longitude"] as? Double).map { ($0 * 100).rounded() / 100 } ?? 0
+            payload["errMsg"] = "getFuzzyLocation:ok"
+          } else {
+            payload["errMsg"] = "getLocation:ok"
+          }
+          self.pendingLocationFuzzy = false
+          try? self.core?.platformResult(requestId: requestId, result: payload)
+          self.locationManager?.stopUpdatingLocation()
+          self.locationTracking = false
+        } else if self.locationTracking {
+          try? self.core?.command([
+            "type": "emitEvent",
+            "name": "locationChange",
+            "payload": self.locationPayload(location),
+          ])
+        }
+      }
+    }
+    delegate.onError = { [weak self] error in
+      Task { @MainActor in
+        guard let self else { return }
+        let message = self.locationErrorText(error)
+        if let requestId = self.pendingLocationRequestId {
+          self.pendingLocationRequestId = nil
+          self.pendingLocationFuzzy = false
+          try? self.core?.platformResult(requestId: requestId, result: [
+            "errMsg": "getLocation:fail \(message)",
+          ])
+        } else {
+          try? self.core?.command([
+            "type": "emitEvent",
+            "name": "locationChangeError",
+            "payload": ["errMsg": "locationChange:fail \(message)"],
+          ])
+        }
+      }
+    }
+    delegate.onAuthorization = { [weak self] status in
+      Task { @MainActor in
+        guard let self else { return }
+        switch status {
+        case .authorizedWhenInUse, .authorizedAlways:
+          if self.pendingLocationRequestId != nil || self.locationTracking {
+            self.locationManager?.startUpdatingLocation()
+          }
+        case .denied, .restricted:
+          if let requestId = self.pendingLocationRequestId {
+            self.pendingLocationRequestId = nil
+            self.pendingLocationFuzzy = false
+            try? self.core?.platformResult(requestId: requestId, result: [
+              "errMsg": "getLocation:fail auth deny",
+            ])
+          }
+        default:
+          break
+        }
+      }
+    }
+    manager.delegate = delegate
+    manager.desiredAccuracy = kCLLocationAccuracyBest
+    locationManager = manager
+    locationDelegate = delegate
+    return manager
+  }
+
+  private func requestLocation(requestId: String, fuzzy: Bool) {
+    let manager = ensureLocationManager()
+    pendingLocationRequestId = requestId
+    pendingLocationFuzzy = fuzzy
+    if manager.authorizationStatus == .notDetermined {
+      manager.requestWhenInUseAuthorization()
+    }
+    manager.requestLocation()
+  }
+
+  private func startLocationTracking(background: Bool) -> String {
+    let manager = ensureLocationManager()
+    if manager.authorizationStatus == .notDetermined {
+      manager.requestWhenInUseAuthorization()
+    }
+    if background {
+      manager.allowsBackgroundLocationUpdates = true
+    }
+    locationTracking = true
+    manager.startUpdatingLocation()
+    return background ? "startLocationUpdateBackground:ok" : "startLocationUpdate:ok"
+  }
+
   // MARK: - Motion sensors
 
   private func sensorIntervalMs(_ value: Any?) -> Double {
@@ -1805,6 +1932,18 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
         try core?.platformResult(requestId: requestId, result: ["errMsg": startSensor(params)])
       case "sensor.stop":
         try core?.platformResult(requestId: requestId, result: ["errMsg": stopSensor(params)])
+      case "location.get":
+        requestLocation(requestId: requestId, fuzzy: false)
+      case "location.fuzzy":
+        requestLocation(requestId: requestId, fuzzy: true)
+      case "location.start":
+        try core?.platformResult(requestId: requestId, result: ["errMsg": startLocationTracking(background: false)])
+      case "location.startBackground":
+        try core?.platformResult(requestId: requestId, result: ["errMsg": startLocationTracking(background: true)])
+      case "location.stop":
+        locationManager?.stopUpdatingLocation()
+        locationTracking = false
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "stopLocationUpdate:ok"])
       case "network.request":
         performNetworkRequest(requestId: requestId, params: params)
       case "toast.show":
@@ -1900,5 +2039,27 @@ final class HeadingDelegate: NSObject, CLLocationManagerDelegate {
 
   func locationManagerShouldDisplayHeadingCalibration(_ manager: CLLocationManager) -> Bool {
     false
+  }
+}
+
+
+/// Location delegate kept outside the runtime for the same reason as the
+/// compass one: the runtime is main-actor isolated.
+final class LocationDelegate: NSObject, CLLocationManagerDelegate {
+  var onUpdate: ((CLLocation) -> Void)?
+  var onError: ((Error) -> Void)?
+  var onAuthorization: ((CLAuthorizationStatus) -> Void)?
+
+  func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+    guard let last = locations.last else { return }
+    onUpdate?(last)
+  }
+
+  func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+    onError?(error)
+  }
+
+  func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+    onAuthorization?(manager.authorizationStatus)
   }
 }
