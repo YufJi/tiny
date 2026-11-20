@@ -261,6 +261,8 @@ const IOS_HOST_API_KEYS = [
   'socket.connect',
   'socket.send',
   'socket.close',
+  'page.selectedTextRange',
+  'page.pipActive',
   'navigate.to',
   'navigate.back',
   'navigate.switchTab',

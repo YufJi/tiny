@@ -2346,6 +2346,16 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
         try core?.platformResult(requestId: requestId, result: sendSocketMessage(params))
       case "socket.close":
         try core?.platformResult(requestId: requestId, result: closeSocket(params))
+      case "page.selectedTextRange":
+        let range = nativeKeyboard?.selectedRange
+        try core?.platformResult(requestId: requestId, result: [
+          "start": range?.start ?? 0,
+          "end": range?.end ?? 0,
+          "errMsg": "getSelectedTextRange:ok",
+        ])
+      case "page.pipActive":
+        // WKWebView's picture-in-picture state is not exposed to the host.
+        try core?.platformResult(requestId: requestId, result: ["isActive": false, "errMsg": "checkIsPictureInPictureActive:ok"])
       case "file.openDocument":
         try core?.platformResult(requestId: requestId, result: openUserDocument(params))
       case "file.saveToDisk":

@@ -28,6 +28,23 @@ final class NativeKeyboardHost: NSObject, UITextFieldDelegate, UITextViewDelegat
     textField?.isFirstResponder == true || textView?.isFirstResponder == true
   }
 
+  /// Focused input selection for `wx.getSelectedTextRange`.
+  var selectedRange: (start: Int, end: Int)? {
+    if let textField, textField.isFirstResponder, let range = textField.selectedTextRange {
+      return (
+        textField.offset(from: textField.beginningOfDocument, to: range.start),
+        textField.offset(from: textField.beginningOfDocument, to: range.end)
+      )
+    }
+    if let textView, textView.isFirstResponder, let range = textView.selectedTextRange {
+      return (
+        textView.offset(from: textView.beginningOfDocument, to: range.start),
+        textView.offset(from: textView.beginningOfDocument, to: range.end)
+      )
+    }
+    return nil
+  }
+
   init(container: UIView, ownerId: String) {
     self.container = container
     self.ownerId = ownerId
