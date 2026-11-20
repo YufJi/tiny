@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, test } from 'vitest'
 import { API_CATALOG } from '../src/catalog'
+import { COMPONENT_COMMAND } from '../src/map-context'
 
 /**
  * Host capability lists drift silently: a Swift `case` without an advertised
@@ -57,6 +58,13 @@ function declaredIOSCapabilities(): Set<string> {
 }
 
 describe('host capability lists', () => {
+  test('the map context mirrors the runtime component control constants', () => {
+    const controls = read('packages/runtime/src/tree-protocol/controls.ts')
+    const domain = /COMPONENT_CONTROL\s*=\s*Object\.freeze\(\{\s*domain:\s*'([^']+)'/.exec(controls)?.[1]
+    const invoke = /COMPONENT_CONTROL[\s\S]*?invoke:\s*'([^']+)'/.exec(controls)?.[1]
+    expect(COMPONENT_COMMAND).toEqual({ domain, invoke })
+  })
+
   test('every catalog host key is answered by a web or native host', () => {
     const handlers = new Set<string>()
     for (const path of BROWSER_SOURCES) {

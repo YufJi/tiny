@@ -3,6 +3,7 @@ import { BridgeConnection, createInMemoryTransportPair } from '@tiny/bridge'
 import { bootTreeThread } from '../src/render/thread'
 import { createRenderConnection } from './helpers/render-connection'
 import {
+  COMPONENT_CONTROL,
   QUERY_CONTROL,
   TREE_PROTOCOL,
   type PageFrameMount,
@@ -630,5 +631,67 @@ describe('tree thread', () => {
     release!()
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(order.at(-1)).toBe('pageReady')
+  })
+
+  test('forwards component commands to the renderer', async () => {
+    const [hostTransport, renderTransport] = createInMemoryTransportPair()
+    const requests: Array<{ method: string; selector?: string }> = []
+    bootTreeThread({
+      connection: createRenderConnection(renderTransport),
+      renderer: {
+        invokeComponent: (request) => {
+          requests.push({ method: request.method, selector: request.selector })
+          if (request.method === 'getScale') return { status: 'ok', value: { scale: 16 } }
+          return { status: 'unsupported-method', method: request.method }
+        },
+      },
+    })
+    const host = new BridgeConnection({
+      localRole: 'host',
+      peerRole: 'render',
+      transport: hostTransport,
+      respondToHello: false,
+    })
+    await host.handshake()
+
+    await expect(host.control(
+      COMPONENT_CONTROL.domain,
+      COMPONENT_CONTROL.invoke,
+      { selector: '#map', method: 'getScale' },
+      { pageId: 'page-1' },
+    )).resolves.toEqual({ status: 'ok', value: { scale: 16 } })
+
+    await expect(host.control(
+      COMPONENT_CONTROL.domain,
+      COMPONENT_CONTROL.invoke,
+      { selector: '#map', method: 'takePhoto' },
+      { pageId: 'page-1' },
+    )).resolves.toEqual({ status: 'unsupported-method', method: 'takePhoto' })
+
+    expect(requests).toEqual([
+      { method: 'getScale', selector: '#map' },
+      { method: 'takePhoto', selector: '#map' },
+    ])
+  })
+
+  test('component commands fail honestly without a renderer hook', async () => {
+    const [hostTransport, renderTransport] = createInMemoryTransportPair()
+    bootTreeThread({
+      connection: createRenderConnection(renderTransport),
+      renderer: {},
+    })
+    const host = new BridgeConnection({
+      localRole: 'host',
+      peerRole: 'render',
+      transport: hostTransport,
+      respondToHello: false,
+    })
+    await host.handshake()
+    await expect(host.control(
+      COMPONENT_CONTROL.domain,
+      COMPONENT_CONTROL.invoke,
+      { selector: '#map', method: 'getScale' },
+      { pageId: 'page-1' },
+    )).resolves.toEqual({ status: 'unsupported-method', method: 'getScale' })
   })
 })

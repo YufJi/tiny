@@ -2,9 +2,9 @@
 
 ## Status
 
-Proposed. Unblocks `createMapContext`, `createVideoContext`,
-`createCameraContext` and `createLivePlayerContext`; the map context is the
-first implementation.
+Accepted for the first slice. `createMapContext` now uses the channel
+(`getCenterLocation` / `moveToLocation` / `getScale`); video, camera and
+live-player contexts extend the whitelist in later changes.
 
 ## Context
 

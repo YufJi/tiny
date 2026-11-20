@@ -50,18 +50,18 @@
 
 ## 1. 结论
 
-1. **面够了，语义不够。** 在范围内的 349 个名字里，表里已有 218 个（62%），但端到端可用（A）只有 135 个
-   （另有 5 个宿主扩展）、半可用（B）54 个、纯桩（C）24 个——**语义覆盖 55.6%**，131 个名字缺失。
+1. **面够了，语义不够。** 在范围内的 349 个名字里，表里已有 219 个（62%），但端到端可用（A）只有 135 个
+   （另有 5 个宿主扩展）、半可用（B）55 个、纯桩（C）24 个——**语义覆盖 55.9%**，130 个名字缺失。
 2. **“假成功”已清零。** 2026-11-19 的 11 个在范围内“`canIUse` 说 true 但什么都不做”的 API，已按
    “真实现 / 诚实失败 / 声明不支持”三选一处理；`api:coverage` 的 honesty 段现在为 0。
-3. **官方 demo 在范围内的缺口是 40 个**（另 12 个落在排除分类）。这是唯一能“跑一遍就知道有没有退步”的短周期目标。
+3. **官方 demo 在范围内的缺口是 39 个**（另 12 个落在排除分类）。这是唯一能“跑一遍就知道有没有退步”的短周期目标。
 4. **iOS 是短板**：105 个宿主 handler key 里 iOS 实现 69 个（身份、设置、剪贴板、批量存储、account/update、网络、电量与
 电量事件、震动、屏幕亮度、常亮、toast/loading/modal/actionSheet、运动传感器、定位、文件系统、文档预览、HEVC、
 录音源、WebSocket、输入框选区、画中画查询）
    加 Rust 的 5 个路由与 2 个页面指令，并已通过 `hostCapabilities` 上报给 `canIUse`；媒体、网络、音频、
    传感器、Worker、文件仍全部缺失。新增 API 必须双宿主同时落地，否则 iOS 只能回答 false。
 5. **分数杠杆很小，必须整域推进。** API 权重 20%，在范围分母 349，每 10 个语义条目只值 **0.57 分**；
-   把 40 个 demo 缺口全补上约 **+2.3 分**（61.1% → ~63.4%）。零散补单点对总分几乎不可见。
+   把 39 个 demo 缺口全补上约 **+2.2 分**（61.1% → ~63.3%）。零散补单点对总分几乎不可见。
 6. **C 层是计划盲区。** 31 个在范围内的可调用空壳既不在“缺失”里，也不在“假 true”里，
    很容易被漏掉——`createWorker` 就是这么漏的。W0 必须先给每个桩定归属。
 
@@ -71,20 +71,20 @@
 | --- | ---: | --- |
 | 微信 3.17.5 `wx.*` 名字 | 499 | 基础库内嵌 canIUse 矩阵的方法表 |
 | 在范围 / 排除 | 349 / 150 | 按 §0 的分类 |
-| tiny 表内名字（在范围） | 218 | 214 core + 5 扩展，扣掉 6 个排除分类 |
-| 端到端可用 A / 半可用 B / 纯桩 C | 135 / 54 / 24 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
-| 缺失（在范围） | 131 | 设备 53、媒体 17、界面 15、基础 4、网络 3、路由 14、位置 4、跳转 7…… |
+| tiny 表内名字（在范围） | 219 | 215 core + 5 扩展，扣掉 6 个排除分类 |
+| 端到端可用 A / 半可用 B / 纯桩 C | 135 / 55 / 24 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
+| 缺失（在范围） | 130 | 设备 53、媒体 17、界面 15、基础 4、网络 3、路由 14、位置 3、跳转 7…… |
 | 依赖宿主 handler 的 API | 113 | 其余 95 个是 service 侧逻辑 |
 | iOS 已实现的宿主 handler key | 69 / 105 | 身份/设置/剪贴板/批量存储/account/update/网络/电量/震动/屏幕/传感器/定位/文件 + Rust 路由指令 |
 | 官方 demo 调用到的唯一 API | 154 | `tests/apps/wechat-demo/**` 静态扫描 |
-| 其中在范围且缺失的 | 40 | 另 12 个落在排除分类，5 个不是 3.17.5 名字 |
+| 其中在范围且缺失的 | 39 | 另 12 个落在排除分类，5 个不是 3.17.5 名字 |
 | 受影响的 demo 源文件 | 22 | 至少调用 1 个缺失名字 |
 | `canIUse` 说 true 但无效果（在范围） | 0 | `api:coverage` 的 honesty 段；由 `catalog.test.ts` 强制 |
 
 ### 2.1 三个数字的含义
 
-- **名字覆盖** 218/349 = 62%。只说明 `typeof wx.foo === 'function'` 成立，不代表能用。
-- **语义覆盖** (A + B + 5 扩展)/349 = 55.6%。A 是有宿主 handler 且真的干活；B 是 handler 在但返回罐头数据。
+- **名字覆盖** 219/349 = 62%。只说明 `typeof wx.foo === 'function'` 成立，不代表能用。
+- **语义覆盖** (A + B + 5 扩展)/349 = 55.9%。A 是有宿主 handler 且真的干活；B 是 handler 在但返回罐头数据。
 - **demo 命中** 61 个缺口里，设备 31、媒体 10、网络 8、界面 3、位置 3、跳转 3、基础 2、画布 1。
 
 ### 2.2 诚实性（已清零）
@@ -301,13 +301,13 @@ MVP 边界：`createWorker(path)` → `postMessage`/`onMessage`/`terminate`；wo
 | W7 Worker | ✅ 完成 | 编译层产出 + Blob Worker + `worker` 全局 bootstrap + 消息排队 |
 | iOS 宿主 | 🟡 部分 | 69/105 个 handler key（身份、设置、剪贴板、批量存储、网络、WebSocket、电量与电量事件、震动、屏幕亮度、常亮、toast/loading/modal/actionSheet、四类运动传感器、定位、沙盒文件系统、文档预览与另存、HEVC、录音源、输入框选区），媒体与 Worker 仍缺 |
 
-语义覆盖从 20.6% 提升到 55.6%，官方 demo 在范围内的缺口从 61 降到 40。
+语义覆盖从 20.6% 提升到 55.9%，官方 demo 在范围内的缺口从 61 降到 39。
 
 ### 4.3 后续三条线
 
 剩余 149 个缺口不在同一个层面，下一阶段建议按线推进，而不是继续加表项：
 
-1. **组件承载线（17 个）**：`createCameraContext` / `createVideoContext` / `createLivePlayerContext` /
+1. **组件承载线（16 个）**：`createCameraContext` / `createVideoContext` / `createLivePlayerContext` /
    `createMapContext` / `createWebAudioContext` / `createOffscreenCanvas` / 图片视频编辑。前提是先把
    `<camera>`/`<video>`/`<map>` 做到可承载（当前 39/60 标签里这几个仍是占位），做完再让 API 控制组件实例。
 2. **devtool chrome 线（14 个）**：`setTopBarText`、`setBackgroundColor`、`setBackgroundTextStyle`、
@@ -323,7 +323,7 @@ iOS 侧同理：媒体、传感器、Worker 三族的 Swift handler 补上后，
 
 | 检查 | 命令 | 结果 |
 | --- | --- | --- |
-| 覆盖率基线 | `pnpm api:coverage --check` | 218 / 349 名字（62.5%），语义 55.6%，demo 缺口 40 |
+| 覆盖率基线 | `pnpm api:coverage --check` | 219 / 349 名字（62.8%），语义 55.9%，demo 缺口 39 |
 | 单元测试 | `pnpm test` | 145 个文件 / 822 个用例全部通过 |
 | 验收门禁 | `pnpm accept:glass-easel` | 44.6s，五段浏览器全绿 |
 | iOS 类型检查 | `pnpm --filter @tiny/host-ios typecheck` | 通过 |
@@ -345,7 +345,7 @@ iOS 侧同理：媒体、传感器、Worker 三族的 Swift handler 补上后，
 | 组件线 | createOffscreenCanvas（同步 canvas adapter） | +1 API（partial），语义 +1 |
 | 媒体长尾 | playVoice/pauseVoice/stopVoice、startRecord/stopRecord、saveMediaToPhotosAlbum | +6 API（partial），语义 +6 |
 
-阶段净增：**在范围名字 210 → 218，语义覆盖 53.0% → 55.6%，iOS 能力 61 → 69 / 105**。
+阶段净增：**在范围名字 210 → 219，语义覆盖 53.0% → 55.9%，iOS 能力 61 → 69 / 105**。
 
 ## 5. 第一批 PR（建议）
 
@@ -385,14 +385,14 @@ iOS 侧同理：媒体、传感器、Worker 三族的 Swift handler 补上后，
 | 分类归口靠键名近似 | 分母与优先级可能偏差 | W0 用官方文档目录校正，偏差超 5% 就重算 |
 | WebSocket 走 bridge 的流式改造 | 影响 bridge 协议稳定性 | 单独 ADR，先做 `onChunkReceived` 验证通道 |
 
-## 附录 A：剩余 131 个缺口的归因（2026-11-19）
+## 附录 A：剩余 130 个缺口的归因（2026-11-19）
 
 继续堆 API 层的收益已经很小：剩下的缺口大多不在 `@tiny/api`，而在组件、devtool UI 或浏览器能力边界。
 
 | 原因 | 数量 | 代表 API | 建议 |
 | --- | ---: | --- | --- |
 | 浏览器无对应能力 | 71 | 蓝牙 30+、WiFi/NFC/HCE/Beacon 20+、`createTCPSocket`/`createUDPSocket`、`sendSms`、通讯录/日历、录屏、`getBackgroundFetchData` | 不实现；W8 只产出能力矩阵 |
-| 需要内置组件或宿主 UI 承载 | 17 | `createCameraContext`/`createVideoContext`/`createLivePlayerContext`、`createWebAudioContext`、`createMapContext`、`editImage`/`openVideoEditor`、`chooseLocation`/`openLocation` | 与组件波次一起做；先补 §4.4 的组件命令通道 |
+| 需要内置组件或宿主 UI 承载 | 16 | `createCameraContext`/`createVideoContext`/`createLivePlayerContext`、`createWebAudioContext`、`createMapContext`、`editImage`/`openVideoEditor`、`chooseLocation`/`openLocation` | 与组件波次一起做；先补 §4.4 的组件命令通道 |
 | 需要页面 chrome | 14 | `setTopBarText`/`setBackgroundColor`/`setBackgroundTextStyle`/`hideHomeButton`/`setWindowSize`、window/key 事件、`enableAlertBeforeUnload`、preload 系列 | devtool 预览层 + 能力上报；浏览器诚实失败 |
 | 自定义路由语义未确认 | 14 | `onAppRoute`/`onBeforePageLoad` 等 | 先在微信模拟器确认再实现 |
 | 跨小程序生态 | 7 | `navigateToMiniProgram`/`openEmbeddedMiniProgram` | 宿主插件接口，浏览器无目标 |
@@ -424,7 +424,7 @@ iOS 侧同理：媒体、传感器、Worker 三族的 Swift handler 补上后，
    参照 `createOffscreenCanvas`：类型定义在 `packages/api/src/context.ts`，由 `hosts/web/src/service-entry.ts`
    注入实现。
 
-补齐这三块之后这些 API 才能真实可用；在此之前保持缺失，不在表里造空壳。
-
-协议与方法白名单的提案见 [ADR-0023](adr/0023-component-command-channel.md)，首个落地目标是
-`createMapContext`（`getCenterLocation` / `moveToLocation` / `getScale`）。
+协议与方法白名单的提案见 [ADR-0023](adr/0023-component-command-channel.md)。三块已按 ADR 落地第一刀：
+`component.invoke` 控制域（含 Rust 侧 `ProtocolDomain::Component`）、`render/thread.ts` 的分发、
+`hosts/web` 的 `invokeComponent`（白名单 + `tiny:command` 事件）、`@tiny/api` 的 `createMapContext`
+（`getCenterLocation` / `moveToLocation` / `getScale`）。video/camera 需要扩展各标签的白名单后再打开。

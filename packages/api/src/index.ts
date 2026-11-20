@@ -9,6 +9,7 @@ import { createInnerAudioApi } from './inner-audio'
 import { createRecorderApi } from './recorder'
 import { createSocketApi } from './socket'
 import { createLocationApi } from './location'
+import { createMapContext } from './map-context'
 import { createMediaPickerApi } from './media-picker'
 import { createSensorApi } from './sensors'
 import { createVoiceApi } from './voice'
@@ -88,6 +89,7 @@ export function createApiHost(
     ...createNetworkApi(apiContext),
     ...createSocketApi(apiContext),
     ...createLocationApi(apiContext),
+    createMapContext: (mapId: unknown) => createMapContext(apiContext, String(mapId ?? '')),
     ...createSensorApi(apiContext),
     ...createDeviceApi(apiContext),
     ...createEncodingApi(apiContext),

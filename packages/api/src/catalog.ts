@@ -242,6 +242,8 @@ export const API_CATALOG = {
   // Host capability: the browser adapter creates a real OffscreenCanvas, iOS
   // returns null (JSCore has none), so the entry counts as partial.
   createOffscreenCanvas: { status: 'partial' },
+  // Component command channel (ADR-0023); the map whitelist is the first cut.
+  createMapContext: { status: 'partial' },
   canvasGetImageData: { status: 'real' },
   canvasPutImageData: { status: 'real' },
   // Legacy alias kept for pre-1.9 bundles; not a WeChat 3.17.5 name.
