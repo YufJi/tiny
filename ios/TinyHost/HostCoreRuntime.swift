@@ -1351,6 +1351,17 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       ]
     case "permissions.setting":
       result = authorizeSettingPayload()
+    case "fs.access": result = fsAccess(params)
+    case "fs.readFile": result = fsReadFile(params)
+    case "fs.writeFile": result = fsWriteFile(params)
+    case "fs.mkdir": result = fsMkdir(params)
+    case "fs.readdir": result = fsReaddir(params)
+    case "fs.stat": result = fsStat(params)
+    case "fs.unlink": result = fsUnlink(params)
+    case "fs.rmdir": result = fsRmdir(params)
+    case "fs.copyFile": result = fsCopyFile(params)
+    case "fs.rename": result = fsRename(params)
+    case "fs.appendFile": result = fsAppendFile(params)
     case "network.type":
       result = ["networkType": currentNetworkType, "errMsg": "getNetworkType:ok"]
     default:
@@ -1360,6 +1371,189 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
           let text = String(data: data, encoding: .utf8)
     else { return "null" }
     return text
+  }
+
+  // MARK: - File system
+
+  private func userDirectory() -> URL {
+    let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+      ?? URL(fileURLWithPath: NSTemporaryDirectory())
+    return documents.appendingPathComponent("usr", isDirectory: true)
+  }
+
+  private func userPath(_ raw: String) -> URL? {
+    guard raw.hasPrefix("wxfile://usr") else { return nil }
+    var url = userDirectory()
+    let rest = raw.dropFirst("wxfile://usr".count)
+    for component in rest.split(separator: "/") {
+      let name = String(component)
+      if name.isEmpty || name == "." { continue }
+      if name == ".." { return nil }
+      url.appendPathComponent(name)
+    }
+    return url
+  }
+
+  private func fsFailure(_ api: String, _ reason: String) -> [String: Any] {
+    ["errMsg": "\(api):fail \(reason)"]
+  }
+
+  private func fsAccess(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userPath(params["path"] as? String ?? "") else {
+      return fsFailure("access", "no such file or directory")
+    }
+    guard FileManager.default.fileExists(atPath: url.path) else {
+      return fsFailure("access", "no such file or directory")
+    }
+    return ["errMsg": "access:ok"]
+  }
+
+  private func fsReadFile(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userPath(params["path"] as? String ?? ""),
+          let data = try? Data(contentsOf: url)
+    else { return fsFailure("readFile", "no such file or directory") }
+    return ["data": data.base64EncodedString(), "errMsg": "readFile:ok"]
+  }
+
+  private func fsWriteFile(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userPath(params["path"] as? String ?? "") else {
+      return fsFailure("writeFile", "no such file or directory")
+    }
+    let parent = url.deletingLastPathComponent()
+    guard FileManager.default.fileExists(atPath: parent.path) else {
+      return fsFailure("writeFile", "no such file or directory")
+    }
+    guard let data = Data(base64Encoded: params["base64"] as? String ?? "") else {
+      return fsFailure("writeFile", "invalid base64 data")
+    }
+    do {
+      try data.write(to: url)
+      return ["errMsg": "writeFile:ok"]
+    } catch {
+      return fsFailure("writeFile", error.localizedDescription)
+    }
+  }
+
+  private func fsMkdir(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userPath(params["path"] as? String ?? "") else {
+      return fsFailure("mkdir", "no such file or directory")
+    }
+    let recursive = params["recursive"] as? Bool ?? false
+    do {
+      try FileManager.default.createDirectory(
+        at: url,
+        withIntermediateDirectories: recursive,
+        attributes: nil,
+      )
+      return ["errMsg": "mkdir:ok"]
+    } catch {
+      return fsFailure("mkdir", "file already exists")
+    }
+  }
+
+  private func fsReaddir(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userPath(params["path"] as? String ?? "") else {
+      return fsFailure("readdir", "no such file or directory")
+    }
+    guard let names = try? FileManager.default.contentsOfDirectory(atPath: url.path) else {
+      return fsFailure("readdir", "no such file or directory")
+    }
+    return ["files": names.sorted(), "errMsg": "readdir:ok"]
+  }
+
+  private func fsStat(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userPath(params["path"] as? String ?? ""),
+          let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
+    else { return fsFailure("stat", "no such file or directory") }
+    let isDirectory = (attributes[.type] as? FileAttributeType) == .typeDirectory
+    let modified = (attributes[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
+    return [
+      "stats": [
+        "size": (attributes[.size] as? NSNumber)?.intValue ?? 0,
+        "lastModifiedTime": modified,
+        "lastAccessedTime": modified,
+        "isDirectory": isDirectory,
+      ],
+      "errMsg": "stat:ok",
+    ]
+  }
+
+  private func fsUnlink(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userPath(params["path"] as? String ?? "") else {
+      return fsFailure("unlink", "no such file or directory")
+    }
+    var isDirectory: ObjCBool = false
+    guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
+      return fsFailure("unlink", "no such file or directory")
+    }
+    if isDirectory.boolValue { return fsFailure("unlink", "is a directory") }
+    do {
+      try FileManager.default.removeItem(at: url)
+      return ["errMsg": "unlink:ok"]
+    } catch {
+      return fsFailure("unlink", error.localizedDescription)
+    }
+  }
+
+  private func fsRmdir(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userPath(params["path"] as? String ?? "") else {
+      return fsFailure("rmdir", "no such file or directory")
+    }
+    var isDirectory: ObjCBool = false
+    guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
+          isDirectory.boolValue
+    else { return fsFailure("rmdir", "no such file or directory") }
+    let recursive = params["recursive"] as? Bool ?? false
+    if !recursive {
+      let children = (try? FileManager.default.contentsOfDirectory(atPath: url.path)) ?? []
+      if !children.isEmpty { return fsFailure("rmdir", "directory not empty") }
+    }
+    do {
+      try FileManager.default.removeItem(at: url)
+      return ["errMsg": "rmdir:ok"]
+    } catch {
+      return fsFailure("rmdir", error.localizedDescription)
+    }
+  }
+
+  private func fsCopyFile(_ params: [String: Any]) -> [String: Any] {
+    guard let source = userPath(params["srcPath"] as? String ?? ""),
+          let destination = userPath(params["destPath"] as? String ?? "")
+    else { return fsFailure("copyFile", "no such file or directory") }
+    do {
+      try FileManager.default.copyItem(at: source, to: destination)
+      return ["errMsg": "copyFile:ok"]
+    } catch {
+      return fsFailure("copyFile", error.localizedDescription)
+    }
+  }
+
+  private func fsRename(_ params: [String: Any]) -> [String: Any] {
+    guard let source = userPath(params["oldPath"] as? String ?? ""),
+          let destination = userPath(params["newPath"] as? String ?? "")
+    else { return fsFailure("rename", "no such file or directory") }
+    do {
+      try FileManager.default.moveItem(at: source, to: destination)
+      return ["errMsg": "rename:ok"]
+    } catch {
+      return fsFailure("rename", error.localizedDescription)
+    }
+  }
+
+  private func fsAppendFile(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userPath(params["path"] as? String ?? "") else {
+      return fsFailure("appendFile", "no such file or directory")
+    }
+    guard let addition = Data(base64Encoded: params["base64"] as? String ?? "") else {
+      return fsFailure("appendFile", "invalid base64 data")
+    }
+    let existing = (try? Data(contentsOf: url)) ?? Data()
+    do {
+      try (existing + addition).write(to: url)
+      return ["errMsg": "appendFile:ok"]
+    } catch {
+      return fsFailure("appendFile", error.localizedDescription)
+    }
   }
 
   // MARK: - Location
@@ -1932,6 +2126,17 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
         try core?.platformResult(requestId: requestId, result: ["errMsg": startSensor(params)])
       case "sensor.stop":
         try core?.platformResult(requestId: requestId, result: ["errMsg": stopSensor(params)])
+      case "fs.access": try core?.platformResult(requestId: requestId, result: fsAccess(params))
+      case "fs.readFile": try core?.platformResult(requestId: requestId, result: fsReadFile(params))
+      case "fs.writeFile": try core?.platformResult(requestId: requestId, result: fsWriteFile(params))
+      case "fs.mkdir": try core?.platformResult(requestId: requestId, result: fsMkdir(params))
+      case "fs.readdir": try core?.platformResult(requestId: requestId, result: fsReaddir(params))
+      case "fs.stat": try core?.platformResult(requestId: requestId, result: fsStat(params))
+      case "fs.unlink": try core?.platformResult(requestId: requestId, result: fsUnlink(params))
+      case "fs.rmdir": try core?.platformResult(requestId: requestId, result: fsRmdir(params))
+      case "fs.copyFile": try core?.platformResult(requestId: requestId, result: fsCopyFile(params))
+      case "fs.rename": try core?.platformResult(requestId: requestId, result: fsRename(params))
+      case "fs.appendFile": try core?.platformResult(requestId: requestId, result: fsAppendFile(params))
       case "location.get":
         requestLocation(requestId: requestId, fuzzy: false)
       case "location.fuzzy":
