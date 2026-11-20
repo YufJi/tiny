@@ -1,9 +1,11 @@
 import AudioToolbox
 import CoreLocation
+import CoreMedia
 import CoreMotion
 import Foundation
 import Network
 import UIKit
+import VideoToolbox
 
 /// Native iOS host runtime: Rust HostCore + JSCore service + one WKWebView per page.
 ///
@@ -31,6 +33,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private var pendingLocationFuzzy = false
   private var locationTracking = false
   private var documentPreview: UIDocumentInteractionController?
+  private var batteryObserversInstalled = false
   /// Last network type reported by `NWPathMonitor`, served to `wx.getNetworkType`.
   private var currentNetworkType = "wifi"
   private var initialPageId: String?
@@ -170,6 +173,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     }
     self.meta = meta
     self.manifest = manifest
+    installBatteryMonitoring()
     let templatesFile = generatedRoot.appendingPathComponent(
       "apps/\(app.id)/assets/templates.js"
     )
@@ -1365,6 +1369,8 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     case "fs.appendFile": result = fsAppendFile(params)
     case "network.type":
       result = ["networkType": currentNetworkType, "errMsg": "getNetworkType:ok"]
+    case "battery.infoSync":
+      result = batteryPayload()
     default:
       result = ["error": "unsupported synchronous host API: \(method)"]
     }
@@ -1372,6 +1378,37 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
           let text = String(data: data, encoding: .utf8)
     else { return "null" }
     return text
+  }
+
+  // MARK: - Battery
+
+  private func batteryPayload() -> [String: Any] {
+    let device = UIDevice.current
+    device.isBatteryMonitoringEnabled = true
+    let level = device.batteryLevel < 0 ? 100 : Int((device.batteryLevel * 100).rounded())
+    let charging = device.batteryState == .charging || device.batteryState == .full
+    return ["level": level, "isCharging": charging, "errMsg": "getBatteryInfo:ok"]
+  }
+
+  private func installBatteryMonitoring() {
+    guard !batteryObserversInstalled else { return }
+    batteryObserversInstalled = true
+    let center = NotificationCenter.default
+    for name in [
+      UIDevice.batteryLevelDidChangeNotification,
+      UIDevice.batteryStateDidChangeNotification,
+    ] {
+      center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+        Task { @MainActor in
+          guard let self else { return }
+          try? self.core?.command([
+            "type": "emitEvent",
+            "name": "batteryInfoChange",
+            "payload": self.batteryPayload(),
+          ])
+        }
+      }
+    }
   }
 
   // MARK: - Documents
@@ -2151,14 +2188,17 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
           "errMsg": "getNetworkType:ok",
         ])
       case "battery.get":
-        let device = UIDevice.current
-        device.isBatteryMonitoringEnabled = true
-        let level = device.batteryLevel < 0 ? 100 : Int((device.batteryLevel * 100).rounded())
-        let charging = device.batteryState == .charging || device.batteryState == .full
+        try core?.platformResult(requestId: requestId, result: batteryPayload())
+      case "audio.sources":
         try core?.platformResult(requestId: requestId, result: [
-          "level": level,
-          "isCharging": charging,
-          "errMsg": "getBatteryInfo:ok",
+          "audioSources": ["auto", "buildInMic", "headsetMic", "mic"],
+        ])
+      case "media.hevcSupport":
+        let supported = VTIsHardwareDecodeSupported(kCMVideoCodecType_HEVC)
+        try core?.platformResult(requestId: requestId, result: [
+          "supportHevc": supported,
+          "hevcHardware": supported,
+          "errMsg": "checkDeviceSupportHevc:ok",
         ])
       case "screen.getBrightness":
         try core?.platformResult(requestId: requestId, result: [

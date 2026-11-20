@@ -55,8 +55,8 @@
 2. **“假成功”已清零。** 2026-11-19 的 11 个在范围内“`canIUse` 说 true 但什么都不做”的 API，已按
    “真实现 / 诚实失败 / 声明不支持”三选一处理；`api:coverage` 的 honesty 段现在为 0。
 3. **官方 demo 在范围内的缺口是 40 个**（另 12 个落在排除分类）。这是唯一能“跑一遍就知道有没有退步”的短周期目标。
-4. **iOS 是短板**：91 个宿主 handler key 里 iOS 实现 61 个（身份、设置、剪贴板、批量存储、account/update、网络、电量、震动、
-toast/loading/modal/actionSheet、运动传感器、定位、文件系统）
+4. **iOS 是短板**：105 个宿主 handler key 里 iOS 实现 64 个（身份、设置、剪贴板、批量存储、account/update、网络、电量与
+电量事件、震动、屏幕亮度、常亮、toast/loading/modal/actionSheet、运动传感器、定位、文件系统、文档预览、HEVC、录音源）
    加 Rust 的 5 个路由与 2 个页面指令，并已通过 `hostCapabilities` 上报给 `canIUse`；媒体、网络、音频、
    传感器、Worker、文件仍全部缺失。新增 API 必须双宿主同时落地，否则 iOS 只能回答 false。
 5. **分数杠杆很小，必须整域推进。** API 权重 20%，在范围分母 349，每 10 个语义条目只值 **0.57 分**；
@@ -74,7 +74,7 @@ toast/loading/modal/actionSheet、运动传感器、定位、文件系统）
 | 端到端可用 A / 半可用 B / 纯桩 C | 135 / 53 / 24 + 5 扩展 | 逐条分级由 W0 的 `api:coverage` 产出 |
 | 缺失（在范围） | 132 | 设备 53、媒体 17、界面 16、基础 4、网络 3、路由 14、位置 4、跳转 7…… |
 | 依赖宿主 handler 的 API | 113 | 其余 95 个是 service 侧逻辑 |
-| iOS 已实现的宿主 handler key | 61 / 91 | 身份/设置/剪贴板/批量存储/account/update + Rust 路由指令 |
+| iOS 已实现的宿主 handler key | 64 / 105 | 身份/设置/剪贴板/批量存储/account/update/网络/电量/震动/屏幕/传感器/定位/文件 + Rust 路由指令 |
 | 官方 demo 调用到的唯一 API | 154 | `tests/apps/wechat-demo/**` 静态扫描 |
 | 其中在范围且缺失的 | 40 | 另 12 个落在排除分类，5 个不是 3.17.5 名字 |
 | 受影响的 demo 源文件 | 22 | 至少调用 1 个缺失名字 |
@@ -298,7 +298,7 @@ MVP 边界：`createWorker(path)` → `postMessage`/`onMessage`/`terminate`；wo
 | W5 媒体采集与播放 | 🟡 部分 | innerAudio、backgroundAudio、recorder、旧版 play/pause/stopVoice 与 startRecord/stopRecord、saveMediaToPhotosAlbum；camera/video/live-player/WebAudio 缺（需要组件侧承载） |
 | W6 位置与传感器 | ✅ 完成 | 定位/模糊定位/持续更新、加速度计/罗盘/陀螺仪/设备运动、电池、键盘高度 |
 | W7 Worker | ✅ 完成 | 编译层产出 + Blob Worker + `worker` 全局 bootstrap + 消息排队 |
-| iOS 宿主 | 🟡 部分 | 61/91 个 handler key（身份、设置、剪贴板、批量存储、网络、电量、震动、屏幕亮度、常亮、toast/loading/modal/actionSheet、四类运动传感器、定位、沙盒文件系统、文档预览与另存），媒体与 Worker 仍缺 |
+| iOS 宿主 | 🟡 部分 | 64/105 个 handler key（身份、设置、剪贴板、批量存储、网络、电量与电量事件、震动、屏幕亮度、常亮、toast/loading/modal/actionSheet、四类运动传感器、定位、沙盒文件系统、文档预览与另存、HEVC、录音源），媒体与 Worker 仍缺 |
 
 语义覆盖从 20.6% 提升到 55.3%，官方 demo 在范围内的缺口从 61 降到 40。
 
