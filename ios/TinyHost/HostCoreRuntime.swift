@@ -34,6 +34,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private var locationTracking = false
   private var documentPreview: UIDocumentInteractionController?
   private var batteryObserversInstalled = false
+  private var sockets: [String: URLSessionWebSocketTask] = [:]
   /// Last network type reported by `NWPathMonitor`, served to `wx.getNetworkType`.
   private var currentNetworkType = "wifi"
   private var initialPageId: String?
@@ -1380,6 +1381,101 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     return text
   }
 
+  // MARK: - Web sockets
+
+  private func emitEvent(_ name: String, _ payload: [String: Any]) {
+    try? core?.command(["type": "emitEvent", "name": name, "payload": payload])
+  }
+
+  private func connectSocket(_ params: [String: Any]) -> [String: Any] {
+    let socketId = params["socketId"] as? String ?? ""
+    guard let url = URL(string: params["url"] as? String ?? ""),
+          let scheme = url.scheme?.lowercased(),
+          scheme == "ws" || scheme == "wss"
+    else { return ["errMsg": "connectSocket:fail invalid url"] }
+    let task = URLSession.shared.webSocketTask(with: url)
+    sockets[socketId] = task
+    task.resume()
+    emitEvent("socketOpen", ["socketId": socketId, "header": [:]])
+    receiveSocket(socketId, task)
+    return ["errMsg": "connectSocket:ok"]
+  }
+
+  private func receiveSocket(_ socketId: String, _ task: URLSessionWebSocketTask) {
+    task.receive { [weak self] result in
+      Task { @MainActor in
+        guard let self, self.sockets[socketId] === task else { return }
+        switch result {
+        case .success(let message):
+          switch message {
+          case .string(let text):
+            self.emitEvent("socketMessage", ["socketId": socketId, "data": text, "isBuffer": false])
+          case .data(let data):
+            self.emitEvent("socketMessage", [
+              "socketId": socketId,
+              "data": data.base64EncodedString(),
+              "isBuffer": true,
+            ])
+          @unknown default:
+            break
+          }
+          self.receiveSocket(socketId, task)
+        case .failure(let error):
+          self.sockets.removeValue(forKey: socketId)
+          self.emitEvent("socketClose", [
+            "socketId": socketId,
+            "code": 1006,
+            "reason": error.localizedDescription,
+          ])
+        }
+      }
+    }
+  }
+
+  private func sendSocketMessage(_ params: [String: Any]) -> [String: Any] {
+    let socketId = params["socketId"] as? String ?? ""
+    guard let task = sockets[socketId] else {
+      return ["errMsg": "sendSocketMessage:fail socket is not connected"]
+    }
+    if (params["isBuffer"] as? Bool) == true,
+       let data = Data(base64Encoded: params["data"] as? String ?? "") {
+      task.send(.data(data)) { [weak self] error in
+        guard let error else { return }
+        Task { @MainActor in
+          self?.emitEvent("socketError", [
+            "socketId": socketId,
+            "errMsg": "socketError:fail \(error.localizedDescription)",
+          ])
+        }
+      }
+    } else {
+      task.send(.string(params["data"] as? String ?? "")) { [weak self] error in
+        guard let error else { return }
+        Task { @MainActor in
+          self?.emitEvent("socketError", [
+            "socketId": socketId,
+            "errMsg": "socketError:fail \(error.localizedDescription)",
+          ])
+        }
+      }
+    }
+    return ["errMsg": "sendSocketMessage:ok"]
+  }
+
+  private func closeSocket(_ params: [String: Any]) -> [String: Any] {
+    let socketId = params["socketId"] as? String ?? ""
+    guard let task = sockets[socketId] else { return ["errMsg": "closeSocket:ok"] }
+    sockets.removeValue(forKey: socketId)
+    let code = (params["code"] as? Int) ?? 1000
+    task.cancel(with: URLSessionWebSocketTask.CloseCode(rawValue: code) ?? .normalClosure, reason: nil)
+    emitEvent("socketClose", [
+      "socketId": socketId,
+      "code": code,
+      "reason": params["reason"] as? String ?? "",
+    ])
+    return ["errMsg": "closeSocket:ok"]
+  }
+
   // MARK: - Battery
 
   private func batteryPayload() -> [String: Any] {
@@ -2244,6 +2340,12 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
         try core?.platformResult(requestId: requestId, result: ["errMsg": "stopLocationUpdate:ok"])
       case "network.request":
         performNetworkRequest(requestId: requestId, params: params)
+      case "socket.connect":
+        try core?.platformResult(requestId: requestId, result: connectSocket(params))
+      case "socket.send":
+        try core?.platformResult(requestId: requestId, result: sendSocketMessage(params))
+      case "socket.close":
+        try core?.platformResult(requestId: requestId, result: closeSocket(params))
       case "file.openDocument":
         try core?.platformResult(requestId: requestId, result: openUserDocument(params))
       case "file.saveToDisk":
