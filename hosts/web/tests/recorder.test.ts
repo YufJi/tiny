@@ -107,4 +107,32 @@ describe('recorder handlers', () => {
       errMsg: 'start:fail audio recording is not available in this runtime',
     })
   })
+
+  test('legacy startRecord/stopRecord return the clip', async () => {
+    const registry = createRegistry()
+    const recorder = createFakeRecorder()
+    const handlers = createRecorderHandlers({
+      emit: () => undefined,
+      registry,
+      getUserMedia: async () => ({ getTracks: () => [{ stop() {} }] }),
+      createRecorder: () => recorder,
+    })
+    await expect(handlers['voice.startRecord']({ duration: 30 })).resolves.toEqual({
+      errMsg: 'startRecord:ok',
+    })
+    const result = await handlers['voice.stopRecord']({})
+    expect(result).toMatchObject({ errMsg: 'stopRecord:ok', fileSize: 11 })
+    expect(String(result.tempFilePath)).toBe('blob:test/1')
+    expect(Number(result.duration)).toBeGreaterThanOrEqual(0)
+  })
+
+  test('legacy recording states fail honestly', async () => {
+    const handlers = createRecorderHandlers({ emit: () => undefined, registry: createRegistry() })
+    await expect(handlers['voice.stopRecord']({})).resolves.toEqual({
+      errMsg: 'stopRecord:fail no recording is running',
+    })
+    await expect(handlers['voice.startRecord']({})).resolves.toEqual({
+      errMsg: 'startRecord:fail audio recording is not available in this runtime',
+    })
+  })
 })

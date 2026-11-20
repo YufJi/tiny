@@ -282,6 +282,8 @@ export const API_CATALOG = {
   playVoice: { status: 'partial', host: 'voice.play' },
   pauseVoice: { status: 'partial', host: 'voice.pause' },
   stopVoice: { status: 'partial', host: 'voice.stop' },
+  startRecord: { status: 'partial', host: 'voice.startRecord' },
+  stopRecord: { status: 'partial', host: 'voice.stopRecord' },
   onBackgroundAudioPlay: { status: 'real' },
   onBackgroundAudioPause: { status: 'real' },
   onBackgroundAudioStop: { status: 'real' },

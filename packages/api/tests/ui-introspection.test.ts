@@ -93,4 +93,12 @@ describe('page introspection APIs', () => {
     await host.stopVoice({})
     expect(calls.map((call) => call.method)).toEqual(['voice.play', 'voice.pause', 'voice.stop'])
   })
+
+  test('legacy record APIs forward to the host', async () => {
+    const { host, calls } = createHost()
+    await host.startRecord({ duration: 30 })
+    await host.stopRecord({})
+    expect(calls.map((call) => call.method)).toEqual(['voice.startRecord', 'voice.stopRecord'])
+    expect(calls[0].params).toEqual({ duration: 30 })
+  })
 })

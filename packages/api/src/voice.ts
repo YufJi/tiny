@@ -17,5 +17,14 @@ export function createVoiceApi(context: ApiContext): ApiHost {
     )),
     pauseVoice: (params: unknown = {}) => runApi(params, 'pauseVoice', () => callHost(context, 'voice.pause')),
     stopVoice: (params: unknown = {}) => runApi(params, 'stopVoice', () => callHost(context, 'voice.stop')),
+    startRecord: (params: unknown = {}) => runApi(params, 'startRecord', () => callHost(
+      context,
+      'voice.startRecord',
+      { duration: Number((params as { duration?: unknown }).duration ?? 60) },
+    )),
+    stopRecord: (params: unknown = {}) => runApi(params, 'stopRecord', async () => {
+      const result = await callHost(context, 'voice.stopRecord') as Record<string, unknown>
+      return { ...result, errMsg: 'stopRecord:ok' }
+    }),
   }
 }

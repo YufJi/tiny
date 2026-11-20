@@ -66,6 +66,8 @@ const CALLBACK_APIS = [
   'playVoice',
   'pauseVoice',
   'stopVoice',
+  'startRecord',
+  'stopRecord',
   'saveMediaToPhotosAlbum',
   'playBackgroundAudio',
   'pauseBackgroundAudio',

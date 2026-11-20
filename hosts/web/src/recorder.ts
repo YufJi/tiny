@@ -40,6 +40,13 @@ export function createRecorderHandlers(
     stream: StreamLike
     stop: () => void
   }>()
+  // The legacy startRecord/stopRecord pair owns one recording at a time.
+  let legacy: {
+    recorder: RecorderLike
+    stream: StreamLike
+    chunks: Blob[]
+    startedAt: number
+  } | undefined
 
   const stopSession = (recorderId: string): void => {
     const session = sessions.get(recorderId)
@@ -48,6 +55,52 @@ export function createRecorderHandlers(
   }
 
   return {
+    'voice.startRecord': async (params) => {
+      if (legacy) return { errMsg: 'startRecord:fail a recording is already running' }
+      if (!getUserMedia || !createRecorder) {
+        return { errMsg: 'startRecord:fail audio recording is not available in this runtime' }
+      }
+      try {
+        const stream = await getUserMedia({ audio: true })
+        const recorder = createRecorder(stream)
+        const session = { recorder, stream, chunks: [] as Blob[], startedAt: Date.now() }
+        recorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) session.chunks.push(event.data)
+        }
+        recorder.start()
+        legacy = session
+        const duration = Number(params.duration ?? 0)
+        if (Number.isFinite(duration) && duration > 0) {
+          setTimeout(() => {
+            if (legacy === session) session.recorder.stop()
+          }, Math.min(duration * 1000, 600_000))
+        }
+        return { errMsg: 'startRecord:ok' }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        return { errMsg: `startRecord:fail ${message}` }
+      }
+    },
+    'voice.stopRecord': () => new Promise<HandlerResult>((resolve) => {
+      const session = legacy
+      if (!session) {
+        resolve({ errMsg: 'stopRecord:fail no recording is running' })
+        return
+      }
+      session.recorder.onstop = () => {
+        for (const track of session.stream.getTracks?.() ?? []) track.stop()
+        const blob = new Blob(session.chunks, { type: session.chunks[0]?.type || 'audio/webm' })
+        const entry = options.registry.add(blob, 'record-legacy.webm')
+        legacy = undefined
+        resolve({
+          tempFilePath: entry.url,
+          duration: Date.now() - session.startedAt,
+          fileSize: entry.size,
+          errMsg: 'stopRecord:ok',
+        })
+      }
+      session.recorder.stop()
+    }),
     'recorder.start': async (params) => {
       const recorderId = String(params.recorderId ?? '')
       if (!recorderId) return { errMsg: 'start:fail recorderId is required' }
