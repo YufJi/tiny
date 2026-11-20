@@ -1,9 +1,10 @@
 import { describe, expect, test } from 'vitest'
 import type { ApiContext } from '../src'
-import { createApiHost } from '../src'
+import { createApiHost, createGlobalEventHub } from '../src'
 
 function createHost() {
   const calls: Array<{ method: string; params: Record<string, unknown> }> = []
+  const events = createGlobalEventHub()
   const handlers: Record<string, (params: Record<string, unknown>) => unknown> = {
     'page.selectedTextRange': () => ({ start: 2, end: 5, errMsg: 'getSelectedTextRange:ok' }),
     'page.pipActive': () => ({ isActive: true, errMsg: 'checkIsPictureInPictureActive:ok' }),
@@ -12,6 +13,7 @@ function createHost() {
     'page.backgroundTextStyle': () => ({ errMsg: 'setBackgroundTextStyle:ok' }),
     'page.alertBeforeUnload': () => ({ errMsg: 'enableAlertBeforeUnload:ok' }),
     'page.disableAlertBeforeUnload': () => ({ errMsg: 'disableAlertBeforeUnload:ok' }),
+    'page.setWindowSize': () => ({ errMsg: 'setWindowSize:ok' }),
   }
   const connection = {
     sendDiagnostic: () => undefined,
@@ -23,6 +25,7 @@ function createHost() {
   }
   const context = {
     connection,
+    events,
     apiName: 'wx',
     apiNamespaces: ['wx'],
     launchOptions: {},
@@ -32,6 +35,7 @@ function createHost() {
   return {
     host: createApiHost(context) as unknown as Record<string, (...args: unknown[]) => any>,
     calls,
+    events,
   }
 }
 
@@ -68,5 +72,17 @@ describe('page introspection APIs', () => {
     ])
     expect(calls[0].params).toEqual({ text: 'Top' })
     expect(calls[3].params).toEqual({ message: 'Leave?' })
+  })
+
+  test('setWindowSize forwards the size and key events come from the hub', async () => {
+    const { host, calls, events } = createHost()
+    await host.setWindowSize({ width: 320, height: 640 })
+    expect(calls.at(-1)).toMatchObject({ method: 'page.setWindowSize' })
+    expect(calls.at(-1)?.params).toMatchObject({ width: 320, height: 640 })
+
+    const keys: unknown[] = []
+    host.onKeyDown((event: unknown) => keys.push(event))
+    events.emit('keyDown', { key: 'a', code: 'KeyA', keyCode: 65 })
+    expect(keys).toHaveLength(1)
   })
 })

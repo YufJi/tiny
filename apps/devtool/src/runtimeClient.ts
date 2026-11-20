@@ -57,6 +57,8 @@ export type DevtoolNavigationState = {
   backgroundTextStyle?: 'dark' | 'light'
   /** `wx.enableAlertBeforeUnload`: toolbar back asks first. */
   alertBeforeUnload?: string
+  /** `wx.setWindowSize`: simulated screen size override. */
+  windowSize?: { width: number; height: number }
 }
 
 export type DevtoolRuntimeState = {
@@ -410,7 +412,7 @@ export class DevtoolRuntimeClient {
   private applyNavigation(
     action: 'title' | 'color' | 'loading'
       | 'topBarText' | 'background' | 'backgroundTextStyle'
-      | 'alertBeforeUnload' | 'disableAlertBeforeUnload',
+      | 'alertBeforeUnload' | 'disableAlertBeforeUnload' | 'windowSize',
     params: Record<string, unknown>,
   ): void {
     const page = this.state.currentPage
@@ -435,6 +437,8 @@ export class DevtoolRuntimeClient {
       next.alertBeforeUnload = String(params.message ?? '')
     } else if (action === 'disableAlertBeforeUnload') {
       next.alertBeforeUnload = undefined
+    } else if (action === 'windowSize') {
+      next.windowSize = { width: Number(params.width), height: Number(params.height) }
     }
     this.navigationOverrides.set(page, next)
     this.update({ navigation: { ...next } })

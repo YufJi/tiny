@@ -25,6 +25,7 @@ const BROWSER_SOURCES = [
   'hosts/web/src/device-extras.ts',
   'hosts/web/src/host-env.ts',
   'hosts/web/src/page-introspection.ts',
+  'hosts/web/src/keyboard-events.ts',
   'hosts/web/src/scan.ts',
 ]
 

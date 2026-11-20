@@ -7,6 +7,7 @@ import {
   createAudioHandlers,
   createDeviceHandlers,
   createEnvHandlers,
+  createKeyboardHandlers,
   createPageIntrospectionHandlers,
   createScanHandlers,
   createSocketHandlers,
@@ -26,6 +27,7 @@ export type DevtoolNavigationAction =
   | 'backgroundTextStyle'
   | 'alertBeforeUnload'
   | 'disableAlertBeforeUnload'
+  | 'windowSize'
 
 export type DevtoolApiOptions = {
   /** Mini-program id reported by `wx.getAccountInfoSync()`. */
@@ -100,6 +102,7 @@ function createApiHandlers(
     ...shared.fileSystem,
     ...shared.env,
     ...createPageIntrospectionHandlers(),
+    ...createKeyboardHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
     ...createScanHandlers(),
     ...createSensorHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
     ...createDeviceHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
@@ -173,6 +176,15 @@ function createApiHandlers(
     'page.backgroundTextStyle': (params) => {
       options.onNavigation?.('backgroundTextStyle', { textStyle: String(params.textStyle ?? 'dark') })
       return { errMsg: 'setBackgroundTextStyle:ok' }
+    },
+    'page.setWindowSize': (params) => {
+      const width = Number(params.width ?? 0)
+      const height = Number(params.height ?? 0)
+      if (width <= 0 || height <= 0) {
+        return Promise.reject(new Error('setWindowSize:fail width and height are required'))
+      }
+      options.onNavigation?.('windowSize', { width, height })
+      return { errMsg: 'setWindowSize:ok' }
     },
     'page.alertBeforeUnload': (params) => {
       options.onNavigation?.('alertBeforeUnload', { message: String(params.message ?? '') })

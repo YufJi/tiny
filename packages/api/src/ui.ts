@@ -30,6 +30,12 @@ export function createUiApi(context: ApiContext): ApiHost {
       context,
       'ui.hideLoading',
     )),
+    setWindowSize: (params: unknown = {}) => runApi(params, 'setWindowSize', () => {
+      const options = (params ?? {}) as { width?: unknown; height?: unknown }
+      const width = Number(options.width ?? 0)
+      const height = Number(options.height ?? 0)
+      return callHost(context, 'page.setWindowSize', { width, height })
+    }),
     setTopBarText: (params: unknown = {}) => runApi(params, 'setTopBarText', () => callHost(
       context,
       'navigation.topBarText',

@@ -129,6 +129,11 @@ export const API_CATALOG = {
   // Both read the render iframe: same-origin only, so partial.
   getSelectedTextRange: { status: 'partial', host: 'page.selectedTextRange' },
   // Chrome only the devtool renders; the browser host fails honestly.
+  setWindowSize: { status: 'partial', host: 'page.setWindowSize' },
+  onKeyDown: { status: 'real' },
+  offKeyDown: { status: 'real' },
+  onKeyUp: { status: 'real' },
+  offKeyUp: { status: 'real' },
   setTopBarText: { status: 'partial', host: 'navigation.topBarText' },
   setBackgroundColor: { status: 'partial', host: 'page.backgroundColor' },
   setBackgroundTextStyle: { status: 'partial', host: 'page.backgroundTextStyle' },

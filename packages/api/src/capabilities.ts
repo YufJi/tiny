@@ -91,6 +91,7 @@ const CALLBACK_APIS = [
   'setKeepScreenOn',
   'loadFontFace',
   'getSelectedTextRange',
+  'setWindowSize',
   'setTopBarText',
   'setBackgroundColor',
   'setBackgroundTextStyle',
