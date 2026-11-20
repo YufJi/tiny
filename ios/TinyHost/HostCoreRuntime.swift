@@ -1,5 +1,6 @@
 import AudioToolbox
 import CoreLocation
+import CoreMotion
 import Foundation
 import Network
 import UIKit
@@ -21,6 +22,9 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private var networkMonitor: NWPathMonitor?
   private var toastView: UIView?
   private var loadingView: UIView?
+  private let motionManager = CMMotionManager()
+  private var headingManager: CLLocationManager?
+  private var headingDelegate: HeadingDelegate?
   /// Last network type reported by `NWPathMonitor`, served to `wx.getNetworkType`.
   private var currentNetworkType = "wifi"
   private var initialPageId: String?
@@ -1353,6 +1357,118 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     return text
   }
 
+  // MARK: - Motion sensors
+
+  private func sensorIntervalMs(_ value: Any?) -> Double {
+    if let number = value as? Double, number.isFinite, number > 0 { return number }
+    if let number = value as? Int, number > 0 { return Double(number) }
+    switch value as? String {
+    case "game": return 20
+    case "ui": return 60
+    default: return 200
+    }
+  }
+
+  private func emitSensor(_ name: String, _ payload: [String: Any]) {
+    try? core?.command(["type": "emitEvent", "name": name, "payload": payload])
+  }
+
+  private func startSensor(_ params: [String: Any]) -> String {
+    let type = params["type"] as? String ?? ""
+    let seconds = sensorIntervalMs(params["interval"]) / 1000
+    switch type {
+    case "accelerometer":
+      guard motionManager.isAccelerometerAvailable else {
+        return "startAccelerometer:fail accelerometer is not available"
+      }
+      motionManager.accelerometerUpdateInterval = seconds
+      motionManager.startAccelerometerUpdates(to: OperationQueue()) { [weak self] data, _ in
+        guard let data else { return }
+        let acceleration = data.acceleration
+        Task { @MainActor in
+          self?.emitSensor("accelerometerChange", [
+            "x": acceleration.x,
+            "y": acceleration.y,
+            "z": acceleration.z,
+          ])
+        }
+      }
+      return "startAccelerometer:ok"
+    case "gyroscope":
+      guard motionManager.isGyroAvailable else {
+        return "startGyroscope:fail gyroscope is not available"
+      }
+      motionManager.gyroUpdateInterval = seconds
+      motionManager.startGyroUpdates(to: OperationQueue()) { [weak self] data, _ in
+        guard let data else { return }
+        // CoreMotion reports rad/s; WeChat reports deg/s.
+        let rate = data.rotationRate
+        let factor = 180.0 / Double.pi
+        Task { @MainActor in
+          self?.emitSensor("gyroscopeChange", [
+            "x": rate.x * factor,
+            "y": rate.y * factor,
+            "z": rate.z * factor,
+          ])
+        }
+      }
+      return "startGyroscope:ok"
+    case "deviceMotion":
+      guard motionManager.isDeviceMotionAvailable else {
+        return "startDeviceMotionListening:fail device motion is not available"
+      }
+      motionManager.deviceMotionUpdateInterval = seconds
+      motionManager.startDeviceMotionUpdates(to: OperationQueue()) { [weak self] data, _ in
+        guard let attitude = data?.attitude else { return }
+        Task { @MainActor in
+          self?.emitSensor("deviceMotionChange", [
+            "alpha": attitude.yaw,
+            "beta": attitude.pitch,
+            "gamma": attitude.roll,
+          ])
+        }
+      }
+      return "startDeviceMotionListening:ok"
+    case "compass":
+      let manager = headingManager ?? CLLocationManager()
+      let delegate = headingDelegate ?? HeadingDelegate()
+      delegate.onHeading = { [weak self] heading in
+        Task { @MainActor in
+          self?.emitSensor("compassChange", [
+            "direction": heading.trueHeading >= 0 ? heading.trueHeading : heading.magneticHeading,
+            "accuracy": heading.headingAccuracy >= 0 ? "high" : "low",
+          ])
+        }
+      }
+      manager.delegate = delegate
+      manager.startUpdatingHeading()
+      headingManager = manager
+      headingDelegate = delegate
+      return "startCompass:ok"
+    default:
+      return "startSensor:fail unknown sensor"
+    }
+  }
+
+  private func stopSensor(_ params: [String: Any]) -> String {
+    switch params["type"] as? String ?? "" {
+    case "accelerometer":
+      motionManager.stopAccelerometerUpdates()
+      return "stopAccelerometer:ok"
+    case "gyroscope":
+      motionManager.stopGyroUpdates()
+      return "stopGyroscope:ok"
+    case "deviceMotion":
+      motionManager.stopDeviceMotionUpdates()
+      return "stopDeviceMotionListening:ok"
+    case "compass":
+      headingManager?.stopUpdatingHeading()
+      return "stopCompass:ok"
+    default:
+      return "stopSensor:fail unknown sensor"
+    }
+  }
+
   // MARK: - Native overlays
 
   private func overlayContainer() -> UIView {
@@ -1685,6 +1801,10 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       case "device.vibrate":
         AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
         try core?.platformResult(requestId: requestId, result: ["errMsg": "vibrateShort:ok"])
+      case "sensor.start":
+        try core?.platformResult(requestId: requestId, result: ["errMsg": startSensor(params)])
+      case "sensor.stop":
+        try core?.platformResult(requestId: requestId, result: ["errMsg": stopSensor(params)])
       case "network.request":
         performNetworkRequest(requestId: requestId, params: params)
       case "toast.show":
@@ -1765,5 +1885,20 @@ enum NativeHostCoreSmoke {
     } catch {
       HostDebug.writeResult(["ok": false, "error": String(describing: error)], name: "native-hostcore-smoke.json")
     }
+  }
+}
+
+
+/// Compass delegate kept outside the runtime so the main-actor class does not
+/// have to conform to a nonisolated delegate protocol.
+final class HeadingDelegate: NSObject, CLLocationManagerDelegate {
+  var onHeading: ((CLHeading) -> Void)?
+
+  func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
+    onHeading?(newHeading)
+  }
+
+  func locationManagerShouldDisplayHeadingCalibration(_ manager: CLLocationManager) -> Bool {
+    false
   }
 }

@@ -232,6 +232,8 @@ const IOS_HOST_API_KEYS = [
   'ui.hideLoading',
   'ui.modal',
   'ui.actionSheet',
+  'sensor.start',
+  'sensor.stop',
   'navigate.to',
   'navigate.back',
   'navigate.switchTab',
