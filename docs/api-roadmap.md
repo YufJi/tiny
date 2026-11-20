@@ -329,6 +329,24 @@ iOS 侧同理：媒体、传感器、Worker 三族的 Swift handler 补上后，
 | iOS 类型检查 | `pnpm --filter @tiny/host-ios typecheck` | 通过 |
 | iOS 模拟器构建 | `xcodebuild -scheme TinyHost -sdk iphonesimulator ARCHS=arm64` | BUILD SUCCEEDED |
 
+### 4.5 第二阶段增量（第 30–50 轮）
+
+| 批次 | 内容 | 效果 |
+| --- | --- | --- |
+| iOS 传感器 | 加速度计/陀螺仪/设备运动/罗盘（CoreMotion + CLLocationManager heading） | iOS +2 能力 key，16 个 API 转真 |
+| iOS 定位 | get/fuzzy/start/startBackground/stop（CLLocationManager + 权限映射） | iOS +5 key，事件走 locationChange |
+| iOS 文件系统 | 11 个 fs.*（沙盒 Documents/usr，sync+async） | iOS +11 key，FMS 全方法可用 |
+| iOS 文档 | openDocument（UIDocumentInteractionController）+ saveFileToDisk（分享面板） | iOS +2 key |
+| iOS 设备 | 屏幕亮度读写、常亮、电池快照与事件、HEVC 检测、录音源 | iOS +4 key |
+| iOS WebSocket | URLSessionWebSocketTask 三件套 | iOS +3 key，W3 双端闭环 |
+| iOS 输入/画中画 | 输入框选区、PiP 查询（如实 false） | iOS +2 key |
+| devtool chrome | topBarText/背景色/背景文字样式/窗口尺寸/离开确认 | +6 API（partial），语义 +6 |
+| 键盘事件 | on/offKeyDown、on/offKeyUp（同源 iframe capture） | +4 API（real），语义 +4 |
+| 组件线 | createOffscreenCanvas（同步 canvas adapter） | +1 API（partial），语义 +1 |
+| 媒体长尾 | playVoice/pauseVoice/stopVoice、startRecord/stopRecord、saveMediaToPhotosAlbum | +6 API（partial），语义 +6 |
+
+阶段净增：**在范围名字 210 → 217，语义覆盖 53.0% → 55.3%，iOS 能力 61 → 69 / 105**。
+
 ## 5. 第一批 PR（建议）
 
 1. **PR-1（W0）**：`packages/api/src/catalog.ts` + `scripts/api-coverage.mjs` + `pnpm api:coverage`，
