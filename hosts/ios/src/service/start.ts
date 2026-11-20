@@ -250,6 +250,8 @@ const IOS_HOST_API_KEYS = [
   'fs.copyFile',
   'fs.rename',
   'fs.appendFile',
+  'file.openDocument',
+  'file.saveToDisk',
   'navigate.to',
   'navigate.back',
   'navigate.switchTab',

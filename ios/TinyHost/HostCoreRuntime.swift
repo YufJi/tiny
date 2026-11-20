@@ -30,6 +30,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private var pendingLocationRequestId: String?
   private var pendingLocationFuzzy = false
   private var locationTracking = false
+  private var documentPreview: UIDocumentInteractionController?
   /// Last network type reported by `NWPathMonitor`, served to `wx.getNetworkType`.
   private var currentNetworkType = "wifi"
   private var initialPageId: String?
@@ -1373,6 +1374,46 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     return text
   }
 
+  // MARK: - Documents
+
+  private func userFileURL(_ params: [String: Any]) -> URL? {
+    guard let url = userPath(params["filePath"] as? String ?? "") else { return nil }
+    guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+    return url
+  }
+
+  private func openUserDocument(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userFileURL(params),
+          topViewController() != nil
+    else { return ["errMsg": "openDocument:fail no such file or directory"] }
+    let preview = UIDocumentInteractionController(url: url)
+    documentPreview = preview
+    if !preview.presentPreview(animated: true) {
+      documentPreview = nil
+      return ["errMsg": "openDocument:fail the document cannot be previewed"]
+    }
+    return ["errMsg": "openDocument:ok"]
+  }
+
+  private func shareUserFile(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userFileURL(params),
+          let controller = topViewController()
+    else { return ["errMsg": "saveFileToDisk:fail no such file or directory"] }
+    let activity = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+    if let popover = activity.popoverPresentationController {
+      popover.sourceView = container
+      popover.sourceRect = CGRect(
+        x: container.bounds.midX,
+        y: container.bounds.midY,
+        width: 0,
+        height: 0,
+      )
+      popover.permittedArrowDirections = []
+    }
+    controller.present(activity, animated: true)
+    return ["errMsg": "saveFileToDisk:ok"]
+  }
+
   // MARK: - File system
 
   private func userDirectory() -> URL {
@@ -2151,6 +2192,10 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
         try core?.platformResult(requestId: requestId, result: ["errMsg": "stopLocationUpdate:ok"])
       case "network.request":
         performNetworkRequest(requestId: requestId, params: params)
+      case "file.openDocument":
+        try core?.platformResult(requestId: requestId, result: openUserDocument(params))
+      case "file.saveToDisk":
+        try core?.platformResult(requestId: requestId, result: shareUserFile(params))
       case "toast.show":
         showToastOverlay(params["title"] as? String ?? "")
         try core?.platformResult(requestId: requestId, result: ["errMsg": "showToast:ok"])
