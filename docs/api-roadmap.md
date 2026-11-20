@@ -425,3 +425,6 @@ iOS 侧同理：媒体、传感器、Worker 三族的 Swift handler 补上后，
    注入实现。
 
 补齐这三块之后这些 API 才能真实可用；在此之前保持缺失，不在表里造空壳。
+
+协议与方法白名单的提案见 [ADR-0023](adr/0023-component-command-channel.md)，首个落地目标是
+`createMapContext`（`getCenterLocation` / `moveToLocation` / `getScale`）。
