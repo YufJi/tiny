@@ -319,13 +319,13 @@ MVP 边界：`createWorker(path)` → `postMessage`/`onMessage`/`terminate`；wo
 iOS 侧同理：媒体、传感器、Worker 三族的 Swift handler 补上后，`IOS_HOST_API_KEYS` 会从 38 继续上升，
 `canIUse` 也会随之变真——列表与实现的漂移已由 `host-capabilities.test.ts` 兜住。
 
-### 4.2 最终验证记录（2026-11-19）
+### 4.2 最终验证记录（2026-11-20）
 
 | 检查 | 命令 | 结果 |
 | --- | --- | --- |
 | 覆盖率基线 | `pnpm api:coverage --check` | 217 / 349 名字（62.2%），语义 55.3%，demo 缺口 40 |
-| 单元测试 | `pnpm test` | 822 个用例全部通过 |
-| 验收门禁 | `pnpm accept:glass-easel` | 50.5s，五段浏览器全绿 |
+| 单元测试 | `pnpm test` | 145 个文件 / 822 个用例全部通过 |
+| 验收门禁 | `pnpm accept:glass-easel` | 44.6s，五段浏览器全绿 |
 | iOS 类型检查 | `pnpm --filter @tiny/host-ios typecheck` | 通过 |
 | iOS 模拟器构建 | `xcodebuild -scheme TinyHost -sdk iphonesimulator ARCHS=arm64` | BUILD SUCCEEDED |
 
