@@ -238,6 +238,9 @@ export const API_CATALOG = {
   canvasToTempFilePath: { status: 'partial', host: 'media.dataUrlToTempFile' },
   // The canvas node is a transferred OffscreenCanvas that lives in the service
   // realm, so pixel reads/writes need no host round-trip.
+  // Host capability: the browser adapter creates a real OffscreenCanvas, iOS
+  // returns null (JSCore has none), so the entry counts as partial.
+  createOffscreenCanvas: { status: 'partial' },
   canvasGetImageData: { status: 'real' },
   canvasPutImageData: { status: 'real' },
   // Legacy alias kept for pre-1.9 bundles; not a WeChat 3.17.5 name.

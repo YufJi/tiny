@@ -1,3 +1,4 @@
+import { DIAGNOSTIC_CODES } from '@tiny/manifest'
 import type { ApiHost, ApiContext } from './context'
 import { createAnimationStub } from './animation'
 import { callHost, runApi } from './run-api'
@@ -13,6 +14,22 @@ export function createCanvasApi(context: ApiContext): ApiHost {
   return {
     createAnimation: (options: unknown = {}) => createAnimationStub(options),
     createContext: () => createCanvasContextStub(),
+    createOffscreenCanvas: (params: unknown = {}) => {
+      const options = (params ?? {}) as { width?: unknown; height?: unknown; type?: unknown }
+      const canvas = context.canvas?.createOffscreenCanvas?.({
+        width: Number(options.width ?? 0),
+        height: Number(options.height ?? 0),
+        ...(typeof options.type === 'string' ? { type: options.type } : {}),
+      })
+      if (!canvas) {
+        context.connection.sendDiagnostic('warn', {
+          code: DIAGNOSTIC_CODES.UNSUPPORTED_API,
+          message: `${context.apiName}.createOffscreenCanvas is not available on this host`,
+        }, context.pageId)
+        return null
+      }
+      return canvas
+    },
     canvasGetImageData: (params: unknown = {}) => runApi(
       params,
       'canvasGetImageData',
