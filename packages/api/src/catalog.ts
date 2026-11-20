@@ -285,8 +285,9 @@ export const API_CATALOG = {
   createInnerAudioContext: { status: 'partial', host: 'audio.create' },
 
   // --- compat-stubs.ts: platform surface with no backend ------------------
-  getScreenBrightness: { status: 'stub' },
-  setScreenBrightness: { status: 'stub' },
+  // Native-only: the iOS host writes UIScreen.brightness; browsers fail.
+  getScreenBrightness: { status: 'partial', host: 'screen.getBrightness' },
+  setScreenBrightness: { status: 'partial', host: 'screen.setBrightness' },
   createBLEPeripheralServer: { status: 'stub' },
   onBLEPeripheralConnectionStateChanged: { status: 'stub' },
   offBLEPeripheralConnectionStateChanged: { status: 'stub' },

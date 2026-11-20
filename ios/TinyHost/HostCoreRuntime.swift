@@ -2160,6 +2160,18 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
           "isCharging": charging,
           "errMsg": "getBatteryInfo:ok",
         ])
+      case "screen.getBrightness":
+        try core?.platformResult(requestId: requestId, result: [
+          "value": Double(UIScreen.main.brightness),
+          "errMsg": "getScreenBrightness:ok",
+        ])
+      case "screen.setBrightness":
+        let value = (params["value"] as? Double) ?? 0
+        UIScreen.main.brightness = CGFloat(min(1, max(0, value)))
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "setScreenBrightness:ok"])
+      case "device.keepScreenOn":
+        UIApplication.shared.isIdleTimerDisabled = (params["keepScreenOn"] as? Bool) ?? true
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "setKeepScreenOn:ok"])
       case "device.vibrate":
         AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
         try core?.platformResult(requestId: requestId, result: ["errMsg": "vibrateShort:ok"])

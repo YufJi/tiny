@@ -17,8 +17,6 @@ export function createCompatStubs(): ApiHost {
     close: noop,
   }
   return {
-    getScreenBrightness: () => ({ errMsg: 'getScreenBrightness:fail not implemented' }),
-    setScreenBrightness: noop,
     createBLEPeripheralServer: () => peripheralServer,
     onBLEPeripheralConnectionStateChanged: noop,
     offBLEPeripheralConnectionStateChanged: noop,

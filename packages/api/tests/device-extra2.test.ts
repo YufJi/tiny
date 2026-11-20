@@ -8,6 +8,8 @@ function createHost() {
     'battery.infoSync': () => ({ level: 55, isCharging: false }),
     'audio.sources': () => ({ audioSources: ['auto', 'mic'] }),
     'device.scanCode': () => ({ result: 'x', errMsg: 'scanCode:ok' }),
+    'screen.getBrightness': () => ({ value: 0.5, errMsg: 'getScreenBrightness:ok' }),
+    'screen.setBrightness': (params) => ({ errMsg: 'setScreenBrightness:ok', value: params.value }),
     'media.cropImage': (params) => ({
       tempFilePath: 'blob:crop',
       errMsg: 'cropImage:ok',
@@ -78,5 +80,16 @@ describe('device extras round two', () => {
       errMsg: 'scanCode:ok',
     })
     expect(calls[0]).toMatchObject({ method: 'device.scanCode', params: { onlyFromCamera: true } })
+  })
+
+  test('brightness APIs go through the host', async () => {
+    const { host, calls } = createHost()
+    await expect(host.getScreenBrightness({})).resolves.toEqual({
+      value: 0.5,
+      errMsg: 'getScreenBrightness:ok',
+    })
+    await host.setScreenBrightness({ value: 0.8 })
+    expect(calls.map((call) => call.method)).toEqual(['screen.getBrightness', 'screen.setBrightness'])
+    expect(calls[1].params).toEqual({ value: 0.8 })
   })
 })

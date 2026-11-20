@@ -39,6 +39,12 @@ export function createDeviceApi(context: ApiContext): ApiHost {
       'device.scanCode',
       params as Record<string, unknown>,
     )),
+    getScreenBrightness: (params: unknown = {}) => runApi(params, 'getScreenBrightness', () => (
+      callHost(context, 'screen.getBrightness')
+    )),
+    setScreenBrightness: (params: unknown = {}) => runApi(params, 'setScreenBrightness', () => (
+      callHost(context, 'screen.setBrightness', { value: Number((params as { value?: unknown }).value ?? 0) })
+    )),
     setKeepScreenOn: (params: unknown = {}) => runApi(
       params,
       'setKeepScreenOn',

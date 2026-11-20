@@ -51,7 +51,6 @@ describe('canIUse schema families', () => {
       'worklet',
       'reportAnalytics',
       'createContext',
-      'getScreenBrightness',
     ]) {
       expect(host.canIUse!(name)).toBe(false)
       expect(host.canIUse!(`wx.${name}`)).toBe(false)
@@ -62,6 +61,7 @@ describe('canIUse schema families', () => {
     expect(host.canIUse!('createInnerAudioContext')).toBe(true)
     expect(host.canIUse!('getRecorderManager')).toBe(true)
     expect(host.canIUse!('getBackgroundAudioManager')).toBe(true)
+    expect(host.canIUse!('getScreenBrightness')).toBe(true)
     expect(host.canIUse!('request')).toBe(true)
     expect(host.canIUse!('createAnimation')).toBe(true)
     expect(host.canIUse!('setClipboardData')).toBe(true)

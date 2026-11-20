@@ -57,12 +57,13 @@ function declaredIOSCapabilities(): Set<string> {
 }
 
 describe('host capability lists', () => {
-  test('every browser host key in the catalog has a handler', () => {
+  test('every catalog host key is answered by a web or native host', () => {
     const handlers = new Set<string>()
     for (const path of BROWSER_SOURCES) {
       for (const key of quotedHandlerKeys(read(path))) handlers.add(key)
     }
     for (const key of rustHandlerKeys()) handlers.add(key)
+    for (const key of swiftHandlerKeys()) handlers.add(key)
     for (const [name, descriptor] of Object.entries(API_CATALOG)) {
       const host = (descriptor as { host?: string }).host
       if (!host) continue
