@@ -48,29 +48,28 @@ describe('canIUse schema families', () => {
   test('does not claim installed stub APIs', () => {
     const { host } = createContext()
     for (const name of [
-      'authorize',
-      'checkSession',
-      'login',
-      'getUserProfile',
-      'getUserInfo',
-      'getFileSystemManager',
-      'createCanvasContext',
       'worklet',
       'reportAnalytics',
-      'getRecorderManager',
-      'getBackgroundAudioManager',
-      'createInnerAudioContext',
       'createContext',
-      'getScreenBrightness',
-      'createWorker',
     ]) {
       expect(host.canIUse!(name)).toBe(false)
       expect(host.canIUse!(`wx.${name}`)).toBe(false)
     }
     // Host-backed APIs are not stubs.
+    expect(host.canIUse!('getFileSystemManager')).toBe(true)
+    expect(host.canIUse!('createWorker')).toBe(true)
+    expect(host.canIUse!('createInnerAudioContext')).toBe(true)
+    expect(host.canIUse!('getRecorderManager')).toBe(true)
+    expect(host.canIUse!('getBackgroundAudioManager')).toBe(true)
+    expect(host.canIUse!('getScreenBrightness')).toBe(true)
     expect(host.canIUse!('request')).toBe(true)
     expect(host.canIUse!('createAnimation')).toBe(true)
     expect(host.canIUse!('setClipboardData')).toBe(true)
+    // Identity APIs are host-backed mocks, not inert stubs: a false negative
+    // here would send apps down their "old base library" fallback path.
+    for (const name of ['login', 'checkSession', 'authorize', 'getUserProfile', 'getSetting']) {
+      expect(host.canIUse!(name)).toBe(true)
+    }
   })
 
   test('answers API method/param probes the engine itself guarantees', () => {
@@ -191,5 +190,56 @@ describe('canIUse schema families', () => {
     expect(host.canIUse!('nextTick.anything')).toBe(false)
     expect(() => host.canIUse!(42)).toThrow('canIUse: schema should be a string')
     expect(() => host.canIUse!(null)).toThrow('canIUse: schema should be a string')
+  })
+})
+
+describe('per-host capabilities', () => {
+  test('canIUse follows the host handler keys, not just the table', () => {
+    const context = {
+      connection: {
+        sendDiagnostic: () => undefined,
+        call: () => Promise.resolve(undefined),
+        callSync: () => undefined,
+      },
+      apiName: 'wx',
+      apiNamespaces: ['wx'],
+      pageId: 'page-1',
+      hostCapabilities: new Set(['storage.get', 'storage.set']),
+    } as unknown as ApiContext
+    const host = createApiHost(context) as Record<string, (...args: unknown[]) => unknown>
+
+    // Host-backed API whose handler the host did not advertise.
+    expect(host.canIUse!('setNavigationBarTitle')).toBe(false)
+    expect(host.canIUse!('getStorage')).toBe(true)
+    // Service-side APIs need no host key and stay available.
+    expect(host.canIUse!('nextTick')).toBe(true)
+    expect(host.canIUse!('getFileSystemManager')).toBe(true)
+    // Host-backed APIs outside the list, and service-only stubs, stay false.
+    expect(host.canIUse!('createWorker')).toBe(false)
+    expect(host.canIUse!('reportAnalytics')).toBe(false)
+  })
+
+  test('a host that implements a reference stub advertises it', () => {
+    const context = {
+      connection: {
+        sendDiagnostic: () => undefined,
+        call: () => Promise.resolve(undefined),
+        callSync: () => undefined,
+      },
+      apiName: 'wx',
+      apiNamespaces: ['wx'],
+      pageId: 'page-1',
+      hostCapabilities: new Set(['share.menu', 'navigation.color']),
+    } as unknown as ApiContext
+    const host = createApiHost(context) as Record<string, (...args: unknown[]) => unknown>
+    // The browser host only stubs these; a host with real chrome can do them.
+    expect(host.canIUse!('showShareMenu')).toBe(true)
+    expect(host.canIUse!('setNavigationBarColor')).toBe(true)
+    expect(host.canIUse!('setNavigationBarTitle')).toBe(false)
+  })
+
+  test('without a capability list the engine-wide answer is kept', () => {
+    const { host } = createContext()
+    expect(host.canIUse!('setNavigationBarTitle')).toBe(true)
   })
 })

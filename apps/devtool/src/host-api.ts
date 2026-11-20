@@ -1,8 +1,38 @@
 import type { HostApiHandlers, StorageValues, SyncApiHandlers, SystemInfo } from '@tiny/api'
+import {
+  createFileSystemHandlers,
+  createTempFileRegistry,
+  createMediaHandlers,
+  createNetworkHandlers,
+  createAudioHandlers,
+  createDeviceHandlers,
+  createEnvHandlers,
+  createKeyboardHandlers,
+  createPageIntrospectionHandlers,
+  createScanHandlers,
+  createSocketHandlers,
+  createRecorderHandlers,
+  createSensorHandlers,
+  createWorkerHandlers,
+  createTempFileRegistry,
+  pickFiles,
+} from '@tiny/host-web'
 
-export type DevtoolNavigationAction = 'title' | 'color' | 'loading'
+export type DevtoolNavigationAction =
+  | 'title'
+  | 'color'
+  | 'loading'
+  | 'topBarText'
+  | 'background'
+  | 'backgroundTextStyle'
+  | 'alertBeforeUnload'
+  | 'disableAlertBeforeUnload'
+  | 'windowSize'
+  | 'hideHomeButton'
 
 export type DevtoolApiOptions = {
+  /** Mini-program id reported by `wx.getAccountInfoSync()`. */
+  appId?: string
   /** Host-owned storage facts shared by the async and sync API tables. */
   storage?: StorageValues
   getSystemInfo: () => SystemInfo
@@ -11,6 +41,12 @@ export type DevtoolApiOptions = {
   onNavigation?: (action: DevtoolNavigationAction, params: Record<string, unknown>) => void
   /** `wx.showShareMenu` / `wx.hideShareMenu` visibility for the host menu. */
   onShareMenu?: (visible: boolean) => void
+  /** Test seam: replace the browser file chooser. */
+  pickFiles?: typeof pickFiles
+  /** Forward host sensor/location readings as service global events. */
+  emitGlobalEvent?: (name: string, payload?: unknown) => void
+  /** Resolve a mini-program worker path to a servable URL. */
+  resolveWorkerUrl?: (path: string) => string
 }
 
 export type DevtoolApiHost = {
@@ -34,20 +70,69 @@ let toastElement: HTMLElement | null = null
  */
 export function createDevtoolApiHost(options: DevtoolApiOptions): DevtoolApiHost {
   const storage = options.storage ?? {}
-  return {
-    apiHandlers: createApiHandlers(storage, options),
-    syncApiHandlers: createSyncApiHandlers(storage, options),
+  // Shared so the async and sync channels see one file system and one
+  // permission cache.
+  const tempFiles = createTempFileRegistry()
+  const shared = {
+    fileSystem: createFileSystemHandlers({ registry: tempFiles }),
+    env: createEnvHandlers(),
+    tempFiles,
   }
+  return {
+    apiHandlers: createApiHandlers(storage, options, shared),
+    syncApiHandlers: createSyncApiHandlers(storage, options, shared),
+  }
+}
+
+type SharedHandlers = {
+  fileSystem: Record<string, (params: Record<string, unknown>) => unknown>
+  env: Record<string, (params: Record<string, unknown>) => unknown>
+  tempFiles: ReturnType<typeof createTempFileRegistry>
 }
 
 function createApiHandlers(
   storage: StorageValues,
   options: DevtoolApiOptions,
+  shared: SharedHandlers,
 ): HostApiHandlers {
   const getSystemInfo = options.getSystemInfo
+  const authSetting: Record<string, boolean> = {}
   return {
+    ...createMediaHandlers({ registry: shared.tempFiles, pick: options.pickFiles }),
+    ...createNetworkHandlers({ registry: shared.tempFiles }),
+    ...shared.fileSystem,
+    ...shared.env,
+    ...createPageIntrospectionHandlers(),
+    ...createKeyboardHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
+    ...createScanHandlers(),
+    ...createSensorHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
+    ...createDeviceHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
+    ...createAudioHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
+    ...createSocketHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
+    ...createRecorderHandlers({
+      emit: options.emitGlobalEvent ?? (() => undefined),
+      registry: shared.tempFiles,
+    }),
+    ...createWorkerHandlers({
+      resolveWorkerUrl: options.resolveWorkerUrl ?? ((workerPath) => workerPath),
+      emit: options.emitGlobalEvent ?? (() => undefined),
+    }),
     'keyboard.hide': () => ({ errMsg: 'hideKeyboard:ok' }),
     'system.info': () => getSystemInfo(),
+    'system.setting': () => ({
+      bluetoothEnabled: false,
+      locationEnabled: typeof navigator !== 'undefined' && 'geolocation' in navigator,
+      wifiEnabled: false,
+      errMsg: 'getSystemSetting:ok',
+    }),
+    'update.check': () => ({ hasUpdate: false, errMsg: 'checkForUpdate:ok' }),
+    'identity.checkSession': () => ({ errMsg: 'checkSession:ok' }),
+    'identity.authorize': (params) => {
+      const scope = String(params.scope ?? '')
+      if (!scope) return { errMsg: 'authorize:fail invalid scope' }
+      authSetting[scope] = true
+      return { errMsg: 'authorize:ok' }
+    },
     'system.menuButton': () => options.getMenuButtonBoundingClientRect?.(),
     'network.request': (params) => request(params),
     'network.type': () => ({ networkType: networkType(), errMsg: 'getNetworkType:ok' }),
@@ -55,8 +140,8 @@ function createApiHandlers(
     'clipboard.set': (params) => setClipboard(String(params.data ?? '')),
     'clipboard.get': () => getClipboard(),
     'device.vibrate': (params) => vibrate(Number(params.duration ?? 15)),
-    'settings.get': () => ({ authSetting: {}, errMsg: 'getSetting:ok' }),
-    'settings.open': () => ({ authSetting: {}, errMsg: 'openSetting:ok' }),
+    'settings.get': () => ({ authSetting: { ...authSetting }, errMsg: 'getSetting:ok' }),
+    'settings.open': () => ({ authSetting: { ...authSetting }, errMsg: 'openSetting:ok' }),
     'login': () => ({ code: createLoginCode(), errMsg: 'login:ok' }),
     'toast.show': (params) => showToast(params),
     'ui.toast': (params) => showToast(params),
@@ -77,6 +162,43 @@ function createApiHandlers(
       iv: '',
       errMsg: 'getUserProfile:ok',
     }),
+    'navigation.topBarText': (params) => {
+      options.onNavigation?.('topBarText', { text: String(params.text ?? '') })
+      return { errMsg: 'setTopBarText:ok' }
+    },
+    'page.backgroundColor': (params) => {
+      options.onNavigation?.('background', {
+        backgroundColor: String(params.backgroundColor ?? ''),
+        backgroundColorTop: params.backgroundColorTop,
+        backgroundColorBottom: params.backgroundColorBottom,
+      })
+      return { errMsg: 'setBackgroundColor:ok' }
+    },
+    'page.backgroundTextStyle': (params) => {
+      options.onNavigation?.('backgroundTextStyle', { textStyle: String(params.textStyle ?? 'dark') })
+      return { errMsg: 'setBackgroundTextStyle:ok' }
+    },
+    'page.hideHomeButton': () => {
+      options.onNavigation?.('hideHomeButton', {})
+      return { errMsg: 'hideHomeButton:ok' }
+    },
+    'page.setWindowSize': (params) => {
+      const width = Number(params.width ?? 0)
+      const height = Number(params.height ?? 0)
+      if (width <= 0 || height <= 0) {
+        return Promise.reject(new Error('setWindowSize:fail width and height are required'))
+      }
+      options.onNavigation?.('windowSize', { width, height })
+      return { errMsg: 'setWindowSize:ok' }
+    },
+    'page.alertBeforeUnload': (params) => {
+      options.onNavigation?.('alertBeforeUnload', { message: String(params.message ?? '') })
+      return { errMsg: 'enableAlertBeforeUnload:ok' }
+    },
+    'page.disableAlertBeforeUnload': () => {
+      options.onNavigation?.('disableAlertBeforeUnload', {})
+      return { errMsg: 'disableAlertBeforeUnload:ok' }
+    },
     'navigation.title': (params) => {
       if (typeof document !== 'undefined') document.title = String(params.title ?? '')
       options.onNavigation?.('title', params)
@@ -118,6 +240,19 @@ function createApiHandlers(
       currentSize: JSON.stringify(storage).length,
       limitSize: 10240,
     }),
+    'storage.batchGet': (params) => ({
+      dataList: (Array.isArray(params.keyList) ? params.keyList : []).map(
+        (key) => storage[String(key)],
+      ),
+      errMsg: 'batchGetStorage:ok',
+    }),
+    'storage.batchSet': (params) => {
+      for (const entry of Array.isArray(params.kvList) ? params.kvList : []) {
+        const item = (entry ?? {}) as { key?: unknown; value?: unknown }
+        storage[String(item.key)] = item.value
+      }
+      return { errMsg: 'batchSetStorage:ok' }
+    },
   }
 }
 
@@ -128,12 +263,21 @@ function createApiHandlers(
 function createSyncApiHandlers(
   storage: StorageValues,
   options: DevtoolApiOptions,
+  shared: SharedHandlers,
 ): SyncApiHandlers {
   const getSystemInfo = options.getSystemInfo
   const getMenuButtonBoundingClientRect = options.getMenuButtonBoundingClientRect
   return {
     'system.info': () => getSystemInfo(),
     'system.menuButton': () => getMenuButtonBoundingClientRect?.(),
+    'account.info': () => ({
+      miniProgram: {
+        appId: options.appId ?? 'tiny-devtool',
+        envVersion: 'develop',
+        version: '0.0.0',
+      },
+      plugin: {},
+    }),
     'storage.get': (params) => ({ value: storage[String(params.key)] }),
     'storage.set': (params) => {
       storage[String(params.key)] = params.value
@@ -152,6 +296,21 @@ function createSyncApiHandlers(
       currentSize: JSON.stringify(storage).length,
       limitSize: 10240,
     }),
+    'storage.batchGet': (params) => ({
+      dataList: (Array.isArray(params.keyList) ? params.keyList : []).map(
+        (key) => storage[String(key)],
+      ),
+      errMsg: 'batchGetStorage:ok',
+    }),
+    'storage.batchSet': (params) => {
+      for (const entry of Array.isArray(params.kvList) ? params.kvList : []) {
+        const item = (entry ?? {}) as { key?: unknown; value?: unknown }
+        storage[String(item.key)] = item.value
+      }
+      return { errMsg: 'batchSetStorage:ok' }
+    },
+    ...shared.fileSystem,
+    ...shared.env,
   }
 }
 

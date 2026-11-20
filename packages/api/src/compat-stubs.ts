@@ -16,14 +16,7 @@ export function createCompatStubs(): ApiHost {
     stopAdvertising: noop,
     close: noop,
   }
-  // A no-op handle: worker methods are resolved lazily so the compatibility
-  // stub does not enumerate a host-looking API surface.
-  const worker = new Proxy({}, {
-    get: (_target, property) => (property === 'then' ? undefined : noop),
-  })
   return {
-    getScreenBrightness: () => ({ errMsg: 'getScreenBrightness:fail not implemented' }),
-    setScreenBrightness: noop,
     createBLEPeripheralServer: () => peripheralServer,
     onBLEPeripheralConnectionStateChanged: noop,
     offBLEPeripheralConnectionStateChanged: noop,
@@ -37,6 +30,5 @@ export function createCompatStubs(): ApiHost {
     offLocalServiceDiscoveryStop: noop,
     startLocalServiceDiscovery: noop,
     stopLocalServiceDiscovery: noop,
-    createWorker: () => worker,
   }
 }

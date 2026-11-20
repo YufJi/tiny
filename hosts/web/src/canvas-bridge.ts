@@ -124,7 +124,9 @@ function createOffscreenCanvasNode(
 ): { node: CanvasNodeHandle; dispose: () => void } {
   offscreen.width = Math.max(1, Math.round(width))
   offscreen.height = Math.max(1, Math.round(height))
-  const exportCanvas = document.createElement('canvas')
+  // Created on the first export so a service without a DOM (or a canvas that is
+  // never exported) does not need one.
+  let exportCanvas: HTMLCanvasElement | undefined
   const createImage = createCanvasImageFactory(options)
   const { requestFrame, cancelFrame, dispose } = createFrameScheduler(() => undefined)
   const node: Record<string, unknown> = {
@@ -139,6 +141,7 @@ function createOffscreenCanvasNode(
     cancelAnimationFrame: cancelFrame,
     toDataURL(...args: unknown[]) {
       try {
+        exportCanvas ??= document.createElement('canvas')
         exportCanvas.width = offscreen.width
         exportCanvas.height = offscreen.height
         const context = exportCanvas.getContext('2d')
@@ -174,8 +177,10 @@ function createOffscreenCanvasNode(
     node: node as unknown as CanvasNodeHandle,
     dispose: () => {
       dispose()
-      exportCanvas.width = 0
-      exportCanvas.height = 0
+      if (exportCanvas) {
+        exportCanvas.width = 0
+        exportCanvas.height = 0
+      }
     },
   }
 }
@@ -470,7 +475,9 @@ function disposeLegacySession(session: LegacySession): void {
   session.offscreen = null
 }
 
-export function createBrowserCanvasAdapter(): ServiceCanvasAdapter {
+export function createBrowserCanvasAdapter(options: {
+  createOffscreen?: (width: number, height: number) => OffscreenCanvas | null
+} = {}): ServiceCanvasAdapter {
   const nodes = new Map<string, {
     node: CanvasNodeHandle
     dispose: () => void
@@ -558,9 +565,24 @@ export function createBrowserCanvasAdapter(): ServiceCanvasAdapter {
 
   installOffscreenCanvasReceiver()
 
+  const createStandalone = options.createOffscreen
+    ?? ((width: number, height: number) => (
+      typeof OffscreenCanvas === 'undefined' ? null : new OffscreenCanvas(width, height)
+    ))
+
   return {
     createLegacyCanvasContext: createLegacy,
     acquireCanvasNode: acquire,
+    createOffscreenCanvas(request: { width: number; height: number; type?: string }) {
+      const width = Math.max(1, Math.round(request.width || 1))
+      const height = Math.max(1, Math.round(request.height || 1))
+      const offscreen = createStandalone(width, height)
+      if (!offscreen) return null
+      const created = createOffscreenCanvasNode(offscreen, width, height, {
+        resolveAssetUrl: undefined,
+      })
+      return created.node
+    },
     releaseCanvasNode(request) {
       if (request.canvasId) {
         const key = keyFor({ pageId: request.pageId, canvasId: request.canvasId })

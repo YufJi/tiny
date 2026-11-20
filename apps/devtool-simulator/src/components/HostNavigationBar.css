@@ -187,3 +187,22 @@
     transform: rotate(360deg);
   }
 }
+
+.td-nav-home {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 4px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.td-nav-home:hover {
+  background: rgba(17, 24, 39, 0.08);
+}

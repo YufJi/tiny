@@ -1,5 +1,6 @@
 import * as glassEasel from '@tiny/runtime/glass-easel'
 import { convertRpx } from '@tiny/css-units'
+import { invokeComponentCommand, type CommandElement } from './component-commands'
 import { DEFAULT_BEHAVIOR_SCHEME, DIAGNOSTIC_CODES, TINY_ENGINE_NAMING } from '@tiny/manifest'
 import {
   RENDER_LOCAL_ID_PREFIX,
@@ -10,6 +11,8 @@ import {
   parseLocator,
 } from '@tiny/runtime'
 import type {
+  ComponentCommandRequest,
+  ComponentCommandResult,
   ComponentDefinitionPayload,
   ComponentFlowDelta,
   ComponentOwnerInstances,
@@ -276,6 +279,8 @@ export type GlassRenderTree = {
     request: RenderIntersectionRequest,
     emit: (entries: RenderIntersectionEntry[]) => void,
   ) => (() => void) | undefined
+  /** Execute a whitelisted command on a component instance (ADR-0023). */
+  invokeComponent?: (request: ComponentCommandRequest) => ComponentCommandResult
   /** `this.animate`: play normalized keyframes with the Web Animations API. */
   playAnimation?: (request: RenderAnimationRequest) => void
   /** `this.clearAnimate`: cancel the animations this tree started. */
@@ -3572,6 +3577,22 @@ export function createGlassRenderTree(options: GlassRenderTreeOptions = {}): Gla
         bindNestedComponentInstances()
         applyComponentDataToNodes(data)
       }
+    },
+    invokeComponent: (request) => {
+      if (typeof document === 'undefined' || !rootElement) return { status: 'not-found' }
+      const componentId = request.componentId
+      const escaped = componentId
+        ? (typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(componentId) : componentId)
+        : ''
+      const selector = request.selector ?? (escaped ? `#${escaped}` : '')
+      if (!selector) return { status: 'invalid-args', detail: 'componentId or selector is required' }
+      let element: Element | null = null
+      try {
+        element = rootElement.querySelector(selector)
+      } catch {
+        return { status: 'invalid-args', detail: 'invalid selector' }
+      }
+      return invokeComponentCommand(element as unknown as CommandElement | null, request)
     },
     observeIntersection: (request, emit) => {
       const rootNode = rootElement

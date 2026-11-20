@@ -53,6 +53,72 @@ const CALLBACK_APIS = [
   'showNavigationBarLoading',
   'hideNavigationBarLoading',
   'pageScrollTo',
+  'chooseImage',
+  'chooseMedia',
+  'chooseVideo',
+  'previewImage',
+  'previewMedia',
+  'getImageInfo',
+  'getVideoInfo',
+  'canvasToTempFilePath',
+  'uploadFile',
+  'downloadFile',
+  'playVoice',
+  'pauseVoice',
+  'stopVoice',
+  'startRecord',
+  'stopRecord',
+  'saveMediaToPhotosAlbum',
+  'playBackgroundAudio',
+  'pauseBackgroundAudio',
+  'stopBackgroundAudio',
+  'seekBackgroundAudio',
+  'getBackgroundAudioPlayerState',
+  'connectSocket',
+  'sendSocketMessage',
+  'closeSocket',
+  'batchGetStorage',
+  'batchSetStorage',
+  'getLocation',
+  'getScreenBrightness',
+  'setScreenBrightness',
+  'scanCode',
+  'setBackgroundFetchToken',
+  'getBackgroundFetchToken',
+  'getDeviceBenchmarkInfo',
+  'startLocationUpdateBackground',
+  'openDocument',
+  'saveFileToDisk',
+  'getFuzzyLocation',
+  'canvasGetImageData',
+  'canvasPutImageData',
+  'getExtConfig',
+  'checkDeviceSupportHevc',
+  'cropImage',
+  'getAvailableAudioSources',
+  'setKeepScreenOn',
+  'loadFontFace',
+  'getSelectedTextRange',
+  'setWindowSize',
+  'setTopBarText',
+  'hideHomeButton',
+  'setBackgroundColor',
+  'setBackgroundTextStyle',
+  'enableAlertBeforeUnload',
+  'disableAlertBeforeUnload',
+  'checkIsPictureInPictureActive',
+  'startLocationUpdate',
+  'stopLocationUpdate',
+  'startAccelerometer',
+  'stopAccelerometer',
+  'startCompass',
+  'stopCompass',
+  'startGyroscope',
+  'stopGyroscope',
+  'startDeviceMotionListening',
+  'stopDeviceMotionListening',
+  'saveImageToPhotosAlbum',
+  'saveVideoToPhotosAlbum',
   'showToast',
   'hideToast',
   'showModal',
@@ -181,27 +247,20 @@ function buildComponentCapabilities(): Readonly<Record<string, CanIUseCapability
 
 /**
  * APIs installed so third-party bundles keep their call shape, but without a
- * real semantic implementation (fake permissions, stub login/profile, fail-only
- * file system, legacy canvas fallback). `canIUse` must answer false for these:
- * an app that branches on the capability should take its fallback path instead
- * of calling a stub that cannot deliver.
+ * real semantic implementation (fail-only file system, media managers with no
+ * backend, platform capabilities with no host). `canIUse` must answer false for
+ * these: an app that branches on the capability should take its fallback path
+ * instead of calling a stub that cannot deliver.
+ *
+ * Identity APIs (`login`, `authorize`, `getUserProfile`, ...) are deliberately
+ * absent: they call the host identity provider, which may answer with mock data
+ * (see `docs/api-roadmap.md` §0). Legacy canvas is absent because both hosts
+ * implement it.
  */
 export const STUB_APIS: ReadonlySet<string> = new Set([
-  'authorize',
-  'checkSession',
-  'login',
-  'getUserProfile',
-  'getUserInfo',
-  'getFileSystemManager',
-  'createCanvasContext',
   'worklet',
   'reportAnalytics',
-  'getRecorderManager',
-  'getBackgroundAudioManager',
-  'createInnerAudioContext',
   'createContext',
-  'getScreenBrightness',
-  'setScreenBrightness',
   'createBLEPeripheralServer',
   'onBLEPeripheralConnectionStateChanged',
   'offBLEPeripheralConnectionStateChanged',
@@ -215,7 +274,24 @@ export const STUB_APIS: ReadonlySet<string> = new Set([
   'offLocalServiceDiscoveryStop',
   'startLocalServiceDiscovery',
   'stopLocalServiceDiscovery',
-  'createWorker',
+  // Chrome and page actions with no implementation on the acceptance host.
+  // The devtool implements the navigation/share chrome; host capability
+  // reporting will let `canIUse` answer per host (docs/api-roadmap.md W0).
+  'pageScrollTo',
+  'stopPullDownRefresh',
+  'setNavigationBarColor',
+  'showNavigationBarLoading',
+  'hideNavigationBarLoading',
+  'showShareMenu',
+  'hideShareMenu',
+  'updateShareMenu',
+  // Global events no host emits yet.
+  'onThemeChange',
+  'offThemeChange',
+  'onMemoryWarning',
+  'offMemoryWarning',
+  'onUserCaptureScreen',
+  'offUserCaptureScreen',
 ])
 
 /** The capability table handed to the `canIUse` resolver. */

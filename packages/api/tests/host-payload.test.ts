@@ -95,6 +95,8 @@ describe('host API payloads', () => {
       method: 'POST',
       header: { 'content-type': 'application/json' },
       data: { query: 'x' },
+      // The service owns the task id so `abort()` can name the transfer.
+      taskId: expect.any(String),
     })
     expectBridgeSafe(calls[0]!.payload)
     expect(success).toEqual([{ statusCode: 200 }])

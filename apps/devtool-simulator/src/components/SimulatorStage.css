@@ -329,6 +329,10 @@
   pointer-events: none;
 }
 
+.td-screen--bg-text-light .td-pull-refresh-spinner {
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+}
 .td-pull-refresh-spinner {
   width: 18px;
   height: 18px;

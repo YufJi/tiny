@@ -72,8 +72,10 @@ export function createCanIUse(
 
     if (context.hasApi?.(head) ?? false) {
       // Installed but stub-only names must not look implemented to feature
-      // detection (`authorize`, `login`, fail-only file system, ...).
-      if (STUB_APIS.has(head)) return false
+      // detection (`authorize`, `login`, fail-only file system, ...). A host
+      // that declared its capabilities already filtered the table, so its
+      // answer wins: the devtool can run page chrome the browser host cannot.
+      if (STUB_APIS.has(head) && !context.hostCapabilities) return false
       if (rest.length > 0 && !API_METHODS.has(rest[0]!)) return false
       if (isSystemSnapshotApi(head)) {
         const resolved = snapshotFieldSupported(systemInfoSnapshot(context), head, rest)

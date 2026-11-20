@@ -42,3 +42,29 @@ export const CANVAS_CONTROL = Object.freeze({
   domain: 'canvas',
   measure: 'measure',
 } as const)
+
+/**
+ * Commands addressed to a component instance in the render tree (ADR-0023).
+ * Context APIs (`createMapContext`, …) send these; the render side resolves the
+ * instance, applies a per-tag method whitelist and returns a status object.
+ */
+export const COMPONENT_CONTROL = Object.freeze({
+  domain: 'component',
+  invoke: 'invoke',
+} as const)
+
+export type ComponentCommandRequest = {
+  /** Shared component id, preferred over `selector`. */
+  componentId?: string
+  /** Page-scoped selector fallback (`#map`), first match wins. */
+  selector?: string
+  method: string
+  args?: unknown
+}
+
+export type ComponentCommandResult =
+  | { status: 'ok'; value?: unknown }
+  | { status: 'not-found' }
+  | { status: 'unsupported-method'; method: string }
+  | { status: 'invalid-args'; detail: string }
+  | { status: 'error'; message: string }

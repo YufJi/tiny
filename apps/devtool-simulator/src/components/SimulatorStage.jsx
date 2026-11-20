@@ -27,6 +27,7 @@ function SimulatorStage({
   tabBarAssetBase = '',
   canGoBack,
   onBack,
+  onHome,
   onTabBarTap,
   onBackground,
   onReload,
@@ -150,11 +151,12 @@ function SimulatorStage({
                 style={{ top: device.frameHeight * 0.25, height: device.frameHeight * 0.11 }}
               />
               <div
-                className="td-screen"
+                className={`td-screen${navigation.backgroundTextStyle === 'light' ? ' td-screen--bg-text-light' : ''}`}
                 ref={screenRef}
                 style={{
-                  width: device.screenWidth,
-                  height: device.screenHeight,
+                  width: navigation.windowSize?.width ?? device.screenWidth,
+                  height: navigation.windowSize?.height ?? device.screenHeight,
+                  backgroundColor: navigation.pageBackground,
                   borderRadius: device.screenRadius,
                   '--td-cutout-width': `${device.cutoutWidth}px`,
                   '--td-cutout-height': `${device.cutoutHeight}px`,
@@ -166,6 +168,7 @@ function SimulatorStage({
                   <HostStatusBar
                     navigation={navigation}
                     overlay={!launcher && navigation.custom}
+                    onHome={onHome}
                     device={device}
                     enabled={!launcher && status === 'running'}
                     onStatusBarTap={onStatusBarTap}

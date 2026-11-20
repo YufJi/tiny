@@ -747,6 +747,8 @@ class RuntimePanel extends PureComponent {
 
   backActive() {
     const session = this.activeSession;
+    const message = this.props.runtime?.navigation?.alertBeforeUnload;
+    if (message && typeof window !== 'undefined' && !window.confirm(message)) return;
     if (session) {
       this.setState({ actionError: '' });
       this.run(() => session.client.back().catch((error) => this.reportActionError(error)));
@@ -962,6 +964,7 @@ class RuntimePanel extends PureComponent {
           tabBarAssetBase={activeAppId ? generatedBaseFor(activeAppId) : ''}
           canGoBack={pageStack.length > 1}
           onBack={() => this.backActive()}
+          onHome={() => this.run(() => this.backgroundToLauncher())}
           onTabBarTap={(index) => this.tapTab(index)}
           onBackground={() => this.run(() => this.backgroundToLauncher())}
           onReload={() => this.reloadActiveApp()}

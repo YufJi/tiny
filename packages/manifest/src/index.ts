@@ -140,6 +140,11 @@ export type ConfigurationArtifact = {
 
 export type AppArtifact = {
   path: string
+  /**
+   * `app.json.workers` root. Worker scripts are copied verbatim, not bundled:
+   * they run in their own thread and cannot import the service modules.
+   */
+  workers?: string
   script?: ScriptArtifact
   /** App-global stylesheet. Runtime consumers must use this reference, not a filename. */
   style?: StyleArtifact

@@ -53,6 +53,18 @@ function stripComments(source) {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
 }
 
+/**
+ * Drop quoted string contents before looking for host globals: a message such as
+ * `'worker.postMessage'` names a protocol method, it does not touch the browser
+ * global. Template literals are left intact because their interpolations carry
+ * real code.
+ */
+function stripStrings(source) {
+  return source
+    .replace(/'(?:\\.|[^'\\])*'/g, "''")
+    .replace(/"(?:\\.|[^"\\])*"/g, '""')
+}
+
 const visited = new Set()
 const files = []
 const hostPackagePrefixes = ['@tiny/host-']
@@ -87,7 +99,7 @@ const pattern = new RegExp(`\\b(${hostGlobals.join('|')})\\b`)
 const bareElement = /(?<![.\w$])Element\b/
 const violations = []
 for (const file of files) {
-  const source = stripComments(fs.readFileSync(file, 'utf8'))
+  const source = stripStrings(stripComments(fs.readFileSync(file, 'utf8')))
   for (const [index, line] of source.split('\n').entries()) {
     const match = line.match(pattern)
     if (match) {

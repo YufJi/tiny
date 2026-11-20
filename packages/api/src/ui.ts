@@ -30,6 +30,59 @@ export function createUiApi(context: ApiContext): ApiHost {
       context,
       'ui.hideLoading',
     )),
+    setWindowSize: (params: unknown = {}) => runApi(params, 'setWindowSize', () => {
+      const options = (params ?? {}) as { width?: unknown; height?: unknown }
+      const width = Number(options.width ?? 0)
+      const height = Number(options.height ?? 0)
+      return callHost(context, 'page.setWindowSize', { width, height })
+    }),
+    hideHomeButton: (params: unknown = {}) => runApi(params, 'hideHomeButton', () => (
+      callHost(context, 'page.hideHomeButton')
+    )),
+    setTopBarText: (params: unknown = {}) => runApi(params, 'setTopBarText', () => callHost(
+      context,
+      'navigation.topBarText',
+      { text: (params as { text?: unknown }).text ?? '' },
+    )),
+    setBackgroundColor: (params: unknown = {}) => runApi(params, 'setBackgroundColor', () => callHost(
+      context,
+      'page.backgroundColor',
+      params as Record<string, unknown>,
+    )),
+    setBackgroundTextStyle: (params: unknown = {}) => runApi(
+      params,
+      'setBackgroundTextStyle',
+      () => callHost(context, 'page.backgroundTextStyle', {
+        textStyle: (params as { textStyle?: unknown }).textStyle ?? 'dark',
+      }),
+    ),
+    enableAlertBeforeUnload: (params: unknown = {}) => runApi(
+      params,
+      'enableAlertBeforeUnload',
+      () => callHost(context, 'page.alertBeforeUnload', {
+        message: (params as { message?: unknown }).message ?? '',
+      }),
+    ),
+    disableAlertBeforeUnload: (params: unknown = {}) => runApi(
+      params,
+      'disableAlertBeforeUnload',
+      () => callHost(context, 'page.disableAlertBeforeUnload'),
+    ),
+    getSelectedTextRange: (params: unknown = {}) => runApi(
+      params,
+      'getSelectedTextRange',
+      () => callHost(context, 'page.selectedTextRange'),
+    ),
+    checkIsPictureInPictureActive: (params: unknown = {}) => runApi(
+      params,
+      'checkIsPictureInPictureActive',
+      () => callHost(context, 'page.pipActive'),
+    ),
+    loadFontFace: (params: unknown = {}) => runApi(
+      params,
+      'loadFontFace',
+      () => callHost(context, 'font.load', params as Record<string, unknown>),
+    ),
     showActionSheet: (params: unknown = {}) => runApi(params, 'showActionSheet', () => callHost(
       context,
       'ui.actionSheet',

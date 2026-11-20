@@ -1,4 +1,22 @@
 import type { HostApiHandlers, StorageValues, SyncApiHandlers, SystemInfo } from '@tiny/api'
+import {
+  createFileSystemHandlers,
+  createMediaHandlers,
+  createNetworkHandlers,
+  createAudioHandlers,
+  createDeviceHandlers,
+  createEnvHandlers,
+  createKeyboardHandlers,
+  createPageIntrospectionHandlers,
+  createScanHandlers,
+  createSocketHandlers,
+  createRecorderHandlers,
+  createSensorHandlers,
+  createWorkerHandlers,
+  createTempFileRegistry,
+  pickFiles,
+} from '@tiny/host-web'
+
 
 const OVERLAY_ID = 'tiny-api-overlay'
 const STYLE_ID = 'tiny-api-overlay-style'
@@ -12,10 +30,71 @@ let toastElement: HTMLElement | null = null
  * These run in the host realm (the page that owns the iframes), so DOM,
  * fetch, clipboard and navigator access stay out of the core runtime.
  */
+/**
+ * Host-owned identity used by `wx.login` / `wx.getUserProfile` and the scope
+ * APIs. The values are mocks: they keep prototype flows moving instead of
+ * failing, and a real backend can replace them without touching `@tiny/api`.
+ */
+/** Handler keys this host registers but cannot honour (page chrome, share UI). */
+export const TEST_HOST_UNSUPPORTED_KEYS: ReadonlySet<string> = new Set([
+  'navigation.color',
+  'navigation.loading',
+  'share.menu',
+  'page.scrollTo',
+])
+
+export type TestHostApiOptions = {
+  /** Mini-program id reported by `wx.getAccountInfoSync()`. */
+  appId?: string
+  identity?: HostIdentity
+  /** Test seam: replace the browser file chooser. */
+  pickFiles?: typeof pickFiles
+  /** Persist storage after a write, remove or clear. */
+  onStorageChange?: () => void
+  /** Forward host sensor/location readings as service global events. */
+  emitGlobalEvent?: (name: string, payload?: unknown) => void
+  /** Resolve a mini-program worker path to a servable URL. */
+  resolveWorkerUrl?: (path: string) => string
+  /**
+   * Handler maps shared by the async and sync tables. The file system keeps
+   * bytes and the permission cache keeps state, so both channels must see the
+   * same instance.
+   */
+  fileSystem?: Record<string, (params: Record<string, unknown>) => unknown>
+  env?: Record<string, (params: Record<string, unknown>) => unknown>
+  /** Temp files shared with the file system's `saveFile`. */
+  tempFiles?: TempFileRegistry
+}
+
+export type HostIdentity = {
+  /** Login code handed to the app; defaults to a random per-call code. */
+  code?: string
+  /** Fields merged over the mock profile. */
+  userInfo?: Record<string, unknown>
+  /** Scopes granted before the app calls `wx.authorize`. */
+  authSetting?: Record<string, boolean>
+}
+
 export function createTestHostApiHandlers(
   storage: StorageValues = {},
   getSystemInfo: () => SystemInfo,
+  options: TestHostApiOptions = {},
 ): HostApiHandlers {
+  const identity = options.identity ?? {}
+  const authSetting: Record<string, boolean> = { ...identity.authSetting }
+  const tempFiles = options.tempFiles ?? createTempFileRegistry()
+  const pick = options.pickFiles ?? pickFiles
+  const onChange = options.onStorageChange ?? (() => undefined)
+  const userInfo = {
+    nickName: 'Tiny User',
+    avatarUrl: '',
+    gender: 0,
+    country: '',
+    province: '',
+    city: '',
+    language: 'zh_CN',
+    ...identity.userInfo,
+  }
   return {
     'keyboard.hide': () => ({ errMsg: 'hideKeyboard:ok' }),
     'system.info': () => getSystemInfo(),
@@ -25,24 +104,49 @@ export function createTestHostApiHandlers(
     'clipboard.set': (params) => setClipboard(String(params.data ?? '')),
     'clipboard.get': () => getClipboard(),
     'device.vibrate': (params) => vibrate(Number(params.duration ?? 15)),
-    'settings.get': () => ({ authSetting: {}, errMsg: 'getSetting:ok' }),
-    'settings.open': () => ({ authSetting: {}, errMsg: 'openSetting:ok' }),
-    'login': () => ({ code: createLoginCode(), errMsg: 'login:ok' }),
+    ...createMediaHandlers({ registry: tempFiles, pick }),
+    ...createNetworkHandlers({ registry: tempFiles }),
+    ...(options.fileSystem ?? createFileSystemHandlers()),
+    ...(options.env ?? createEnvHandlers()),
+    ...createPageIntrospectionHandlers(),
+    ...createKeyboardHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
+    ...createScanHandlers(),
+    ...createSensorHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
+    ...createDeviceHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
+    ...createAudioHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
+    ...createSocketHandlers({ emit: options.emitGlobalEvent ?? (() => undefined) }),
+    ...createRecorderHandlers({
+      emit: options.emitGlobalEvent ?? (() => undefined),
+      registry: tempFiles,
+    }),
+    ...createWorkerHandlers({
+      resolveWorkerUrl: options.resolveWorkerUrl ?? ((workerPath) => workerPath),
+      emit: options.emitGlobalEvent ?? (() => undefined),
+    }),
+    'system.setting': () => ({
+      bluetoothEnabled: false,
+      locationEnabled: typeof navigator !== 'undefined' && 'geolocation' in navigator,
+      wifiEnabled: false,
+      errMsg: 'getSystemSetting:ok',
+    }),
+    'update.check': () => ({ hasUpdate: false, errMsg: 'checkForUpdate:ok' }),
+    'identity.checkSession': () => ({ errMsg: 'checkSession:ok' }),
+    'identity.authorize': (params) => {
+      const scope = String(params.scope ?? '')
+      if (!scope) return { errMsg: 'authorize:fail invalid scope' }
+      authSetting[scope] = true
+      return { errMsg: 'authorize:ok' }
+    },
+    'settings.get': () => ({ authSetting: { ...authSetting }, errMsg: 'getSetting:ok' }),
+    'settings.open': () => ({ authSetting: { ...authSetting }, errMsg: 'openSetting:ok' }),
+    'login': () => ({ code: identity.code ?? createLoginCode(), errMsg: 'login:ok' }),
     'toast.show': (params) => showToast(params),
     'ui.toast': (params) => showToast(params),
     'ui.hideToast': () => hideToast(),
     'profile.get': () => ({
-      userInfo: {
-        nickName: 'Tiny User',
-        avatarUrl: '',
-        gender: 0,
-        country: '',
-        province: '',
-        city: '',
-        language: 'zh_CN',
-      },
-      rawData: '{}',
-      signature: '',
+      userInfo: { ...userInfo },
+      rawData: JSON.stringify(userInfo),
+      signature: 'mock-signature',
       encryptedData: '',
       iv: '',
       errMsg: 'getUserProfile:ok',
@@ -55,27 +159,19 @@ export function createTestHostApiHandlers(
     'ui.hideLoading': () => hideLoading(),
     'ui.modal': (params) => showModal(params),
     'ui.actionSheet': (params) => showActionSheet(params),
-    'navigation.color': () => ({ errMsg: 'setNavigationBarColor:ok' }),
-    'navigation.loading': () => ({ errMsg: 'showNavigationBarLoading:ok' }),
-    'share.menu': (params) => ({ errMsg: `${String(params.action ?? 'share')}:ok` }),
-    'storage.get': (params) => ({ value: storage[String(params.key)] }),
-    'storage.set': (params) => {
-      storage[String(params.key)] = params.value
-      return { errMsg: 'setStorageSync:ok' }
-    },
-    'storage.remove': (params) => {
-      delete storage[String(params.key)]
-      return { errMsg: 'removeStorageSync:ok' }
-    },
-    'storage.clear': () => {
-      for (const key of Object.keys(storage)) delete storage[key]
-      return { errMsg: 'clearStorageSync:ok' }
-    },
-    'storage.info': () => ({
-      keys: Object.keys(storage),
-      currentSize: JSON.stringify(storage).length,
-      limitSize: 10240,
+    // The acceptance host has no page chrome, so these report failure instead
+    // of faking ok; the devtool owns real implementations in its own host API.
+    'navigation.color': () => ({
+      errMsg: 'setNavigationBarColor:fail not supported by this host',
     }),
+    'navigation.loading': (params) => ({
+      errMsg: `${params.visible === false ? 'hide' : 'show'}NavigationBarLoading:fail not supported by this host`,
+    }),
+    'share.menu': (params) => ({
+      errMsg: `${String(params.action ?? 'share')}:fail not supported by this host`,
+    }),
+    'page.scrollTo': () => ({ errMsg: 'pageScrollTo:fail not supported by this host' }),
+    ...createStorageHandlers(storage, onChange),
   }
 }
 
@@ -86,27 +182,22 @@ export function createTestHostApiHandlers(
 export function createTestHostSyncApiHandlers(
   storage: StorageValues = {},
   getSystemInfo: () => SystemInfo,
+  options: TestHostApiOptions = {},
 ): SyncApiHandlers {
+  const onChange = options.onStorageChange ?? (() => undefined)
   return {
     'system.info': () => getSystemInfo(),
-    'storage.get': (params) => ({ value: storage[String(params.key)] }),
-    'storage.set': (params) => {
-      storage[String(params.key)] = params.value
-      return { errMsg: 'setStorageSync:ok' }
-    },
-    'storage.remove': (params) => {
-      delete storage[String(params.key)]
-      return { errMsg: 'removeStorageSync:ok' }
-    },
-    'storage.clear': () => {
-      for (const key of Object.keys(storage)) delete storage[key]
-      return { errMsg: 'clearStorageSync:ok' }
-    },
-    'storage.info': () => ({
-      keys: Object.keys(storage),
-      currentSize: JSON.stringify(storage).length,
-      limitSize: 10240,
+    'account.info': () => ({
+      miniProgram: {
+        appId: options.appId ?? 'tiny-test',
+        envVersion: 'develop',
+        version: '0.0.0',
+      },
+      plugin: {},
     }),
+    ...createStorageHandlers(storage, onChange),
+    ...(options.fileSystem ?? createFileSystemHandlers()),
+    ...(options.env ?? createEnvHandlers()),
   }
 }
 
@@ -371,4 +462,54 @@ function showActionSheet(params: Record<string, unknown>): Promise<Record<string
     panel.appendChild(actions)
     root.append(mask, panel)
   })
+}
+
+
+function createStorageHandlers(
+  storage: StorageValues,
+  onChange: () => void,
+): Record<string, (params: Record<string, unknown>) => unknown> {
+  const keyList = (params: Record<string, unknown>): string[] => (
+    Array.isArray(params.keyList) ? params.keyList.map(String) : []
+  )
+  const kvList = (params: Record<string, unknown>): Array<{ key: string; value: unknown }> => (
+    Array.isArray(params.kvList)
+      ? params.kvList.map((entry) => {
+        const item = (entry ?? {}) as { key?: unknown; value?: unknown }
+        return { key: String(item.key), value: item.value }
+      })
+      : []
+  )
+  return {
+    'storage.get': (params) => ({ value: storage[String(params.key)] }),
+    'storage.set': (params) => {
+      storage[String(params.key)] = params.value
+      onChange()
+      return { errMsg: 'setStorageSync:ok' }
+    },
+    'storage.remove': (params) => {
+      delete storage[String(params.key)]
+      onChange()
+      return { errMsg: 'removeStorageSync:ok' }
+    },
+    'storage.clear': () => {
+      for (const key of Object.keys(storage)) delete storage[key]
+      onChange()
+      return { errMsg: 'clearStorageSync:ok' }
+    },
+    'storage.info': () => ({
+      keys: Object.keys(storage),
+      currentSize: JSON.stringify(storage).length,
+      limitSize: 10240,
+    }),
+    'storage.batchGet': (params) => ({
+      dataList: keyList(params).map((key) => storage[key]),
+      errMsg: 'batchGetStorage:ok',
+    }),
+    'storage.batchSet': (params) => {
+      for (const { key, value } of kvList(params)) storage[key] = value
+      onChange()
+      return { errMsg: 'batchSetStorage:ok' }
+    },
+  }
 }

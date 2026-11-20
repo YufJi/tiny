@@ -10,6 +10,7 @@
 | `style-isolation.md` | 样式隔离与内置组件样式的完整模型、编译/运行时分界、已知边界 | 改 WXSS 编译、scope、内置样式之前 |
 | `acceptance.md` | 验收门禁、浏览器阶段、fixture 说明 | 跑 `pnpm accept:glass-easel` 前 |
 | `wechat-webview-parity.md` | 微信 WebView 能力对齐分与缺口 | 评估兼容性、排优先级 |
+| `api-roadmap.md` | `wx.*` API 补齐的波次、DoD 与优先级（计划，不是完成度） | 决定“下一步补哪个 API” |
 | `archive/builtin-inventory-2.33.0.md` | 历史内置组件/behaviors 缺口清单与占位目录；后续实现统一以微信 3.17.5 WebView + glass-easel 为准 | 考古时 |
 | `archive/component-reference-diff-2.33.0.md` | 历史组件参考差异（2.7.0/2.33.0 审计）；后续实现统一以微信 3.17.5 WebView + glass-easel 为准 | 考古时 |
 | `known-issues/` | 已知问题与临时处理 | 遇到相关症状时 |

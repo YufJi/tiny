@@ -14,6 +14,7 @@
     </view>
     <view class="page-section page-section-gap">
       <map
+        id="map"
         subkey="{{subKey}}"
         style="width: 100%; height: 300px;"
         latitude="{{latitude}}"

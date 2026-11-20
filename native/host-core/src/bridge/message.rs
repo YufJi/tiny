@@ -34,6 +34,7 @@ pub enum ProtocolDomain {
     Canvas,
     Query,
     Tree,
+    Component,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

@@ -1,6 +1,11 @@
+import AudioToolbox
+import CoreLocation
+import CoreMedia
+import CoreMotion
 import Foundation
 import Network
 import UIKit
+import VideoToolbox
 
 /// Native iOS host runtime: Rust HostCore + JSCore service + one WKWebView per page.
 ///
@@ -17,10 +22,28 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
   private let smoke: Bool
   private var core: HostCoreSession?
   private var networkMonitor: NWPathMonitor?
+  private var toastView: UIView?
+  private var loadingView: UIView?
+  private let motionManager = CMMotionManager()
+  private var headingManager: CLLocationManager?
+  private var headingDelegate: HeadingDelegate?
+  private var locationManager: CLLocationManager?
+  private var locationDelegate: LocationDelegate?
+  private var pendingLocationRequestId: String?
+  private var pendingLocationFuzzy = false
+  private var locationTracking = false
+  private var documentPreview: UIDocumentInteractionController?
+  private var batteryObserversInstalled = false
+  private var sockets: [String: URLSessionWebSocketTask] = [:]
+  /// Last network type reported by `NWPathMonitor`, served to `wx.getNetworkType`.
+  private var currentNetworkType = "wifi"
   private var initialPageId: String?
   private var smokeNavigationStarted = false
   private var surfaces: [String: NativeRenderSurface] = [:]
   private var storage: [String: Any] = [:]
+  /// Scopes granted through `identity.authorize`, the iOS mock of WeChat's
+  /// permission model.
+  private var authSetting: [String: Bool] = [:]
   private let storagePrefix: String
   private var activePageId: String?
   private var displayedStack: [String] = []
@@ -151,6 +174,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
     }
     self.meta = meta
     self.manifest = manifest
+    installBatteryMonitoring()
     let templatesFile = generatedRoot.appendingPathComponent(
       "apps/\(app.id)/assets/templates.js"
     )
@@ -635,6 +659,7 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       }
       DispatchQueue.main.async {
         guard let self else { return }
+        self.currentNetworkType = networkType
         try? self.core?.command([
           "type": "emitEvent",
           "name": "networkStatusChange",
@@ -1299,6 +1324,54 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
         "currentSize": 0,
         "limitSize": 10240,
       ]
+    case "storage.batchGet":
+      let keyList = params["keyList"] as? [String] ?? []
+      result = [
+        "dataList": keyList.map { storage[$0] ?? NSNull() },
+        "errMsg": "batchGetStorage:ok",
+      ]
+    case "storage.batchSet":
+      let kvList = params["kvList"] as? [[String: Any]] ?? []
+      for entry in kvList {
+        guard let key = entry["key"] as? String else { continue }
+        let value = entry["value"] ?? NSNull()
+        storage[key] = value
+        persistStorageValue(key, value)
+      }
+      result = ["errMsg": "batchSetStorage:ok"]
+    case "account.info":
+      result = [
+        "miniProgram": [
+          "appId": app.id,
+          "envVersion": "develop",
+          "version": "0.0.0",
+        ],
+        "plugin": [:],
+      ]
+    case "system.setting":
+      result = [
+        "bluetoothEnabled": false,
+        "locationEnabled": CLLocationManager.locationServicesEnabled(),
+        "wifiEnabled": false,
+        "errMsg": "getSystemSetting:ok",
+      ]
+    case "permissions.setting":
+      result = authorizeSettingPayload()
+    case "fs.access": result = fsAccess(params)
+    case "fs.readFile": result = fsReadFile(params)
+    case "fs.writeFile": result = fsWriteFile(params)
+    case "fs.mkdir": result = fsMkdir(params)
+    case "fs.readdir": result = fsReaddir(params)
+    case "fs.stat": result = fsStat(params)
+    case "fs.unlink": result = fsUnlink(params)
+    case "fs.rmdir": result = fsRmdir(params)
+    case "fs.copyFile": result = fsCopyFile(params)
+    case "fs.rename": result = fsRename(params)
+    case "fs.appendFile": result = fsAppendFile(params)
+    case "network.type":
+      result = ["networkType": currentNetworkType, "errMsg": "getNetworkType:ok"]
+    case "battery.infoSync":
+      result = batteryPayload()
     default:
       result = ["error": "unsupported synchronous host API: \(method)"]
     }
@@ -1306,6 +1379,827 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
           let text = String(data: data, encoding: .utf8)
     else { return "null" }
     return text
+  }
+
+  // MARK: - Web sockets
+
+  private func emitEvent(_ name: String, _ payload: [String: Any]) {
+    try? core?.command(["type": "emitEvent", "name": name, "payload": payload])
+  }
+
+  private func connectSocket(_ params: [String: Any]) -> [String: Any] {
+    let socketId = params["socketId"] as? String ?? ""
+    guard let url = URL(string: params["url"] as? String ?? ""),
+          let scheme = url.scheme?.lowercased(),
+          scheme == "ws" || scheme == "wss"
+    else { return ["errMsg": "connectSocket:fail invalid url"] }
+    let task = URLSession.shared.webSocketTask(with: url)
+    sockets[socketId] = task
+    task.resume()
+    emitEvent("socketOpen", ["socketId": socketId, "header": [:]])
+    receiveSocket(socketId, task)
+    return ["errMsg": "connectSocket:ok"]
+  }
+
+  private func receiveSocket(_ socketId: String, _ task: URLSessionWebSocketTask) {
+    task.receive { [weak self] result in
+      Task { @MainActor in
+        guard let self, self.sockets[socketId] === task else { return }
+        switch result {
+        case .success(let message):
+          switch message {
+          case .string(let text):
+            self.emitEvent("socketMessage", ["socketId": socketId, "data": text, "isBuffer": false])
+          case .data(let data):
+            self.emitEvent("socketMessage", [
+              "socketId": socketId,
+              "data": data.base64EncodedString(),
+              "isBuffer": true,
+            ])
+          @unknown default:
+            break
+          }
+          self.receiveSocket(socketId, task)
+        case .failure(let error):
+          self.sockets.removeValue(forKey: socketId)
+          self.emitEvent("socketClose", [
+            "socketId": socketId,
+            "code": 1006,
+            "reason": error.localizedDescription,
+          ])
+        }
+      }
+    }
+  }
+
+  private func sendSocketMessage(_ params: [String: Any]) -> [String: Any] {
+    let socketId = params["socketId"] as? String ?? ""
+    guard let task = sockets[socketId] else {
+      return ["errMsg": "sendSocketMessage:fail socket is not connected"]
+    }
+    if (params["isBuffer"] as? Bool) == true,
+       let data = Data(base64Encoded: params["data"] as? String ?? "") {
+      task.send(.data(data)) { [weak self] error in
+        guard let error else { return }
+        Task { @MainActor in
+          self?.emitEvent("socketError", [
+            "socketId": socketId,
+            "errMsg": "socketError:fail \(error.localizedDescription)",
+          ])
+        }
+      }
+    } else {
+      task.send(.string(params["data"] as? String ?? "")) { [weak self] error in
+        guard let error else { return }
+        Task { @MainActor in
+          self?.emitEvent("socketError", [
+            "socketId": socketId,
+            "errMsg": "socketError:fail \(error.localizedDescription)",
+          ])
+        }
+      }
+    }
+    return ["errMsg": "sendSocketMessage:ok"]
+  }
+
+  private func closeSocket(_ params: [String: Any]) -> [String: Any] {
+    let socketId = params["socketId"] as? String ?? ""
+    guard let task = sockets[socketId] else { return ["errMsg": "closeSocket:ok"] }
+    sockets.removeValue(forKey: socketId)
+    let code = (params["code"] as? Int) ?? 1000
+    task.cancel(with: URLSessionWebSocketTask.CloseCode(rawValue: code) ?? .normalClosure, reason: nil)
+    emitEvent("socketClose", [
+      "socketId": socketId,
+      "code": code,
+      "reason": params["reason"] as? String ?? "",
+    ])
+    return ["errMsg": "closeSocket:ok"]
+  }
+
+  // MARK: - Battery
+
+  private func batteryPayload() -> [String: Any] {
+    let device = UIDevice.current
+    device.isBatteryMonitoringEnabled = true
+    let level = device.batteryLevel < 0 ? 100 : Int((device.batteryLevel * 100).rounded())
+    let charging = device.batteryState == .charging || device.batteryState == .full
+    return ["level": level, "isCharging": charging, "errMsg": "getBatteryInfo:ok"]
+  }
+
+  private func installBatteryMonitoring() {
+    guard !batteryObserversInstalled else { return }
+    batteryObserversInstalled = true
+    let center = NotificationCenter.default
+    for name in [
+      UIDevice.batteryLevelDidChangeNotification,
+      UIDevice.batteryStateDidChangeNotification,
+    ] {
+      center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+        Task { @MainActor in
+          guard let self else { return }
+          try? self.core?.command([
+            "type": "emitEvent",
+            "name": "batteryInfoChange",
+            "payload": self.batteryPayload(),
+          ])
+        }
+      }
+    }
+  }
+
+  // MARK: - Documents
+
+  private func userFileURL(_ params: [String: Any]) -> URL? {
+    guard let url = userPath(params["filePath"] as? String ?? "") else { return nil }
+    guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+    return url
+  }
+
+  private func openUserDocument(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userFileURL(params),
+          topViewController() != nil
+    else { return ["errMsg": "openDocument:fail no such file or directory"] }
+    let preview = UIDocumentInteractionController(url: url)
+    documentPreview = preview
+    if !preview.presentPreview(animated: true) {
+      documentPreview = nil
+      return ["errMsg": "openDocument:fail the document cannot be previewed"]
+    }
+    return ["errMsg": "openDocument:ok"]
+  }
+
+  private func shareUserFile(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userFileURL(params),
+          let controller = topViewController()
+    else { return ["errMsg": "saveFileToDisk:fail no such file or directory"] }
+    let activity = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+    if let popover = activity.popoverPresentationController {
+      popover.sourceView = container
+      popover.sourceRect = CGRect(
+        x: container.bounds.midX,
+        y: container.bounds.midY,
+        width: 0,
+        height: 0,
+      )
+      popover.permittedArrowDirections = []
+    }
+    controller.present(activity, animated: true)
+    return ["errMsg": "saveFileToDisk:ok"]
+  }
+
+  // MARK: - File system
+
+  private func userDirectory() -> URL {
+    let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+      ?? URL(fileURLWithPath: NSTemporaryDirectory())
+    return documents.appendingPathComponent("usr", isDirectory: true)
+  }
+
+  private func userPath(_ raw: String) -> URL? {
+    guard raw.hasPrefix("wxfile://usr") else { return nil }
+    var url = userDirectory()
+    let rest = raw.dropFirst("wxfile://usr".count)
+    for component in rest.split(separator: "/") {
+      let name = String(component)
+      if name.isEmpty || name == "." { continue }
+      if name == ".." { return nil }
+      url.appendPathComponent(name)
+    }
+    return url
+  }
+
+  private func fsFailure(_ api: String, _ reason: String) -> [String: Any] {
+    ["errMsg": "\(api):fail \(reason)"]
+  }
+
+  private func fsAccess(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userPath(params["path"] as? String ?? "") else {
+      return fsFailure("access", "no such file or directory")
+    }
+    guard FileManager.default.fileExists(atPath: url.path) else {
+      return fsFailure("access", "no such file or directory")
+    }
+    return ["errMsg": "access:ok"]
+  }
+
+  private func fsReadFile(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userPath(params["path"] as? String ?? ""),
+          let data = try? Data(contentsOf: url)
+    else { return fsFailure("readFile", "no such file or directory") }
+    return ["data": data.base64EncodedString(), "errMsg": "readFile:ok"]
+  }
+
+  private func fsWriteFile(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userPath(params["path"] as? String ?? "") else {
+      return fsFailure("writeFile", "no such file or directory")
+    }
+    let parent = url.deletingLastPathComponent()
+    guard FileManager.default.fileExists(atPath: parent.path) else {
+      return fsFailure("writeFile", "no such file or directory")
+    }
+    guard let data = Data(base64Encoded: params["base64"] as? String ?? "") else {
+      return fsFailure("writeFile", "invalid base64 data")
+    }
+    do {
+      try data.write(to: url)
+      return ["errMsg": "writeFile:ok"]
+    } catch {
+      return fsFailure("writeFile", error.localizedDescription)
+    }
+  }
+
+  private func fsMkdir(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userPath(params["path"] as? String ?? "") else {
+      return fsFailure("mkdir", "no such file or directory")
+    }
+    let recursive = params["recursive"] as? Bool ?? false
+    do {
+      try FileManager.default.createDirectory(
+        at: url,
+        withIntermediateDirectories: recursive,
+        attributes: nil,
+      )
+      return ["errMsg": "mkdir:ok"]
+    } catch {
+      return fsFailure("mkdir", "file already exists")
+    }
+  }
+
+  private func fsReaddir(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userPath(params["path"] as? String ?? "") else {
+      return fsFailure("readdir", "no such file or directory")
+    }
+    guard let names = try? FileManager.default.contentsOfDirectory(atPath: url.path) else {
+      return fsFailure("readdir", "no such file or directory")
+    }
+    return ["files": names.sorted(), "errMsg": "readdir:ok"]
+  }
+
+  private func fsStat(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userPath(params["path"] as? String ?? ""),
+          let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
+    else { return fsFailure("stat", "no such file or directory") }
+    let isDirectory = (attributes[.type] as? FileAttributeType) == .typeDirectory
+    let modified = (attributes[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
+    return [
+      "stats": [
+        "size": (attributes[.size] as? NSNumber)?.intValue ?? 0,
+        "lastModifiedTime": modified,
+        "lastAccessedTime": modified,
+        "isDirectory": isDirectory,
+      ],
+      "errMsg": "stat:ok",
+    ]
+  }
+
+  private func fsUnlink(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userPath(params["path"] as? String ?? "") else {
+      return fsFailure("unlink", "no such file or directory")
+    }
+    var isDirectory: ObjCBool = false
+    guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
+      return fsFailure("unlink", "no such file or directory")
+    }
+    if isDirectory.boolValue { return fsFailure("unlink", "is a directory") }
+    do {
+      try FileManager.default.removeItem(at: url)
+      return ["errMsg": "unlink:ok"]
+    } catch {
+      return fsFailure("unlink", error.localizedDescription)
+    }
+  }
+
+  private func fsRmdir(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userPath(params["path"] as? String ?? "") else {
+      return fsFailure("rmdir", "no such file or directory")
+    }
+    var isDirectory: ObjCBool = false
+    guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
+          isDirectory.boolValue
+    else { return fsFailure("rmdir", "no such file or directory") }
+    let recursive = params["recursive"] as? Bool ?? false
+    if !recursive {
+      let children = (try? FileManager.default.contentsOfDirectory(atPath: url.path)) ?? []
+      if !children.isEmpty { return fsFailure("rmdir", "directory not empty") }
+    }
+    do {
+      try FileManager.default.removeItem(at: url)
+      return ["errMsg": "rmdir:ok"]
+    } catch {
+      return fsFailure("rmdir", error.localizedDescription)
+    }
+  }
+
+  private func fsCopyFile(_ params: [String: Any]) -> [String: Any] {
+    guard let source = userPath(params["srcPath"] as? String ?? ""),
+          let destination = userPath(params["destPath"] as? String ?? "")
+    else { return fsFailure("copyFile", "no such file or directory") }
+    do {
+      try FileManager.default.copyItem(at: source, to: destination)
+      return ["errMsg": "copyFile:ok"]
+    } catch {
+      return fsFailure("copyFile", error.localizedDescription)
+    }
+  }
+
+  private func fsRename(_ params: [String: Any]) -> [String: Any] {
+    guard let source = userPath(params["oldPath"] as? String ?? ""),
+          let destination = userPath(params["newPath"] as? String ?? "")
+    else { return fsFailure("rename", "no such file or directory") }
+    do {
+      try FileManager.default.moveItem(at: source, to: destination)
+      return ["errMsg": "rename:ok"]
+    } catch {
+      return fsFailure("rename", error.localizedDescription)
+    }
+  }
+
+  private func fsAppendFile(_ params: [String: Any]) -> [String: Any] {
+    guard let url = userPath(params["path"] as? String ?? "") else {
+      return fsFailure("appendFile", "no such file or directory")
+    }
+    guard let addition = Data(base64Encoded: params["base64"] as? String ?? "") else {
+      return fsFailure("appendFile", "invalid base64 data")
+    }
+    let existing = (try? Data(contentsOf: url)) ?? Data()
+    do {
+      try (existing + addition).write(to: url)
+      return ["errMsg": "appendFile:ok"]
+    } catch {
+      return fsFailure("appendFile", error.localizedDescription)
+    }
+  }
+
+  // MARK: - Location
+
+  private func locationPayload(_ location: CLLocation) -> [String: Any] {
+    [
+      "latitude": location.coordinate.latitude,
+      "longitude": location.coordinate.longitude,
+      "speed": max(0, location.speed),
+      "accuracy": location.horizontalAccuracy,
+      "altitude": location.altitude,
+      "verticalAccuracy": location.verticalAccuracy,
+      "horizontalAccuracy": location.horizontalAccuracy,
+    ]
+  }
+
+  private func locationErrorText(_ error: Error) -> String {
+    let code = (error as NSError).code
+    if code == 1 { return "auth deny" }
+    return error.localizedDescription
+  }
+
+  private func ensureLocationManager() -> CLLocationManager {
+    if let manager = locationManager, locationDelegate != nil {
+      return manager
+    }
+    let manager = CLLocationManager()
+    let delegate = LocationDelegate()
+    delegate.onUpdate = { [weak self] location in
+      Task { @MainActor in
+        guard let self else { return }
+        if let requestId = self.pendingLocationRequestId {
+          self.pendingLocationRequestId = nil
+          var payload = self.locationPayload(location)
+          if self.pendingLocationFuzzy {
+            payload["latitude"] = (payload["latitude"] as? Double).map { ($0 * 100).rounded() / 100 } ?? 0
+            payload["longitude"] = (payload["longitude"] as? Double).map { ($0 * 100).rounded() / 100 } ?? 0
+            payload["errMsg"] = "getFuzzyLocation:ok"
+          } else {
+            payload["errMsg"] = "getLocation:ok"
+          }
+          self.pendingLocationFuzzy = false
+          try? self.core?.platformResult(requestId: requestId, result: payload)
+          self.locationManager?.stopUpdatingLocation()
+          self.locationTracking = false
+        } else if self.locationTracking {
+          try? self.core?.command([
+            "type": "emitEvent",
+            "name": "locationChange",
+            "payload": self.locationPayload(location),
+          ])
+        }
+      }
+    }
+    delegate.onError = { [weak self] error in
+      Task { @MainActor in
+        guard let self else { return }
+        let message = self.locationErrorText(error)
+        if let requestId = self.pendingLocationRequestId {
+          self.pendingLocationRequestId = nil
+          self.pendingLocationFuzzy = false
+          try? self.core?.platformResult(requestId: requestId, result: [
+            "errMsg": "getLocation:fail \(message)",
+          ])
+        } else {
+          try? self.core?.command([
+            "type": "emitEvent",
+            "name": "locationChangeError",
+            "payload": ["errMsg": "locationChange:fail \(message)"],
+          ])
+        }
+      }
+    }
+    delegate.onAuthorization = { [weak self] status in
+      Task { @MainActor in
+        guard let self else { return }
+        switch status {
+        case .authorizedWhenInUse, .authorizedAlways:
+          if self.pendingLocationRequestId != nil || self.locationTracking {
+            self.locationManager?.startUpdatingLocation()
+          }
+        case .denied, .restricted:
+          if let requestId = self.pendingLocationRequestId {
+            self.pendingLocationRequestId = nil
+            self.pendingLocationFuzzy = false
+            try? self.core?.platformResult(requestId: requestId, result: [
+              "errMsg": "getLocation:fail auth deny",
+            ])
+          }
+        default:
+          break
+        }
+      }
+    }
+    manager.delegate = delegate
+    manager.desiredAccuracy = kCLLocationAccuracyBest
+    locationManager = manager
+    locationDelegate = delegate
+    return manager
+  }
+
+  private func requestLocation(requestId: String, fuzzy: Bool) {
+    let manager = ensureLocationManager()
+    pendingLocationRequestId = requestId
+    pendingLocationFuzzy = fuzzy
+    if manager.authorizationStatus == .notDetermined {
+      manager.requestWhenInUseAuthorization()
+    }
+    manager.requestLocation()
+  }
+
+  private func startLocationTracking(background: Bool) -> String {
+    let manager = ensureLocationManager()
+    if manager.authorizationStatus == .notDetermined {
+      manager.requestWhenInUseAuthorization()
+    }
+    if background {
+      manager.allowsBackgroundLocationUpdates = true
+    }
+    locationTracking = true
+    manager.startUpdatingLocation()
+    return background ? "startLocationUpdateBackground:ok" : "startLocationUpdate:ok"
+  }
+
+  // MARK: - Motion sensors
+
+  private func sensorIntervalMs(_ value: Any?) -> Double {
+    if let number = value as? Double, number.isFinite, number > 0 { return number }
+    if let number = value as? Int, number > 0 { return Double(number) }
+    switch value as? String {
+    case "game": return 20
+    case "ui": return 60
+    default: return 200
+    }
+  }
+
+  private func emitSensor(_ name: String, _ payload: [String: Any]) {
+    try? core?.command(["type": "emitEvent", "name": name, "payload": payload])
+  }
+
+  private func startSensor(_ params: [String: Any]) -> String {
+    let type = params["type"] as? String ?? ""
+    let seconds = sensorIntervalMs(params["interval"]) / 1000
+    switch type {
+    case "accelerometer":
+      guard motionManager.isAccelerometerAvailable else {
+        return "startAccelerometer:fail accelerometer is not available"
+      }
+      motionManager.accelerometerUpdateInterval = seconds
+      motionManager.startAccelerometerUpdates(to: OperationQueue()) { [weak self] data, _ in
+        guard let data else { return }
+        let acceleration = data.acceleration
+        Task { @MainActor in
+          self?.emitSensor("accelerometerChange", [
+            "x": acceleration.x,
+            "y": acceleration.y,
+            "z": acceleration.z,
+          ])
+        }
+      }
+      return "startAccelerometer:ok"
+    case "gyroscope":
+      guard motionManager.isGyroAvailable else {
+        return "startGyroscope:fail gyroscope is not available"
+      }
+      motionManager.gyroUpdateInterval = seconds
+      motionManager.startGyroUpdates(to: OperationQueue()) { [weak self] data, _ in
+        guard let data else { return }
+        // CoreMotion reports rad/s; WeChat reports deg/s.
+        let rate = data.rotationRate
+        let factor = 180.0 / Double.pi
+        Task { @MainActor in
+          self?.emitSensor("gyroscopeChange", [
+            "x": rate.x * factor,
+            "y": rate.y * factor,
+            "z": rate.z * factor,
+          ])
+        }
+      }
+      return "startGyroscope:ok"
+    case "deviceMotion":
+      guard motionManager.isDeviceMotionAvailable else {
+        return "startDeviceMotionListening:fail device motion is not available"
+      }
+      motionManager.deviceMotionUpdateInterval = seconds
+      motionManager.startDeviceMotionUpdates(to: OperationQueue()) { [weak self] data, _ in
+        guard let attitude = data?.attitude else { return }
+        Task { @MainActor in
+          self?.emitSensor("deviceMotionChange", [
+            "alpha": attitude.yaw,
+            "beta": attitude.pitch,
+            "gamma": attitude.roll,
+          ])
+        }
+      }
+      return "startDeviceMotionListening:ok"
+    case "compass":
+      let manager = headingManager ?? CLLocationManager()
+      let delegate = headingDelegate ?? HeadingDelegate()
+      delegate.onHeading = { [weak self] heading in
+        Task { @MainActor in
+          self?.emitSensor("compassChange", [
+            "direction": heading.trueHeading >= 0 ? heading.trueHeading : heading.magneticHeading,
+            "accuracy": heading.headingAccuracy >= 0 ? "high" : "low",
+          ])
+        }
+      }
+      manager.delegate = delegate
+      manager.startUpdatingHeading()
+      headingManager = manager
+      headingDelegate = delegate
+      return "startCompass:ok"
+    default:
+      return "startSensor:fail unknown sensor"
+    }
+  }
+
+  private func stopSensor(_ params: [String: Any]) -> String {
+    switch params["type"] as? String ?? "" {
+    case "accelerometer":
+      motionManager.stopAccelerometerUpdates()
+      return "stopAccelerometer:ok"
+    case "gyroscope":
+      motionManager.stopGyroUpdates()
+      return "stopGyroscope:ok"
+    case "deviceMotion":
+      motionManager.stopDeviceMotionUpdates()
+      return "stopDeviceMotionListening:ok"
+    case "compass":
+      headingManager?.stopUpdatingHeading()
+      return "stopCompass:ok"
+    default:
+      return "stopSensor:fail unknown sensor"
+    }
+  }
+
+  // MARK: - Native overlays
+
+  private func overlayContainer() -> UIView {
+    let box = UIView()
+    box.backgroundColor = UIColor.black.withAlphaComponent(0.75)
+    box.layer.cornerRadius = 10
+    box.translatesAutoresizingMaskIntoConstraints = false
+    return box
+  }
+
+  private func showToastOverlay(_ text: String) {
+    toastView?.removeFromSuperview()
+    guard !text.isEmpty else { return }
+    let box = overlayContainer()
+    let label = UILabel()
+    label.text = text
+    label.textColor = .white
+    label.font = .systemFont(ofSize: 14)
+    label.numberOfLines = 0
+    label.textAlignment = .center
+    label.translatesAutoresizingMaskIntoConstraints = false
+    box.addSubview(label)
+    container.addSubview(box)
+    NSLayoutConstraint.activate([
+      label.leadingAnchor.constraint(equalTo: box.leadingAnchor, constant: 14),
+      label.trailingAnchor.constraint(equalTo: box.trailingAnchor, constant: -14),
+      label.topAnchor.constraint(equalTo: box.topAnchor, constant: 10),
+      label.bottomAnchor.constraint(equalTo: box.bottomAnchor, constant: -10),
+      box.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+      box.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+      box.widthAnchor.constraint(lessThanOrEqualTo: container.widthAnchor, constant: -40),
+    ])
+    toastView = box
+    box.alpha = 0
+    UIView.animate(withDuration: 0.15) { box.alpha = 1 }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { [weak self, weak box] in
+      guard let self, let box, self.toastView === box else { return }
+      box.removeFromSuperview()
+      self.toastView = nil
+    }
+  }
+
+  private func showLoadingOverlay(_ text: String) {
+    hideLoadingOverlay()
+    let box = overlayContainer()
+    let spinner = UIActivityIndicatorView(style: .medium)
+    spinner.color = .white
+    spinner.startAnimating()
+    spinner.translatesAutoresizingMaskIntoConstraints = false
+    let label = UILabel()
+    label.text = text.isEmpty ? "加载中" : text
+    label.textColor = .white
+    label.font = .systemFont(ofSize: 13)
+    label.translatesAutoresizingMaskIntoConstraints = false
+    box.addSubview(spinner)
+    box.addSubview(label)
+    container.addSubview(box)
+    NSLayoutConstraint.activate([
+      spinner.topAnchor.constraint(equalTo: box.topAnchor, constant: 12),
+      spinner.centerXAnchor.constraint(equalTo: box.centerXAnchor),
+      label.topAnchor.constraint(equalTo: spinner.bottomAnchor, constant: 8),
+      label.leadingAnchor.constraint(equalTo: box.leadingAnchor, constant: 14),
+      label.trailingAnchor.constraint(equalTo: box.trailingAnchor, constant: -14),
+      label.bottomAnchor.constraint(equalTo: box.bottomAnchor, constant: -12),
+      box.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+      box.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+    ])
+    loadingView = box
+  }
+
+  private func hideLoadingOverlay() {
+    loadingView?.removeFromSuperview()
+    loadingView = nil
+  }
+
+  private func presentModal(requestId: String, params: [String: Any]) {
+    guard let controller = topViewController() else {
+      try? core?.platformResult(requestId: requestId, result: [
+        "confirm": false,
+        "cancel": false,
+        "errMsg": "showModal:fail no view controller",
+      ])
+      return
+    }
+    let alert = UIAlertController(
+      title: params["title"] as? String,
+      message: params["content"] as? String,
+      preferredStyle: .alert,
+    )
+    let confirmText = params["confirmText"] as? String ?? "确定"
+    let cancelText = params["cancelText"] as? String ?? "取消"
+    let showCancel = params["showCancel"] as? Bool ?? true
+    alert.addAction(UIAlertAction(title: confirmText, style: .default) { [weak self] _ in
+      try? self?.core?.platformResult(requestId: requestId, result: [
+        "confirm": true,
+        "cancel": false,
+        "errMsg": "showModal:ok",
+      ])
+    })
+    if showCancel {
+      alert.addAction(UIAlertAction(title: cancelText, style: .cancel) { [weak self] _ in
+        try? self?.core?.platformResult(requestId: requestId, result: [
+          "confirm": false,
+          "cancel": true,
+          "errMsg": "showModal:ok",
+        ])
+      })
+    }
+    controller.present(alert, animated: true)
+  }
+
+  private func presentActionSheet(requestId: String, params: [String: Any]) {
+    guard let controller = topViewController() else {
+      try? core?.platformResult(requestId: requestId, result: [
+        "tapIndex": -1,
+        "errMsg": "showActionSheet:fail no view controller",
+      ])
+      return
+    }
+    let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+    let items = params["itemList"] as? [String] ?? []
+    for (index, item) in items.enumerated() {
+      sheet.addAction(UIAlertAction(title: item, style: .default) { [weak self] _ in
+        try? self?.core?.platformResult(requestId: requestId, result: [
+          "tapIndex": index,
+          "errMsg": "showActionSheet:ok",
+        ])
+      })
+    }
+    let cancelText = params["cancelText"] as? String ?? "取消"
+    sheet.addAction(UIAlertAction(title: cancelText, style: .cancel) { [weak self] _ in
+      try? self?.core?.platformResult(requestId: requestId, result: [
+        "tapIndex": -1,
+        "errMsg": "showActionSheet:fail cancel",
+      ])
+    })
+    // iPad requires a popover anchor; the container center is good enough.
+    if let popover = sheet.popoverPresentationController {
+      popover.sourceView = container
+      popover.sourceRect = CGRect(x: container.bounds.midX, y: container.bounds.maxY, width: 0, height: 0)
+      popover.permittedArrowDirections = []
+    }
+    controller.present(sheet, animated: true)
+  }
+
+  /// URLSession-backed `wx.request`. The reply is delivered later, so the
+  /// switch returns without calling `platformResult`.
+  private func performNetworkRequest(requestId: String, params: [String: Any]) {
+    guard let urlString = params["url"] as? String,
+          let url = URL(string: urlString),
+          let scheme = url.scheme?.lowercased(),
+          scheme == "http" || scheme == "https"
+    else {
+      try? core?.platformResult(requestId: requestId, result: ["errMsg": "request:fail invalid url"])
+      return
+    }
+    var request = URLRequest(url: url)
+    request.httpMethod = (params["method"] as? String ?? "GET").uppercased()
+    if let header = params["header"] as? [String: Any] {
+      for (key, value) in header {
+        request.setValue(String(describing: value), forHTTPHeaderField: key)
+      }
+    }
+    if let data = params["data"] {
+      if let text = data as? String {
+        request.httpBody = text.data(using: .utf8)
+      } else if JSONSerialization.isValidJSONObject(data),
+                let body = try? JSONSerialization.data(withJSONObject: data) {
+        request.httpBody = body
+      }
+    }
+    let timeout = (params["timeout"] as? Double ?? 60000) / 1000
+    request.timeoutInterval = max(1, timeout)
+    let wantsBuffer = (params["responseType"] as? String) == "arraybuffer"
+    URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+      Task { @MainActor in
+        guard let self else { return }
+        if let error {
+          try? self.core?.platformResult(requestId: requestId, result: [
+            "errMsg": "request:fail \(error.localizedDescription)",
+          ])
+          return
+        }
+        let http = response as? HTTPURLResponse
+        var result: [String: Any] = [
+          "statusCode": http?.statusCode ?? 0,
+          "header": (http?.allHeaderFields as? [String: String]) ?? [:],
+          "errMsg": "request:ok",
+        ]
+        if let data {
+          if wantsBuffer {
+            result["data"] = data.base64EncodedString()
+          } else {
+            result["data"] = String(data: data, encoding: .utf8) ?? ""
+          }
+        } else {
+          result["data"] = ""
+        }
+        try? self.core?.platformResult(requestId: requestId, result: result)
+      }
+    }.resume()
+  }
+
+  /// WeChat mock identity: fields match the real envelope so prototype flows
+  /// keep moving; no WeChat account is involved.
+  private func mockProfile() -> [String: Any] {
+    let userInfo: [String: Any] = [
+      "nickName": "Tiny User",
+      "avatarUrl": "",
+      "gender": 0,
+      "country": "",
+      "province": "",
+      "city": "",
+      "language": "zh_CN",
+    ]
+    return [
+      "userInfo": userInfo,
+      "rawData": "{}",
+      "signature": "mock-signature",
+      "encryptedData": "",
+      "iv": "",
+      "errMsg": "getUserProfile:ok",
+    ]
+  }
+
+  private func authorizeSettingPayload() -> [String: Any] {
+    [
+      "albumAuthorized": "not determined",
+      "bluetoothAuthorized": "not determined",
+      "cameraAuthorized": "not determined",
+      "locationAuthorized": "not determined",
+      "locationReducedAccuracy": false,
+      "microphoneAuthorized": "not determined",
+      "notificationAuthorized": "not determined",
+      "phoneCalendarAuthorized": "not determined",
+    ]
   }
 
   func platformCall(
@@ -1347,6 +2241,138 @@ final class HostCoreRuntime: NSObject, HostCoreActionSink {
       case "keyboard.hide":
         nativeKeyboard?.endEditing()
         try core?.platformResult(requestId: requestId, result: ["errMsg": "hideKeyboard:ok"])
+      case "clipboard.set":
+        UIPasteboard.general.string = params["data"] as? String ?? ""
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "setClipboardData:ok"])
+      case "clipboard.get":
+        try core?.platformResult(requestId: requestId, result: [
+          "data": UIPasteboard.general.string ?? "",
+          "errMsg": "getClipboardData:ok",
+        ])
+      case "identity.checkSession":
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "checkSession:ok"])
+      case "identity.authorize":
+        let scope = params["scope"] as? String ?? ""
+        guard !scope.isEmpty else {
+          try core?.platformResult(requestId: requestId, result: ["errMsg": "authorize:fail invalid scope"])
+          return
+        }
+        authSetting[scope] = true
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "authorize:ok"])
+      case "settings.get":
+        try core?.platformResult(requestId: requestId, result: [
+          "authSetting": authSetting,
+          "errMsg": "getSetting:ok",
+        ])
+      case "settings.open":
+        try core?.platformResult(requestId: requestId, result: [
+          "authSetting": authSetting,
+          "errMsg": "openSetting:ok",
+        ])
+      case "login":
+        try core?.platformResult(requestId: requestId, result: [
+          "code": UUID().uuidString.replacingOccurrences(of: "-", with: ""),
+          "errMsg": "login:ok",
+        ])
+      case "profile.get":
+        try core?.platformResult(requestId: requestId, result: mockProfile())
+      case "update.check":
+        try core?.platformResult(requestId: requestId, result: ["hasUpdate": false, "errMsg": "checkForUpdate:ok"])
+      case "network.type":
+        try core?.platformResult(requestId: requestId, result: [
+          "networkType": currentNetworkType,
+          "errMsg": "getNetworkType:ok",
+        ])
+      case "battery.get":
+        try core?.platformResult(requestId: requestId, result: batteryPayload())
+      case "audio.sources":
+        try core?.platformResult(requestId: requestId, result: [
+          "audioSources": ["auto", "buildInMic", "headsetMic", "mic"],
+        ])
+      case "media.hevcSupport":
+        let supported = VTIsHardwareDecodeSupported(kCMVideoCodecType_HEVC)
+        try core?.platformResult(requestId: requestId, result: [
+          "supportHevc": supported,
+          "hevcHardware": supported,
+          "errMsg": "checkDeviceSupportHevc:ok",
+        ])
+      case "screen.getBrightness":
+        try core?.platformResult(requestId: requestId, result: [
+          "value": Double(UIScreen.main.brightness),
+          "errMsg": "getScreenBrightness:ok",
+        ])
+      case "screen.setBrightness":
+        let value = (params["value"] as? Double) ?? 0
+        UIScreen.main.brightness = CGFloat(min(1, max(0, value)))
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "setScreenBrightness:ok"])
+      case "device.keepScreenOn":
+        UIApplication.shared.isIdleTimerDisabled = (params["keepScreenOn"] as? Bool) ?? true
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "setKeepScreenOn:ok"])
+      case "device.vibrate":
+        AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "vibrateShort:ok"])
+      case "sensor.start":
+        try core?.platformResult(requestId: requestId, result: ["errMsg": startSensor(params)])
+      case "sensor.stop":
+        try core?.platformResult(requestId: requestId, result: ["errMsg": stopSensor(params)])
+      case "fs.access": try core?.platformResult(requestId: requestId, result: fsAccess(params))
+      case "fs.readFile": try core?.platformResult(requestId: requestId, result: fsReadFile(params))
+      case "fs.writeFile": try core?.platformResult(requestId: requestId, result: fsWriteFile(params))
+      case "fs.mkdir": try core?.platformResult(requestId: requestId, result: fsMkdir(params))
+      case "fs.readdir": try core?.platformResult(requestId: requestId, result: fsReaddir(params))
+      case "fs.stat": try core?.platformResult(requestId: requestId, result: fsStat(params))
+      case "fs.unlink": try core?.platformResult(requestId: requestId, result: fsUnlink(params))
+      case "fs.rmdir": try core?.platformResult(requestId: requestId, result: fsRmdir(params))
+      case "fs.copyFile": try core?.platformResult(requestId: requestId, result: fsCopyFile(params))
+      case "fs.rename": try core?.platformResult(requestId: requestId, result: fsRename(params))
+      case "fs.appendFile": try core?.platformResult(requestId: requestId, result: fsAppendFile(params))
+      case "location.get":
+        requestLocation(requestId: requestId, fuzzy: false)
+      case "location.fuzzy":
+        requestLocation(requestId: requestId, fuzzy: true)
+      case "location.start":
+        try core?.platformResult(requestId: requestId, result: ["errMsg": startLocationTracking(background: false)])
+      case "location.startBackground":
+        try core?.platformResult(requestId: requestId, result: ["errMsg": startLocationTracking(background: true)])
+      case "location.stop":
+        locationManager?.stopUpdatingLocation()
+        locationTracking = false
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "stopLocationUpdate:ok"])
+      case "network.request":
+        performNetworkRequest(requestId: requestId, params: params)
+      case "socket.connect":
+        try core?.platformResult(requestId: requestId, result: connectSocket(params))
+      case "socket.send":
+        try core?.platformResult(requestId: requestId, result: sendSocketMessage(params))
+      case "socket.close":
+        try core?.platformResult(requestId: requestId, result: closeSocket(params))
+      case "page.selectedTextRange":
+        let range = nativeKeyboard?.selectedRange
+        try core?.platformResult(requestId: requestId, result: [
+          "start": range?.start ?? 0,
+          "end": range?.end ?? 0,
+          "errMsg": "getSelectedTextRange:ok",
+        ])
+      case "page.pipActive":
+        // WKWebView's picture-in-picture state is not exposed to the host.
+        try core?.platformResult(requestId: requestId, result: ["isActive": false, "errMsg": "checkIsPictureInPictureActive:ok"])
+      case "file.openDocument":
+        try core?.platformResult(requestId: requestId, result: openUserDocument(params))
+      case "file.saveToDisk":
+        try core?.platformResult(requestId: requestId, result: shareUserFile(params))
+      case "toast.show":
+        showToastOverlay(params["title"] as? String ?? "")
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "showToast:ok"])
+      case "ui.loading":
+        showLoadingOverlay(params["title"] as? String ?? "")
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "showLoading:ok"])
+      case "ui.hideLoading":
+        hideLoadingOverlay()
+        try core?.platformResult(requestId: requestId, result: ["errMsg": "hideLoading:ok"])
+      case "ui.modal":
+        presentModal(requestId: requestId, params: params)
+      case "ui.actionSheet":
+        presentActionSheet(requestId: requestId, params: params)
       default:
         // An unimplemented host handler is a platform failure, not a fake
         // success: `request` must not look like it fetched anything, `login`
@@ -1412,5 +2438,42 @@ enum NativeHostCoreSmoke {
     } catch {
       HostDebug.writeResult(["ok": false, "error": String(describing: error)], name: "native-hostcore-smoke.json")
     }
+  }
+}
+
+
+/// Compass delegate kept outside the runtime so the main-actor class does not
+/// have to conform to a nonisolated delegate protocol.
+final class HeadingDelegate: NSObject, CLLocationManagerDelegate {
+  var onHeading: ((CLHeading) -> Void)?
+
+  func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
+    onHeading?(newHeading)
+  }
+
+  func locationManagerShouldDisplayHeadingCalibration(_ manager: CLLocationManager) -> Bool {
+    false
+  }
+}
+
+
+/// Location delegate kept outside the runtime for the same reason as the
+/// compass one: the runtime is main-actor isolated.
+final class LocationDelegate: NSObject, CLLocationManagerDelegate {
+  var onUpdate: ((CLLocation) -> Void)?
+  var onError: ((Error) -> Void)?
+  var onAuthorization: ((CLAuthorizationStatus) -> Void)?
+
+  func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+    guard let last = locations.last else { return }
+    onUpdate?(last)
+  }
+
+  func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+    onError?(error)
+  }
+
+  func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+    onAuthorization?(manager.authorizationStatus)
   }
 }

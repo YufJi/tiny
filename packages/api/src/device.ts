@@ -34,6 +34,24 @@ export function createDeviceApi(context: ApiContext): ApiHost {
       'vibrateLong',
       () => callHost(context, 'device.vibrate', { duration: 400 }),
     ),
+    scanCode: (params: unknown = {}) => runApi(params, 'scanCode', () => callHost(
+      context,
+      'device.scanCode',
+      params as Record<string, unknown>,
+    )),
+    getScreenBrightness: (params: unknown = {}) => runApi(params, 'getScreenBrightness', () => (
+      callHost(context, 'screen.getBrightness')
+    )),
+    setScreenBrightness: (params: unknown = {}) => runApi(params, 'setScreenBrightness', () => (
+      callHost(context, 'screen.setBrightness', { value: Number((params as { value?: unknown }).value ?? 0) })
+    )),
+    setKeepScreenOn: (params: unknown = {}) => runApi(
+      params,
+      'setKeepScreenOn',
+      () => callHost(context, 'device.keepScreenOn', {
+        keepScreenOn: (params as { keepScreenOn?: unknown }).keepScreenOn !== false,
+      }),
+    ),
     getSetting: (params: unknown = {}) => runApi(
       params,
       'getSetting',
@@ -47,31 +65,31 @@ export function createDeviceApi(context: ApiContext): ApiHost {
     authorize: (params: unknown = {}) => runApi(
       params,
       'authorize',
-      () => ({ errMsg: 'authorize:ok' }),
+      () => callHost(context, 'identity.authorize', params as Record<string, unknown>),
     ),
     checkSession: (params: unknown = {}) => runApi(
       params,
       'checkSession',
-      () => ({ errMsg: 'checkSession:ok' }),
+      () => callHost(context, 'identity.checkSession'),
     ),
     login: (params: unknown = {}) => {
       warnStub(
         DIAGNOSTIC_CODES.API_LOGIN_STUB,
-        `${context.apiName}.login returns a host-generated stub code; no session is created.`,
+        `${context.apiName}.login returns the host identity mock code; no session is created.`,
       )
       return runApi(params, 'login', () => callHost(context, 'login'))
     },
     getUserProfile: (params: unknown = {}) => {
       warnStub(
         DIAGNOSTIC_CODES.API_PROFILE_STUB,
-        `${context.apiName}.getUserProfile returns a stub profile in the P0 runtime.`,
+        `${context.apiName}.getUserProfile returns the host identity mock profile.`,
       )
       return runApi(params, 'getUserProfile', () => callHost(context, 'profile.get'))
     },
     getUserInfo: (params: unknown = {}) => {
       warnStub(
         DIAGNOSTIC_CODES.API_PROFILE_STUB,
-        `${context.apiName}.getUserInfo returns a stub profile in the P0 runtime.`,
+        `${context.apiName}.getUserInfo returns the host identity mock profile.`,
       )
       return runApi(params, 'getUserInfo', () => callHost(context, 'profile.get'))
     },

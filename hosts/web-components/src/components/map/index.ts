@@ -58,10 +58,76 @@ export function defineMap(ctx: BuiltinContext): BuiltinDefinition {
     options: ctx.hostOptions('map'),
     lifetimes: {
       attached() {
+        const runtime = this as unknown as MapRuntime & {
+          __commandHost?: HTMLElement | null
+          __commandHandler?: (event: Event) => void
+        }
+        const host = runtime.getBackendElement?.() ?? null
+        const handler = (event: Event) => {
+          ;(this as unknown as { handleCommand: (event: Event) => void })
+            .handleCommand(event)
+        }
+        host?.addEventListener('tiny:command', handler)
+        runtime.__commandHost = host
+        runtime.__commandHandler = handler
         ;(this as unknown as { apply: () => void }).apply()
+      },
+      detached() {
+        const runtime = this as unknown as {
+          __commandHost?: HTMLElement | null
+          __commandHandler?: (event: Event) => void
+        }
+        if (runtime.__commandHost && runtime.__commandHandler) {
+          runtime.__commandHost.removeEventListener('tiny:command', runtime.__commandHandler)
+        }
+        runtime.__commandHost = null
+        runtime.__commandHandler = undefined
       },
     },
     methods: {
+      /**
+       * `createMapContext` command (ADR-0023). The render tree dispatches
+       * `tiny:command` on the backend element after checking the whitelist.
+       */
+      handleCommand(event: Event) {
+        const detail = (event as CustomEvent).detail as {
+          method?: string
+          args?: unknown
+          reply?: (value: unknown) => void
+          fail?: (message: string) => void
+        } | undefined
+        if (!detail?.reply) return
+        try {
+          switch (detail.method) {
+            case 'getCenterLocation':
+              detail.reply({
+                latitude: Number(this.data.latitude),
+                longitude: Number(this.data.longitude),
+              })
+              return
+            case 'getScale':
+              detail.reply({ scale: Number(this.data.scale) })
+              return
+            case 'moveToLocation': {
+              const args = (detail.args ?? {}) as { latitude?: unknown; longitude?: unknown }
+              const latitude = Number(args.latitude)
+              const longitude = Number(args.longitude)
+              if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+                detail.fail?.('latitude and longitude are required')
+                return
+              }
+              this.setData({ latitude, longitude })
+              ;(this as unknown as { apply: () => void }).apply()
+              detail.reply({})
+              return
+            }
+            default:
+              detail.fail?.(`unsupported method ${String(detail.method)}`)
+          }
+        } catch (error) {
+          detail.fail?.(error instanceof Error ? error.message : String(error))
+        }
+      },
       markersElement(): HTMLElement | null {
         const runtime = this as unknown as MapRuntime
         return runtime.getShadowRoot?.()?.getElementById?.('markers')

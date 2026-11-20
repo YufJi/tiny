@@ -85,6 +85,13 @@ const styles = Object.fromEntries(
   ),
 )
 
+// The host advertises the `api` handler keys that actually work here; the
+// service turns that into per-host `canIUse` answers.
+const apiCapabilities = (new URLSearchParams(window.location.search).get('apiCapabilities') ?? '')
+  .split(',')
+  .map((key) => key.trim())
+  .filter(Boolean)
+
 bootServiceEntry({
   manifest,
   initialPath: manifest.pages[0]?.path ?? '',
@@ -92,6 +99,7 @@ bootServiceEntry({
     (await importGenerated<{ default: TemplateRegistry }>(`${generatedBase}/templates.js`)).default,
   loadStyle: (stylePath) => styles[stylePath] ?? '',
   apiExtensions: createHostApiExtensions(),
+  apiCapabilities,
   resolveAssetUrl,
   loadArtifacts: async () => {
     await importGenerated(`${generatedBase}/service.js`)

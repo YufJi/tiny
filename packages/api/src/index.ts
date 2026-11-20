@@ -1,8 +1,19 @@
 import type { ApiContext, ApiHost } from './context'
+import { createBasicsApi } from './basics'
 import { createCanvasApi } from './canvas'
+import { describeApi } from './catalog'
 import { createWorkletApi } from './worklet'
 import { createAnalyticsApi } from './analytics'
-import { createMediaApi } from './media'
+import { createBackgroundAudioApi } from './background-audio'
+import { createInnerAudioApi } from './inner-audio'
+import { createRecorderApi } from './recorder'
+import { createSocketApi } from './socket'
+import { createLocationApi } from './location'
+import { createMapContext } from './map-context'
+import { createMediaPickerApi } from './media-picker'
+import { createSensorApi } from './sensors'
+import { createVoiceApi } from './voice'
+import { createWorkerApi } from './worker'
 import { createCompatStubs } from './compat-stubs'
 import { createDeviceApi } from './device'
 import { createEncodingApi } from './encoding'
@@ -69,24 +80,47 @@ export function createApiHost(
   apiContext.hasApi = (name) => available.has(name)
   const table: ApiHost = {
     ...createSystemApi(apiContext),
+    ...createBasicsApi(apiContext),
     ...createGlobalEventApi(apiContext),
     ...createStorageApi(apiContext),
     ...createNavigationApi(apiContext),
     ...createUiApi(apiContext),
     ...createTabBarApi(apiContext),
     ...createNetworkApi(apiContext),
+    ...createSocketApi(apiContext),
+    ...createLocationApi(apiContext),
+    createMapContext: (mapId: unknown) => createMapContext(apiContext, String(mapId ?? '')),
+    ...createSensorApi(apiContext),
     ...createDeviceApi(apiContext),
     ...createEncodingApi(apiContext),
     ...createShareApi(apiContext),
     ...createCanvasApi(apiContext),
     ...createWorkletApi(),
     ...createAnalyticsApi(),
-    ...createMediaApi(),
+    ...createMediaPickerApi(apiContext),
+    ...createBackgroundAudioApi(apiContext),
+    ...createVoiceApi(apiContext),
+    ...createInnerAudioApi(apiContext),
+    ...createRecorderApi(apiContext),
+    ...createWorkerApi(apiContext),
     ...createCompatStubs(),
     ...createQueryApi(apiContext),
-    ...createFileSystemApi(),
+    ...createFileSystemApi(apiContext),
     ...extensions,
   }
-  for (const name of Object.keys(table)) available.add(name)
+  for (const name of Object.keys(table)) {
+    const descriptor = describeApi(name)
+    // A host that declares its capabilities only advertises APIs it can run;
+    // a host that does not declare any keeps the engine-wide answer.
+    const host = descriptor?.host
+    const runnable = descriptor
+      ? host
+        // A host that declares capabilities decides for host-backed entries,
+        // including ones the reference host only stubs.
+        ? !apiContext.hostCapabilities || apiContext.hostCapabilities.has(host)
+        : descriptor.status !== 'stub'
+      : true
+    if (runnable) available.add(name)
+  }
   return table
 }

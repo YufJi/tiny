@@ -26,6 +26,7 @@ function PreviewStage({
   tabBarAssetBase,
   canGoBack,
   onBack,
+  onHome,
   onTabBarTap,
   onBackground,
   onReload,
@@ -98,6 +99,7 @@ function PreviewStage({
       tabBarAssetBase={tabBarAssetBase}
       canGoBack={canGoBack}
       onBack={onBack}
+      onHome={onHome}
       onTabBarTap={onTabBarTap}
       onBackground={onBackground}
       onReload={onReload}

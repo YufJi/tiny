@@ -29,6 +29,8 @@ export type ServiceEntryOptions = {
   apiHost?: (context: ApiContext) => ApiHost
   /** Host-specific APIs composed into the standard table. */
   apiExtensions?: ApiHost
+  /** Host `api` handler keys that work here; `canIUse` answers per host. */
+  apiCapabilities?: readonly string[]
 }
 
 /**
@@ -97,6 +99,9 @@ export function bootServiceEntry(options: ServiceEntryOptions): void {
       canvas,
       resolveAssetUrl: options.resolveAssetUrl,
       events,
+      ...(options.apiCapabilities && options.apiCapabilities.length > 0
+        ? { hostCapabilities: new Set(options.apiCapabilities) }
+        : {}),
       launchOptions,
       getActivePage: () => runtime?.activePage,
       getCurrentPagePath: () => runtime?.activePage?.path,
@@ -129,6 +134,9 @@ export function bootServiceEntry(options: ServiceEntryOptions): void {
       ...(options.loadStyle ? { loadStyle: options.loadStyle } : {}),
       resolveAssetUrl: options.resolveAssetUrl,
       events,
+      ...(options.apiCapabilities && options.apiCapabilities.length > 0
+        ? { hostCapabilities: new Set(options.apiCapabilities) }
+        : {}),
       onPageRelease: (pageId) => canvas.releaseCanvasNode?.({ pageId }),
     })
   }, { sendSync })

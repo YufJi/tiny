@@ -4,6 +4,7 @@ import type { WxsModuleTable } from '@tiny/wxs-runtime'
 import type { TemplateRegistry } from '../shared/template'
 import {
   CANVAS_CONTROL,
+  COMPONENT_CONTROL,
   QUERY_CONTROL,
   RUNTIME_CONTROL,
   TREE_PROTOCOL,
@@ -19,6 +20,8 @@ import {
   type RenderEventGeometry,
   type RenderHostAction,
   type RenderIntersectionEntry,
+  type ComponentCommandRequest,
+  type ComponentCommandResult,
   type RenderIntersectionRequest,
   type RenderNode,
   type PageFrameMount,
@@ -99,6 +102,10 @@ export type TreeRenderer = {
   setHostRequestSink?: (sink: (method: string, payload: unknown) => Promise<unknown>) => void
   applyStyles?: (styles: string[]) => void
   setPagePath?: (pagePath: string) => void
+  /** Execute a whitelisted command on a component instance (ADR-0023). */
+  invokeComponent?: (
+    request: ComponentCommandRequest,
+  ) => ComponentCommandResult | Promise<ComponentCommandResult>
   measureCanvas?: (selector: string, canvasId: string) => {
     width: number
     height: number
@@ -544,6 +551,12 @@ export function bootTreeThread(options: TreeThreadOptions): TreeThreadRuntime {
   connection.onControl(RUNTIME_CONTROL.domain, RUNTIME_CONTROL.measure, (message) => {
     const payload = (message.payload ?? {}) as { ids?: string[] }
     return options.renderer.measure?.(payload.ids ?? []) ?? {}
+  })
+  connection.onControl(COMPONENT_CONTROL.domain, COMPONENT_CONTROL.invoke, (message) => {
+    const payload = (message.payload ?? {}) as ComponentCommandRequest
+    const invoke = options.renderer.invokeComponent
+    if (!invoke) return { status: 'unsupported-method', method: payload.method ?? '' }
+    return invoke(payload)
   })
   connection.onControl(QUERY_CONTROL.domain, QUERY_CONTROL.select, (message) => {
     const payload = (message.payload ?? {}) as { selector?: string; all?: boolean; scopeId?: string }

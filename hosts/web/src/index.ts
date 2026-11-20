@@ -22,6 +22,17 @@ export {
 } from './render-entry'
 export { installPageLifecycleBridge } from './page-lifecycle'
 export {
+  createMediaHandlers,
+  createTempFileRegistry,
+  loadImageElement,
+  pickFiles,
+  type MediaHandlerOptions,
+  type PickFilesOptions,
+  type TempFile,
+  type TempFileRegistry,
+  type TempFileUrlFactory,
+} from './media-files'
+export {
   createGlassRenderEntry,
   installBuiltinStyles,
   type GlassRenderEntry,
@@ -33,6 +44,60 @@ export {
   type GlassRenderTree,
   type GlassRenderTreeOptions,
 } from './render/tree'
+export { HOST_CORE_API_KEYS } from './api-capabilities'
+export {
+  createKeyboardHandlers,
+  type KeyboardHandlerOptions,
+} from './keyboard-events'
+export { createScanHandlers, type ScanHandlerOptions } from './scan'
+export {
+  createPageIntrospectionHandlers,
+  type FrameLike,
+  type PageIntrospectionOptions,
+} from './page-introspection'
+export { createEnvHandlers, type EnvHandlerOptions } from './host-env'
+export {
+  createSocketHandlers,
+  type SocketHandlerOptions,
+} from './socket'
+export {
+  createRecorderHandlers,
+  type RecorderHandlerOptions,
+} from './recorder'
+export {
+  createAudioHandlers,
+  type AudioElementLike,
+  type AudioHandlerOptions,
+} from './audio'
+export {
+  createDeviceHandlers,
+  type DeviceHandlerOptions,
+} from './device-extras'
+export {
+  createWorkerHandlers,
+  WORKER_BOOTSTRAP,
+  wrapWorkerSource,
+  type WorkerHandlerOptions,
+} from './workers'
+export {
+  createSensorHandlers,
+  type GlobalEventEmitter,
+  type SensorHandlerOptions,
+} from './sensors'
+export {
+  createFileSystemHandlers,
+  FILE_SYSTEM_USER_ROOT,
+  type FileSystemHandlerOptions,
+} from './file-system'
+export {
+  createPersistentStorage,
+  type PersistentStorage,
+  type StorageBackend,
+} from './storage-area'
+export {
+  createNetworkHandlers,
+  type NetworkHandlerOptions,
+} from './network-tasks'
 export {
   createRenderHostEventBus,
   listenForRenderHostEvents,

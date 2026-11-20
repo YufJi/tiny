@@ -3,7 +3,15 @@
  * split by message, node, component, event and patch shape.
  */
 
-export { CANVAS_CONTROL, PAGE_CONTROL, QUERY_CONTROL, RUNTIME_CONTROL } from './controls'
+export {
+  CANVAS_CONTROL,
+  COMPONENT_CONTROL,
+  PAGE_CONTROL,
+  QUERY_CONTROL,
+  RUNTIME_CONTROL,
+  type ComponentCommandRequest,
+  type ComponentCommandResult,
+} from './controls'
 export * from './messages'
 export * from './nodes'
 export * from './components'

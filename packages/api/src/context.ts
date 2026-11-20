@@ -81,6 +81,16 @@ export type ServiceCanvasAdapter = {
   acquireCanvasNode?: (
     request: CanvasNodeRequest,
   ) => Promise<CanvasNodeHandle | null> | CanvasNodeHandle | null
+  /**
+   * Create a standalone offscreen canvas (WeChat's `createOffscreenCanvas` is
+   * synchronous, so this must return a usable handle immediately). Hosts
+   * without the capability return null.
+   */
+  createOffscreenCanvas?: (request: {
+    width: number
+    height: number
+    type?: string
+  }) => unknown | null
   /** Release every node owned by a page (or one canvas of that page). */
   releaseCanvasNode?: (request: {
     pageId?: string
@@ -133,6 +143,11 @@ export type ApiContext = {
   resolveAssetUrl?: AssetUrlResolver
   /** Service-thread bus behind the global `wx.onXXX` APIs. */
   events?: GlobalEventHub
+  /**
+   * Host `api` handler keys that actually work on this host. When present,
+   * `canIUse` answers per host instead of advertising every installed name.
+   */
+  hostCapabilities?: ReadonlySet<string>
   /** Host-owned launch options returned by `getLaunchOptionsSync`. */
   launchOptions?: unknown
   /** Active page instance, for `wx.*` entries that scope to the current page. */

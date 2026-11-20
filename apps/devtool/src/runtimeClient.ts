@@ -10,12 +10,27 @@ import type { RuntimeDiagnostic, RuntimePageState, RuntimeTabBarState } from '@t
 import type { InspectNode } from '@tiny/runtime'
 import type { RuntimeManifest } from '@tiny/runtime'
 import type { StorageValues, SystemInfo } from '@tiny/api'
-import { WasmBrowserHost, type WasmHostCoreFactory } from '@tiny/host-web'
+import { HOST_CORE_API_KEYS, WasmBrowserHost, type WasmHostCoreFactory } from '@tiny/host-web'
 import { createDevtoolApiHost } from './host-api'
 import { projectComponentTree } from './componentTree'
 import { pollHostPicker, showHostPicker, updateHostPicker } from './hostPicker'
 import { launchExitState } from './pageStackState'
 import type { PreviewRect } from '@tiny/devtool-simulator'
+
+/** Advertise the `api` handler keys this host can honour; the service turns the
+ * list into per-host `canIUse` answers. */
+function withApiCapabilities(
+  serviceUrl: string,
+  apiHost: { apiHandlers: Record<string, unknown>; syncApiHandlers: Record<string, unknown> },
+): string {
+  const keys = [
+    ...Object.keys(apiHost.apiHandlers),
+    ...Object.keys(apiHost.syncApiHandlers),
+    ...HOST_CORE_API_KEYS,
+  ]
+  const separator = serviceUrl.includes('?') ? '&' : '?'
+  return `${serviceUrl}${separator}apiCapabilities=${encodeURIComponent(keys.join(','))}`
+}
 
 export type DevtoolRuntimeStatus = 'idle' | 'connecting' | 'running' | 'terminated' | 'error'
 
@@ -34,6 +49,18 @@ export type DevtoolNavigationState = {
   backgroundColor?: string
   textStyle?: 'white' | 'black'
   loading?: boolean
+  /** `wx.setTopBarText` override for the chrome title. */
+  topBarText?: string
+  /** `wx.setBackgroundColor` for the screen behind the page. */
+  pageBackground?: string
+  /** `wx.setBackgroundTextStyle`: pull-down spinner colour. */
+  backgroundTextStyle?: 'dark' | 'light'
+  /** `wx.enableAlertBeforeUnload`: toolbar back asks first. */
+  alertBeforeUnload?: string
+  /** `wx.setWindowSize`: simulated screen size override. */
+  windowSize?: { width: number; height: number }
+  /** `wx.hideHomeButton`: hide the chrome's home affordance. */
+  homeHidden?: boolean
 }
 
 export type DevtoolRuntimeState = {
@@ -181,17 +208,23 @@ export class DevtoolRuntimeClient {
       }
     }
     try {
+      let emitGlobalEvent: (name: string, payload?: unknown) => void = () => undefined
       const apiHost = createDevtoolApiHost({
         storage,
         getSystemInfo,
         getMenuButtonBoundingClientRect: () => this.options.menuButton,
         onNavigation: (action, params) => this.applyNavigation(action, params),
         onShareMenu: (visible) => this.update({ shareMenuVisible: visible }),
+        emitGlobalEvent: (name, payload) => emitGlobalEvent(name, payload),
+        resolveWorkerUrl: (workerPath) => {
+          const base = this.options.serviceUrl.replace(/\/[^/]*$/, '')
+          return `${base}/${workerPath.split('/').map(encodeURIComponent).join('/')}`
+        },
       })
       this.wasmHost = new WasmBrowserHost({
         appId: this.options.appId ?? 'devtool',
         manifest: this.options.manifest,
-        serviceUrl: this.options.serviceUrl,
+        serviceUrl: withApiCapabilities(this.options.serviceUrl, apiHost),
         renderUrl: this.options.renderUrl,
         initialPath: this.launchPath,
         container,
@@ -222,6 +255,7 @@ export class DevtoolRuntimeClient {
           return Promise.reject(new Error(`unsupported host request: ${method}`))
         },
       }, this.options.wasmCoreFactory)
+      emitGlobalEvent = (name, payload) => this.wasmHost?.emitGlobalEvent(name, payload)
       await this.wasmHost.launch()
       // The service sends the post-ready tree snapshot asynchronously.
       await new Promise((resolve) => setTimeout(resolve, 300))
@@ -378,7 +412,9 @@ export class DevtoolRuntimeClient {
    * back restores the title/color the page had before it was hidden.
    */
   private applyNavigation(
-    action: 'title' | 'color' | 'loading',
+    action: 'title' | 'color' | 'loading'
+      | 'topBarText' | 'background' | 'backgroundTextStyle'
+      | 'alertBeforeUnload' | 'disableAlertBeforeUnload' | 'windowSize' | 'hideHomeButton',
     params: Record<string, unknown>,
   ): void {
     const page = this.state.currentPage
@@ -393,6 +429,20 @@ export class DevtoolRuntimeClient {
       else if (front === '#000000') next.textStyle = 'black'
     } else if (action === 'loading' && typeof params.visible === 'boolean') {
       next.loading = params.visible
+    } else if (action === 'topBarText') {
+      next.topBarText = String(params.text ?? '')
+    } else if (action === 'background') {
+      if (typeof params.backgroundColor === 'string') next.pageBackground = params.backgroundColor
+    } else if (action === 'backgroundTextStyle') {
+      next.backgroundTextStyle = params.textStyle === 'light' ? 'light' : 'dark'
+    } else if (action === 'alertBeforeUnload') {
+      next.alertBeforeUnload = String(params.message ?? '')
+    } else if (action === 'disableAlertBeforeUnload') {
+      next.alertBeforeUnload = undefined
+    } else if (action === 'windowSize') {
+      next.windowSize = { width: Number(params.width), height: Number(params.height) }
+    } else if (action === 'hideHomeButton') {
+      next.homeHidden = true
     }
     this.navigationOverrides.set(page, next)
     this.update({ navigation: { ...next } })
