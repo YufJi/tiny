@@ -27,6 +27,7 @@ function SimulatorStage({
   tabBarAssetBase = '',
   canGoBack,
   onBack,
+  onHome,
   onTabBarTap,
   onBackground,
   onReload,
@@ -167,6 +168,7 @@ function SimulatorStage({
                   <HostStatusBar
                     navigation={navigation}
                     overlay={!launcher && navigation.custom}
+                    onHome={onHome}
                     device={device}
                     enabled={!launcher && status === 'running'}
                     onStatusBarTap={onStatusBarTap}

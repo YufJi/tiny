@@ -36,6 +36,9 @@ export function createUiApi(context: ApiContext): ApiHost {
       const height = Number(options.height ?? 0)
       return callHost(context, 'page.setWindowSize', { width, height })
     }),
+    hideHomeButton: (params: unknown = {}) => runApi(params, 'hideHomeButton', () => (
+      callHost(context, 'page.hideHomeButton')
+    )),
     setTopBarText: (params: unknown = {}) => runApi(params, 'setTopBarText', () => callHost(
       context,
       'navigation.topBarText',

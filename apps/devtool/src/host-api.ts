@@ -28,6 +28,7 @@ export type DevtoolNavigationAction =
   | 'alertBeforeUnload'
   | 'disableAlertBeforeUnload'
   | 'windowSize'
+  | 'hideHomeButton'
 
 export type DevtoolApiOptions = {
   /** Mini-program id reported by `wx.getAccountInfoSync()`. */
@@ -176,6 +177,10 @@ function createApiHandlers(
     'page.backgroundTextStyle': (params) => {
       options.onNavigation?.('backgroundTextStyle', { textStyle: String(params.textStyle ?? 'dark') })
       return { errMsg: 'setBackgroundTextStyle:ok' }
+    },
+    'page.hideHomeButton': () => {
+      options.onNavigation?.('hideHomeButton', {})
+      return { errMsg: 'hideHomeButton:ok' }
     },
     'page.setWindowSize': (params) => {
       const width = Number(params.width ?? 0)

@@ -101,6 +101,7 @@ const CALLBACK_APIS = [
   'getSelectedTextRange',
   'setWindowSize',
   'setTopBarText',
+  'hideHomeButton',
   'setBackgroundColor',
   'setBackgroundTextStyle',
   'enableAlertBeforeUnload',

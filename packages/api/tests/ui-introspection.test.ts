@@ -14,6 +14,7 @@ function createHost() {
     'page.alertBeforeUnload': () => ({ errMsg: 'enableAlertBeforeUnload:ok' }),
     'page.disableAlertBeforeUnload': () => ({ errMsg: 'disableAlertBeforeUnload:ok' }),
     'page.setWindowSize': () => ({ errMsg: 'setWindowSize:ok' }),
+    'page.hideHomeButton': () => ({ errMsg: 'hideHomeButton:ok' }),
   }
   const connection = {
     sendDiagnostic: () => undefined,
@@ -100,5 +101,11 @@ describe('page introspection APIs', () => {
     await host.stopRecord({})
     expect(calls.map((call) => call.method)).toEqual(['voice.startRecord', 'voice.stopRecord'])
     expect(calls[0].params).toEqual({ duration: 30 })
+  })
+
+  test('hideHomeButton forwards to the host', async () => {
+    const { host, calls } = createHost()
+    await expect(host.hideHomeButton({})).resolves.toMatchObject({ errMsg: 'hideHomeButton:ok' })
+    expect(calls.at(-1)?.method).toBe('page.hideHomeButton')
   })
 })

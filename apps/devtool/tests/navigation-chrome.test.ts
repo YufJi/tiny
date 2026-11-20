@@ -91,4 +91,14 @@ describe('devtool navigation chrome', () => {
     expect(result).toEqual({ errMsg: 'setWindowSize:ok' })
     expect(events).toEqual([['windowSize', { width: 320, height: 640 }]])
   })
+
+  test('hideHomeButton reaches the chrome', () => {
+    const events: Array<[string, Record<string, unknown>]> = []
+    const { apiHandlers: handlers } = createDevtoolApiHost({
+      getSystemInfo: () => systemInfo,
+      onNavigation: (action, params) => events.push([action, params]),
+    })
+    handlers['page.hideHomeButton']!({})
+    expect(events).toEqual([['hideHomeButton', {}]])
+  })
 })

@@ -67,6 +67,7 @@ function HostNavigationBar({
   enabled,
   canGoBack,
   onBack,
+  onHome,
   device,
 }) {
   const textColor = navigation.textStyle === 'white' ? '#ffffff' : '#111827';
@@ -104,6 +105,25 @@ function HostNavigationBar({
           </svg>
         </button>
       )}
+      {onHome && !navigation.homeHidden ? (
+        <button
+          type="button"
+          className="td-nav-home"
+          aria-label="Back to the app launcher"
+          title="Back to the app launcher"
+          onClick={onHome}
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true">
+            <path
+              d="M4 11.5 12 4l8 7.5M6.5 10v9h11v-9"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      ) : null}
       <div className="td-nav-title" title={navigation.topBarText || navigation.title}>
         {navigation.topBarText || navigation.title}
       </div>

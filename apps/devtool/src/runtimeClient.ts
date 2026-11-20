@@ -59,6 +59,8 @@ export type DevtoolNavigationState = {
   alertBeforeUnload?: string
   /** `wx.setWindowSize`: simulated screen size override. */
   windowSize?: { width: number; height: number }
+  /** `wx.hideHomeButton`: hide the chrome's home affordance. */
+  homeHidden?: boolean
 }
 
 export type DevtoolRuntimeState = {
@@ -412,7 +414,7 @@ export class DevtoolRuntimeClient {
   private applyNavigation(
     action: 'title' | 'color' | 'loading'
       | 'topBarText' | 'background' | 'backgroundTextStyle'
-      | 'alertBeforeUnload' | 'disableAlertBeforeUnload' | 'windowSize',
+      | 'alertBeforeUnload' | 'disableAlertBeforeUnload' | 'windowSize' | 'hideHomeButton',
     params: Record<string, unknown>,
   ): void {
     const page = this.state.currentPage
@@ -439,6 +441,8 @@ export class DevtoolRuntimeClient {
       next.alertBeforeUnload = undefined
     } else if (action === 'windowSize') {
       next.windowSize = { width: Number(params.width), height: Number(params.height) }
+    } else if (action === 'hideHomeButton') {
+      next.homeHidden = true
     }
     this.navigationOverrides.set(page, next)
     this.update({ navigation: { ...next } })

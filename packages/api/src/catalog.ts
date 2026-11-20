@@ -130,6 +130,7 @@ export const API_CATALOG = {
   getSelectedTextRange: { status: 'partial', host: 'page.selectedTextRange' },
   // Chrome only the devtool renders; the browser host fails honestly.
   setWindowSize: { status: 'partial', host: 'page.setWindowSize' },
+  hideHomeButton: { status: 'partial', host: 'page.hideHomeButton' },
   onKeyDown: { status: 'real' },
   offKeyDown: { status: 'real' },
   onKeyUp: { status: 'real' },
