@@ -307,7 +307,7 @@ MVP 边界：`createWorker(path)` → `postMessage`/`onMessage`/`terminate`；wo
 
 剩余 149 个缺口不在同一个层面，下一阶段建议按线推进，而不是继续加表项：
 
-1. **组件承载线（12 个）**：`createCameraContext` / `createVideoContext` / `createLivePlayerContext` /
+1. **组件承载线（17 个）**：`createCameraContext` / `createVideoContext` / `createLivePlayerContext` /
    `createMapContext` / `createWebAudioContext` / `createOffscreenCanvas` / 图片视频编辑。前提是先把
    `<camera>`/`<video>`/`<map>` 做到可承载（当前 39/60 标签里这几个仍是占位），做完再让 API 控制组件实例。
 2. **devtool chrome 线（15 个）**：`setTopBarText`、`setBackgroundColor`、`setBackgroundTextStyle`、
@@ -323,9 +323,9 @@ iOS 侧同理：媒体、传感器、Worker 三族的 Swift handler 补上后，
 
 | 检查 | 命令 | 结果 |
 | --- | --- | --- |
-| 覆盖率基线 | `pnpm api:coverage --check` | 200 / 349 名字（57.3%），语义 49.9%，demo 缺口 40 |
-| 单元测试 | `pnpm test` | 142 个文件 / 803 个用例全部通过 |
-| 验收门禁 | `pnpm accept:glass-easel` | 43.1s，五段浏览器全绿 |
+| 覆盖率基线 | `pnpm api:coverage --check` | 217 / 349 名字（62.2%），语义 55.3%，demo 缺口 40 |
+| 单元测试 | `pnpm test` | 822 个用例全部通过 |
+| 验收门禁 | `pnpm accept:glass-easel` | 50.5s，五段浏览器全绿 |
 | iOS 类型检查 | `pnpm --filter @tiny/host-ios typecheck` | 通过 |
 | iOS 模拟器构建 | `xcodebuild -scheme TinyHost -sdk iphonesimulator ARCHS=arm64` | BUILD SUCCEEDED |
 
@@ -374,11 +374,11 @@ iOS 侧同理：媒体、传感器、Worker 三族的 Swift handler 补上后，
 | 原因 | 数量 | 代表 API | 建议 |
 | --- | ---: | --- | --- |
 | 浏览器无对应能力 | 71 | 蓝牙 30+、WiFi/NFC/HCE/Beacon 20+、`createTCPSocket`/`createUDPSocket`、`sendSms`、通讯录/日历、录屏、`getBackgroundFetchData` | 不实现；W8 只产出能力矩阵 |
-| 需要内置组件或宿主 UI 承载 | 12 | `createCameraContext`/`createVideoContext`/`createLivePlayerContext`、`createWebAudioContext`、`createMapContext`、`createOffscreenCanvas`、`editImage`/`openVideoEditor` | 与组件波次一起做，不在 API 层硬造 |
+| 需要内置组件或宿主 UI 承载 | 17 | `createCameraContext`/`createVideoContext`/`createLivePlayerContext`、`createWebAudioContext`、`createMapContext`、`editImage`/`openVideoEditor`、`chooseLocation`/`openLocation` | 与组件波次一起做；先补 §4.4 的组件命令通道 |
 | 需要页面 chrome | 15 | `setTopBarText`/`setBackgroundColor`/`setBackgroundTextStyle`/`hideHomeButton`/`setWindowSize`、window/key 事件、`enableAlertBeforeUnload`、preload 系列 | devtool 预览层 + 能力上报；浏览器诚实失败 |
 | 自定义路由语义未确认 | 14 | `onAppRoute`/`onBeforePageLoad` 等 | 先在微信模拟器确认再实现 |
 | 跨小程序生态 | 7 | `navigateToMiniProgram`/`openEmbeddedMiniProgram` | 宿主插件接口，浏览器无目标 |
-| 其他未排期 | 13 | `updateWeChatApp`、旧版 `playVoice`/`startRecord`、`setInnerAudioOption`、`loadBuiltInFontFace`、`createCacheManager`、音频中断事件 | 逐项评估，优先把旧版音频映射到 innerAudio |
+| 其他未排期 | 8 | `updateWeChatApp`、`setInnerAudioOption`、`loadBuiltInFontFace`、`createCacheManager`、音频中断事件 | 逐项评估 |
 
 其中「浏览器无对应能力」的 71 个不会因为继续补齐而减少；`api:coverage` 的语义覆盖再往上走，需要先做组件与 devtool 的基础设施，而不是继续加表项。
 
