@@ -402,8 +402,26 @@ iOS 侧同理：媒体、传感器、Worker 三族的 Swift handler 补上后，
 
 ### 4.4 组件上下文为什么还没做
 
-`createCameraContext` / `createVideoContext` / `createLivePlayerContext` / `createMapContext` 需要
-**service → render 的组件实例命令通道**：service 侧要按组件 id 找到渲染侧的组件实例并调用它的方法，
-再把结果回传。现有 bridge 只有 service→render 的树操作（patch/animate）和 render→service 的事件，
-没有“按实例执行命令”的 RPC。补齐它是组件上下文类 API 的前置条件，预计需要一篇 ADR 和 bridge/runtime 两侧的改动；
-在此之前这些 API 保持缺失，不在表里造空壳。
+`createCameraContext` / `createVideoContext` / `createLivePlayerContext` / `createMapContext` 要操作的是
+**渲染侧的组件实例**（播放、seek、相机参数、地图中心），而 service 侧只持有逻辑树。
+
+现有的 service→render 路径其实有两条：
+
+- **bridge 控制调用**：`createRenderRpc`（`packages/runtime/src/service/render-bridge/rpc.ts`）用
+  `connection.call(TREE_PROTOCOL.domain, ...)` 请求渲染侧；`packages/runtime/src/render/thread.ts`（约 594 行）
+  用 `connection.onControl(...)` 应答 measure / queryView / intersection / canvas measure。请求-响应语义是现成的。
+- **canvas 中继**：service iframe 通过 `window.parent.postMessage` 把请求交给宿主页，宿主页再转给 render
+  （`hosts/web/src/canvas-bridge.ts` 的 `requestCanvasHandoff`），这是跨 iframe 的同源消息通道。
+
+所以缺的不是 RPC 管道，而是三块具体能力：
+
+1. **协议方法**：`packages/runtime/src/tree-protocol/protocol.ts` 增加组件命令域（例如
+   `component.invoke { componentId | selector, method, args }`），并在 `render/thread.ts` 注册对应 `onControl`。
+2. **render 侧实例分发**：`renderer` 目前只有 `measure` / `query` / `observeIntersection` 等节点级能力，
+   没有“按组件 id 取实例并调用方法”的入口。需要在 glass render tree（`hosts/web`）补一个受控的
+   `invokeComponent(id, method, args)`：方法白名单、参数与返回值必须可结构化克隆。
+3. **service 侧 API 面**：每个上下文对象的方法表（map / video / camera），以及 `ApiContext` 上的适配器——
+   参照 `createOffscreenCanvas`：类型定义在 `packages/api/src/context.ts`，由 `hosts/web/src/service-entry.ts`
+   注入实现。
+
+补齐这三块之后这些 API 才能真实可用；在此之前保持缺失，不在表里造空壳。
